@@ -1,14 +1,18 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using NEXORA.Application.Catalog;
 using NEXORA.Web.Models;
 
 namespace NEXORA.Web.Controllers;
 
-public class HomeController : Controller
+public class HomeController(ICustomerCatalogQueryService catalog) : Controller
 {
-    public IActionResult Index()
+    public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
-        return View();
+        return View(new StorefrontHomeViewModel
+        {
+            Data = await catalog.GetHomeAsync(cancellationToken)
+        });
     }
 
     public IActionResult Privacy()

@@ -4,7 +4,7 @@
 
 Ma trận này nối các yêu cầu chức năng Chương 2 với module triển khai và Use Case được liệt kê trong khóa luận. Nguồn là tài liệu [`NEXORA_KHOA_LUAN_DOT_2_TU_VAN_NGON_NGU_TU_NHIEN_BAT_BUOC.docx`](./NEXORA_KHOA_LUAN_DOT_2_TU_VAN_NGON_NGU_TU_NHIEN_BAT_BUOC.docx), trọng tâm mục 2.2–2.4 và 2.9–2.10.
 
-Chương 2 có 50 FR (FR01–FR50), 10 NFR (NFR01–NFR10), 19 BR (BR01–BR19), bốn tác nhân và 46 Use Case. Tên FR, BR và Use Case dưới đây được rút từ tài liệu. “Module” là nhóm trách nhiệm kiến trúc đề xuất trong `IMPLEMENTATION_PLAN.md`, không phải module đã tồn tại trong source code.
+Chương 2 có 50 FR (FR01–FR50), 10 NFR (NFR01–NFR10), 19 BR (BR01–BR19), bốn tác nhân và 46 Use Case. Tên FR, BR và Use Case dưới đây được rút từ tài liệu. “Module” là nhóm trách nhiệm kiến trúc trong `IMPLEMENTATION_PLAN.md`; một phần đã có triển khai source code ở Phase 1–2, các phần còn lại là kế hoạch giai đoạn sau.
 
 ## 2. Vai trò và phạm vi Use Case
 
@@ -171,7 +171,22 @@ Bộ kiểm thử tư vấn do khóa luận đề xuất gồm:
 
 Các ca trên là kế hoạch chưa chạy. Chỉ ghi nhận pass/fail sau khi triển khai và lưu kết quả thực tế.
 
-## 8. Ghi chú về phạm vi Use Case
+## 8. Bằng chứng triển khai và nghiệm thu Phase 2
+
+| Yêu cầu/Use Case | Module/điểm triển khai | Bằng chứng Phase 2 | Trạng thái/giới hạn |
+|---|---|---|---|
+| FR37 / UC-A04 | Admin Categories, category management service | Browser create/read/edit; từ chối tên trùng; ngừng Category khi đang được Product dùng | Browser đã kiểm tra; dữ liệu test đã dọn |
+| FR38 / UC-A05 | Admin Brands, brand management service | Browser create/read/edit; từ chối tên trùng; ngừng Brand khi đang được Product tham chiếu | Browser đã kiểm tra; dữ liệu test đã dọn |
+| FR39 / FR45 / UC-A06 / UC-A12 | Admin Products, ProductManagementService | Browser create/read/edit/deactivate; validation giá; từ chối Product ACTIVE thiếu Specification bắt buộc | Browser đã kiểm tra; không đo hiệu năng |
+| FR40 / UC-A07 | ProductImage upload/storage | Browser chấp nhận PNG hợp lệ, từ chối `.txt` và >5 MiB; thay ảnh chính giữ tối đa một ảnh `IsPrimary`; xóa ảnh qua UI | Browser đã kiểm tra; JPEG/WebP codec chưa kiểm tra riêng |
+| FR41 / UC-A08 | Admin Specifications, CategorySpecification, ProductSpecification | Browser create/edit/deactivate; gán NUMBER/GB, flags; nhập/hiển thị giá trị; server giữ context khi required-value lỗi | Browser đã kiểm tra; wrong-category ID được bao phủ bởi Domain policy test |
+| FR05–FR07 / UC-C05–UC-C07 | Customer Catalog, dynamic Specification facets | Browser search, category/brand/price/NUMBER filter, product details and no-result empty state; query lấy SQL data | Browser đã kiểm tra; NFR01 chưa đo |
+| FR11 / UC-C09 / BR07 | Catalog comparison | Browser chọn hai checkbox cùng Category, nút submit bật, form GET tới `Compare?ids=1&ids=2`; bảng so sánh hiện đủ hai sản phẩm; 4 ID bị từ chối | Browser selection và kết quả đã kiểm tra |
+| BR08 / NFR03 | Identity & Access / Admin authorization | Admin dashboard mở trong phiên Admin (DB xác nhận ID 2); Customer QA tạm ID 3 chỉ có role Customer bị từ chối `/Admin/Products`; anonymous `/Admin/Products` chuyển về login; controller test yêu cầu Admin | Browser authorization đã kiểm tra; Customer QA user đã dọn sau khi không phát sinh dữ liệu phụ thuộc |
+
+Kiểm thử trên browser không thay thế unit tests hoặc HTTP smoke. Số lần chạy, tình trạng 64/64 tests, database counts, schema/migration và các giới hạn xác thực được ghi tại [`PHASE2_ACCEPTANCE.md`](./PHASE2_ACCEPTANCE.md). Natural Language Consultation (FR08–FR10, UC-C08, BR15–BR19) vẫn bắt buộc nhưng chưa thuộc Phase 2 và chưa triển khai.
+
+## 9. Ghi chú về phạm vi Use Case
 
 - Danh mục Use Case trong tài liệu có 46 UC; mã được dùng xuyên suốt đặc tả và sơ đồ.
 - FR18 và FR26 yêu cầu nhân viên đăng nhập nhưng danh mục UC không có UC đăng nhập riêng cho Sales/Warehouse. Ma trận giữ nguyên danh mục gốc và liên kết hai FR với module xác thực dùng chung, không tạo mã UC mới.

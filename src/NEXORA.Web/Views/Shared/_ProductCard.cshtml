@@ -1,0 +1,14 @@
+@model NEXORA.Application.Catalog.CatalogProductCard
+<article class="card h-100 product-card border-0 shadow-sm">
+    <a asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id" class="product-card-image text-decoration-none">
+        @if (Model.PrimaryImageUrl is not null) { <img src="@Model.PrimaryImageUrl" alt="@Model.Name" loading="lazy" /> }
+        else { <span>Chưa có ảnh</span> }
+    </a>
+    <div class="card-body d-flex flex-column">
+        <div class="small text-secondary mb-1">@Model.CategoryName · @Model.BrandName</div>
+        <h3 class="h6 fw-semibold"><a asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id" class="product-card-title text-decoration-none">@Model.Name</a></h3>
+        <p class="small text-secondary mb-3">Mã: @Model.Sku</p>
+        <div class="mt-auto d-flex align-items-baseline gap-2"><strong class="text-primary">@((Model.DiscountPrice ?? Model.Price).ToString("N0")) ₫</strong>@if (Model.DiscountPrice.HasValue) { <del class="small text-secondary">@Model.Price.ToString("N0") ₫</del> }</div>
+        <a class="btn btn-outline-primary btn-sm mt-3" asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id">Xem chi tiết</a>
+    </div>
+</article>

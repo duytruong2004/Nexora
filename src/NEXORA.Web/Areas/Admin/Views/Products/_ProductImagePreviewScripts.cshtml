@@ -1,0 +1,23 @@
+<script>
+    (() => {
+        const show = (inputId, targetId, multiple) => {
+            const input = document.getElementById(inputId);
+            const target = document.getElementById(targetId);
+            if (!input || !target) return;
+            input.addEventListener('change', () => {
+                target.replaceChildren();
+                const files = Array.from(input.files || []);
+                (multiple ? files : files.slice(0, 1)).forEach(file => {
+                    if (!file.type.startsWith('image/')) return;
+                    const image = document.createElement('img');
+                    image.alt = 'Xem trước ảnh';
+                    image.src = URL.createObjectURL(file);
+                    image.onload = () => URL.revokeObjectURL(image.src);
+                    target.append(image);
+                });
+            });
+        };
+        show('PrimaryImage', 'primaryPreview', false);
+        show('DetailImages', 'detailsPreview', true);
+    })();
+</script>

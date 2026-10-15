@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\src\NEXORA.Domain\NEXORA.Domain.csproj" />
     <ProjectReference Include="..\..\src\NEXORA.Application\NEXORA.Application.csproj" />
     <ProjectReference Include="..\..\src\NEXORA.Infrastructure\NEXORA.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\NEXORA.Web\NEXORA.Web.csproj" />
   </ItemGroup>
 
 </Project>

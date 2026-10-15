@@ -1,0 +1,5 @@
+@model NEXORA.Web.Areas.Admin.Models.SpecificationFormViewModel
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+<div class="mb-3"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger"></span></div>
+<div class="mb-3"><label asp-for="Unit" class="form-label"></label><input asp-for="Unit" class="form-control" placeholder="GB, inch, kg..." /><span asp-validation-for="Unit" class="text-danger"></span></div>
+<div class="mb-3"><label asp-for="DataType" class="form-label"></label><select asp-for="DataType" class="form-select"><option value="NUMBER">NUMBER — lọc theo khoảng</option><option value="TEXT">TEXT — văn bản tự do</option><option value="ENUM">ENUM — giá trị phân loại động</option><option value="BOOLEAN">BOOLEAN — đúng/sai</option></select><span asp-validation-for="DataType" class="text-danger"></span><div class="form-text">Enum không cần danh sách lựa chọn trong schema; bộ lọc lấy các giá trị đang có trên sản phẩm thuộc danh mục.</div></div>

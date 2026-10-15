@@ -1,0 +1,21 @@
+@model NEXORA.Web.Areas.Admin.Models.BrandListViewModel
+@{
+    ViewData["Title"] = "Quản lý thương hiệu";
+}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div><p class="text-uppercase small fw-semibold text-primary mb-1">Quản trị danh mục</p><h1 class="h2 mb-0">Thương hiệu</h1></div>
+    <a class="btn btn-primary" asp-action="Create">Thêm thương hiệu</a>
+</div>
+<form method="get" asp-action="Index" class="card card-body border-0 shadow-sm mb-4">
+    <div class="row g-2 align-items-end"><div class="col-md-8"><label for="search" class="form-label">Tìm theo tên</label><input id="search" name="search" value="@Model.Search" class="form-control" placeholder="Nhập tên thương hiệu" /></div><div class="col-md-4 d-flex gap-2"><button class="btn btn-outline-primary flex-grow-1" type="submit">Tìm kiếm</button><a class="btn btn-outline-secondary" asp-action="Index">Xóa lọc</a></div></div>
+</form>
+<div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+    <thead class="table-light"><tr><th>Tên</th><th>Mô tả</th><th>Trạng thái</th><th class="text-end">Thao tác</th></tr></thead>
+    <tbody>
+    @if (Model.Items.Count == 0) { <tr><td colspan="4" class="text-center text-secondary py-5">Chưa có thương hiệu phù hợp.</td></tr> }
+    @foreach (var item in Model.Items)
+    {
+        <tr><td class="fw-semibold">@item.Name</td><td class="text-secondary">@item.Description</td><td><span class="badge @(item.IsActive ? "text-bg-success" : "text-bg-secondary")">@(item.IsActive ? "Đang dùng" : "Đã ngừng")</span></td><td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@item.Id">Sửa</a><form method="post" asp-action="Remove" asp-route-id="@item.Id" class="d-inline" onsubmit="return confirm('Xóa nếu chưa có sản phẩm liên quan, nếu không sẽ ngừng sử dụng?');"><button class="btn btn-sm btn-outline-danger" type="submit">Xóa / ngừng</button></form></td></tr>
+    }
+    </tbody>
+</table></div></div>

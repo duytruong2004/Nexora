@@ -1,0 +1,10 @@
+@model NEXORA.Web.Areas.Admin.Models.ProductFormViewModel
+@{
+    ViewData["Title"] = "Thêm sản phẩm";
+}
+<div class="mb-4"><a asp-action="Index" class="text-decoration-none">← Sản phẩm</a><h1 class="h2 mt-2">Thêm sản phẩm</h1></div>
+<form asp-action="Create" method="post" enctype="multipart/form-data" class="card border-0 shadow-sm p-4 catalog-form">
+    <partial name="_ProductForm" model="Model" />
+    <div class="d-flex gap-2 mt-4"><button class="btn btn-primary" type="submit">Lưu sản phẩm</button><a class="btn btn-outline-secondary" asp-action="Index">Hủy</a></div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /><partial name="_ProductImagePreviewScripts" /> }

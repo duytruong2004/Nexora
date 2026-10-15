@@ -1,3 +1,4 @@
+@model NEXORA.Web.Models.StorefrontHomeViewModel
 @{
     ViewData["Title"] = "Trang chủ";
 }
@@ -5,55 +6,52 @@
 <section class="nexora-hero rounded-4 p-4 p-lg-5 mb-5">
     <div class="row align-items-center g-4">
         <div class="col-lg-8">
-            <p class="text-uppercase fw-semibold small text-primary mb-2">Thiết bị công nghệ cho nhu cầu của bạn</p>
-            <h1 class="display-5 fw-bold mb-3">Chào mừng đến với NEXORA</h1>
-            <p class="lead text-secondary mb-4">
-                Nền tảng mua sắm thiết bị công nghệ đang được xây dựng với trọng tâm là tư vấn sản phẩm theo nhu cầu,
-                thông tin kỹ thuật rõ ràng và quy trình đơn hàng minh bạch.
-            </p>
-            <div class="d-flex flex-wrap gap-2">
-                <a class="btn btn-primary btn-lg" asp-controller="Account" asp-action="Register">Tạo tài khoản</a>
-                <a class="btn btn-outline-dark btn-lg" asp-controller="Account" asp-action="Login">Đăng nhập</a>
-            </div>
+            <p class="text-uppercase fw-semibold small text-primary mb-2">Thiết bị công nghệ theo nhu cầu</p>
+            <h1 class="display-5 fw-bold mb-3">Chọn đúng thiết bị. Dùng đúng mục đích.</h1>
+            <p class="lead text-secondary mb-4">Khám phá danh mục, xem thông số kỹ thuật rõ ràng và tìm sản phẩm phù hợp với công việc hằng ngày.</p>
+            <div class="d-flex flex-wrap gap-2"><a class="btn btn-primary btn-lg" asp-controller="Catalog" asp-action="Index">Khám phá sản phẩm</a>@if (User.Identity?.IsAuthenticated != true) { <a class="btn btn-outline-dark btn-lg" asp-controller="Account" asp-action="Register">Tạo tài khoản</a> }</div>
         </div>
-        <div class="col-lg-4">
-            <div class="hero-mark" aria-hidden="true">N</div>
-        </div>
+        <div class="col-lg-4"><div class="hero-mark" aria-hidden="true">N</div></div>
     </div>
 </section>
 
-<section aria-labelledby="foundation-title">
-    <div class="mb-4">
-        <p class="text-uppercase fw-semibold small text-primary mb-2">Nền tảng NEXORA</p>
-        <h2 id="foundation-title" class="h3 fw-bold">Thiết kế quanh nhu cầu thực tế</h2>
+<section class="mb-5" aria-labelledby="consultation-title">
+    <div class="consultation-banner rounded-4 p-4 p-lg-5 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-4">
+        <div><p class="text-uppercase small fw-semibold mb-2">Điểm khác biệt NEXORA</p><h2 id="consultation-title" class="h3 fw-bold">Mô tả nhu cầu bằng tiếng Việt</h2><p class="mb-0 text-secondary">Tư vấn lựa chọn sản phẩm bằng ngôn ngữ tự nhiên là tính năng cốt lõi của khóa luận, đang được xây dựng cho giai đoạn tiếp theo.</p></div>
+        <a class="btn btn-outline-primary btn-lg flex-shrink-0" asp-controller="Catalog" asp-action="Index">Xem sản phẩm hiện có</a>
     </div>
-    <div class="row g-3">
-        <div class="col-md-4">
-            <article class="card h-100 feature-card">
-                <div class="card-body p-4">
-                    <span class="feature-number">01</span>
-                    <h3 class="h5 fw-semibold mt-3">Tư vấn theo nhu cầu</h3>
-                    <p class="text-secondary mb-0">Khách hàng có thể mô tả mục đích, ngân sách và ưu tiên bằng tiếng Việt.</p>
-                </div>
-            </article>
+</section>
+
+<section class="mb-5" aria-labelledby="categories-title">
+    <div class="d-flex justify-content-between align-items-end gap-3 mb-3"><div><p class="text-uppercase small fw-semibold text-primary mb-1">Danh mục</p><h2 id="categories-title" class="h3 fw-bold mb-0">Khám phá theo nhóm</h2></div><a asp-controller="Catalog" asp-action="Index" class="text-decoration-none">Tất cả sản phẩm</a></div>
+    @if (Model.Data.Categories.Count == 0)
+    {
+        <div class="catalog-empty rounded-4 p-4 text-secondary">Danh mục đang được cập nhật.</div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var category in Model.Data.Categories)
+            {
+                <div class="col-6 col-md-4 col-xl-3"><a class="category-tile card h-100 p-3 p-lg-4 text-decoration-none" asp-controller="Catalog" asp-action="Category" asp-route-id="@category.Id"><span class="small text-secondary">Danh mục</span><span class="fw-semibold text-dark mt-1">@category.Name</span></a></div>
+            }
         </div>
-        <div class="col-md-4">
-            <article class="card h-100 feature-card">
-                <div class="card-body p-4">
-                    <span class="feature-number">02</span>
-                    <h3 class="h5 fw-semibold mt-3">Thông số linh hoạt</h3>
-                    <p class="text-secondary mb-0">Dữ liệu kỹ thuật được tổ chức theo danh mục sản phẩm.</p>
-                </div>
-            </article>
+    }
+</section>
+
+<section aria-labelledby="featured-title">
+    <div class="d-flex justify-content-between align-items-end gap-3 mb-3"><div><p class="text-uppercase small fw-semibold text-primary mb-1">Từ danh mục hiện có</p><h2 id="featured-title" class="h3 fw-bold mb-0">Sản phẩm mới</h2></div></div>
+    @if (Model.Data.Products.Count == 0)
+    {
+        <div class="catalog-empty rounded-4 p-4 text-secondary">Chưa có sản phẩm đang kinh doanh. Quản trị viên có thể thêm sản phẩm từ khu vực Admin.</div>
+    }
+    else
+    {
+        <div class="row g-3 g-lg-4">
+            @foreach (var product in Model.Data.Products)
+            {
+                <div class="col-6 col-md-4 col-xl-3"><partial name="_ProductCard" model="product" /></div>
+            }
         </div>
-        <div class="col-md-4">
-            <article class="card h-100 feature-card">
-                <div class="card-body p-4">
-                    <span class="feature-number">03</span>
-                    <h3 class="h5 fw-semibold mt-3">Vận hành nhất quán</h3>
-                    <p class="text-secondary mb-0">Đơn hàng, số lượng giữ trước và tồn kho được thiết kế để cập nhật an toàn.</p>
-                </div>
-            </article>
-        </div>
-    </div>
+    }
 </section>

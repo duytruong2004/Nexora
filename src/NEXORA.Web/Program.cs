@@ -1,13 +1,17 @@
 using Microsoft.AspNetCore.Identity;
+using System.Globalization;
+using NEXORA.Application.Catalog;
 using NEXORA.Application.Email;
 using NEXORA.Domain.Security;
 using NEXORA.Infrastructure;
 using NEXORA.Infrastructure.Identity;
 using NEXORA.Infrastructure.Persistence;
 using NEXORA.Web.Email;
+using NEXORA.Web.Images;
 using NEXORA.Web.Identity;
 
-var builder = WebApplication.CreateBuilder(args);
+var commandArguments = ProvisioningCommandArguments.Parse(args);
+var builder = WebApplication.CreateBuilder(commandArguments.HostArguments);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(connectionString))
@@ -17,6 +21,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
 }
 
 builder.Services.AddNexoraInfrastructure(connectionString);
+builder.Services.AddScoped<IProductImageStorage, LocalProductImageStorage>();
 builder.Services.AddIdentity<AppUser, AppRole>(options =>
     {
         options.User.RequireUniqueEmail = true;
@@ -69,10 +74,23 @@ else
 }
 
 app.UseHttpsRedirection();
+var vietnameseCulture = new CultureInfo("vi-VN");
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new Microsoft.AspNetCore.Localization.RequestCulture(vietnameseCulture),
+    SupportedCultures = [vietnameseCulture],
+    SupportedUICultures = [vietnameseCulture]
+});
+// Uploads are created at runtime and are not included in the static asset manifest.
+app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapStaticAssets();
+app.MapControllerRoute(
+        name: "areas",
+        pattern: "{area:exists}/{controller=Dashboard}/{action=Index}/{id?}")
+    .WithStaticAssets();
 app.MapControllerRoute(
         name: "default",
         pattern: "{controller=Home}/{action=Index}/{id?}")
@@ -83,6 +101,29 @@ await using (var scope = app.Services.CreateAsyncScope())
 {
     var roleSeeder = scope.ServiceProvider.GetRequiredService<RoleSeeder>();
     await roleSeeder.EnsureRolesAsync();
+}
+
+if (app.Environment.IsDevelopment() && !commandArguments.IsRequested)
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var demoSeeder = scope.ServiceProvider.GetRequiredService<ICatalogDemoSeeder>();
+    await demoSeeder.SeedAsync(app.Lifetime.ApplicationStopping);
+}
+
+if (commandArguments.IsRequested)
+{
+    if (!app.Environment.IsDevelopment())
+    {
+        app.Logger.LogCritical("Admin provisioning is available only in the Development environment.");
+        Environment.ExitCode = 1;
+        return;
+    }
+
+    Environment.ExitCode = await DevelopmentAdminProvisioningCommand.ExecuteAsync(
+        app.Services,
+        app.Logger,
+        app.Lifetime.ApplicationStopping);
+    return;
 }
 
 app.Run();

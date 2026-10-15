@@ -161,6 +161,23 @@ public sealed class AppDbContextModelTests
     }
 
     [Fact]
+    public void Model_KeepsDynamicSpecificationsUniqueAndLinkedToCategoriesAndProducts()
+    {
+        using var context = CreateContext();
+        var assignments = context.Model.FindEntityType(typeof(CategorySpecification))!;
+        var values = context.Model.FindEntityType(typeof(ProductSpecification))!;
+
+        Assert.Contains(assignments.GetKeys(), key =>
+            key.Properties.Select(property => property.Name).SequenceEqual(["CategoryId", "SpecificationId"]));
+        Assert.Contains(values.GetIndexes(), index => index.IsUnique &&
+            index.Properties.Select(property => property.Name).SequenceEqual(["ProductId", "SpecificationId"]));
+        Assert.Contains(values.GetIndexes(), index =>
+            index.Properties.Select(property => property.Name).SequenceEqual(["SpecificationId", "NumericValue"]));
+        Assert.Contains(values.GetForeignKeys(), foreignKey => foreignKey.PrincipalEntityType.ClrType == typeof(Product));
+        Assert.Contains(values.GetForeignKeys(), foreignKey => foreignKey.PrincipalEntityType.ClrType == typeof(Specification));
+    }
+
+    [Fact]
     public void Identity_UsesIntegerKeysStandardUniqueIndexesAndExpectedLengths()
     {
         using var context = CreateContext();

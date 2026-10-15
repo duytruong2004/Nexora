@@ -1,0 +1,16 @@
+@model NEXORA.Web.Models.CustomerCatalogViewModel
+@using System.Globalization
+<input type="hidden" name="search" value="@Model.Filter.Search" />
+@if (Model.Filter.CategoryId.HasValue) { <input type="hidden" name="categoryId" value="@Model.Filter.CategoryId" /> }
+@if (Model.Filter.BrandId.HasValue) { <input type="hidden" name="brandId" value="@Model.Filter.BrandId" /> }
+@if (Model.Filter.MinimumPrice.HasValue) { <input type="hidden" name="minimumPrice" value="@Model.Filter.MinimumPrice.Value.ToString(CultureInfo.InvariantCulture)" /> }
+@if (Model.Filter.MaximumPrice.HasValue) { <input type="hidden" name="maximumPrice" value="@Model.Filter.MaximumPrice.Value.ToString(CultureInfo.InvariantCulture)" /> }
+<input type="hidden" name="sortBy" value="@Model.Filter.SortBy" />
+@for (var index = 0; index < Model.Filter.SpecificationFilters.Count; index++)
+{
+    var filter = Model.Filter.SpecificationFilters[index];
+    <input type="hidden" name="specificationFilters[@index].SpecificationId" value="@filter.SpecificationId" />
+    @if (filter.MinimumValue.HasValue) { <input type="hidden" name="specificationFilters[@index].MinimumValue" value="@filter.MinimumValue.Value.ToString(CultureInfo.InvariantCulture)" /> }
+    @if (filter.MaximumValue.HasValue) { <input type="hidden" name="specificationFilters[@index].MaximumValue" value="@filter.MaximumValue.Value.ToString(CultureInfo.InvariantCulture)" /> }
+    @if (!string.IsNullOrWhiteSpace(filter.Value)) { <input type="hidden" name="specificationFilters[@index].Value" value="@filter.Value" /> }
+}

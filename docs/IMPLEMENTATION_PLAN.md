@@ -107,11 +107,79 @@ Các tiêu chí dưới đây là đề xuất nghiệm thu. Kết quả Phase 1
 
 **Database đã được chủ dự án duyệt và cập nhật:** `PC01\SQLEXPRESS`, database `NEXORA`. Trước cập nhật, truy vấn chỉ đọc trên `master` xác nhận database chưa tồn tại và cấu hình Web `.\SQLEXPRESS` phân giải về hostname `PC01`; sau đó EF Core áp dụng đúng `20261015173046_InitialFoundation`. Database hiện có 27 bảng: 22 bảng nghiệp vụ, bốn bảng kỹ thuật Identity và `__EFMigrationsHistory`. File [`INITIAL_FOUNDATION_REVIEW.sql`](./INITIAL_FOUNDATION_REVIEW.sql) được giữ làm artifact review, không chạy trực tiếp.
 
-### Phase 2 – Danh mục, sản phẩm, thông số động, tìm kiếm/lọc/so sánh
+### Phase 2 – Danh mục, sản phẩm, thông số động, tìm kiếm/lọc/so sánh (đã nghiệm thu và commit local)
 
 **Công việc:** hiện thực nhóm bảng danh mục/sản phẩm/thông số; quản lý ảnh; trang liệt kê và chi tiết; tìm kiếm; lọc theo cấu hình thông số của danh mục; so sánh 2–3 sản phẩm theo UC-C09.
 
-**Tiêu chí kiểm thử đề xuất:** CRUD theo quyền; khóa duy nhất/FK được bảo đảm; bộ lọc thay đổi theo danh mục (BR06); giá trị số và hiển thị được xử lý đúng kiểu; so sánh từ chối/cảnh báo dữ liệu không tương thích (BR07); tra cứu/lọc đạt mục tiêu NFR01 là 3 giây trong bộ dữ liệu và môi trường thử nghiệm được ghi rõ.
+#### 2.1 – Git checkpoint và cấp quyền Admin Development
+
+**Đã thực hiện:** khởi tạo repository Git cục bộ, mở rộng `.gitignore` để loại `bin/`, `obj/`, cấu hình Development chứa connection string, secrets, `.env`, khóa chứng thư và ảnh upload; đã kiểm tra các file bị loại không nằm trong staging. Chủ dự án đã cấu hình danh tính Git local; sau khi kiểm tra `user.name`/`user.email`, rà soát file staged và quét dấu hiệu bí mật, checkpoint Phase 1 đã được commit thành `fcd1153` (`chore: checkpoint Phase 1 foundation`). File cấu hình Development không được commit.
+
+Đã thêm `--provision-admin` chạy riêng qua console tương tác, chỉ cho phép ở Development; công cụ tra cứu tài khoản đang hoạt động có sẵn, yêu cầu xác nhận `GRANT ADMIN <ID>`, không nhận email qua tham số lệnh, không có endpoint HTTP và không ghi email/mật khẩu/token vào log. Tại thời điểm hoàn tất phần 2.1, chưa gán role Admin cho tài khoản nào. Sau đó, theo xác nhận riêng của chủ dự án ở đợt nghiệm thu 2.8, tài khoản ID 2 đã được cấp Admin bằng command này. Hướng dẫn thao tác nằm ở [`DEVELOPMENT_ADMIN_PROVISIONING.md`](./DEVELOPMENT_ADMIN_PROVISIONING.md). Kiểm thử parser command đạt; lời gọi console với tài khoản không tồn tại không thực hiện thay đổi.
+
+**Kiểm tra tại thời điểm hoàn tất phần 2.1:** `dotnet restore NEXORA.sln` thành công; `dotnet build NEXORA.sln --no-restore` thành công với 0 warning/0 error sau khi dừng tiến trình website cũ đang khóa executable; `dotnet test NEXORA.sln --no-build --no-restore` đạt 30/30. Lệnh provisioning console với địa chỉ thử nghiệm không tồn tại trả về không có thay đổi; ở thời điểm đó chưa cấp quyền Admin cho tài khoản nào.
+
+#### 2.2 – Category & Brand (đã hoàn tất)
+
+Đã bổ sung Application contract và Infrastructure service truy vấn/tạo/sửa/tìm kiếm/xóa an toàn cho danh mục và thương hiệu. Danh mục hỗ trợ phân cấp, kiểm tra tên trùng cùng cấp, không cho vòng lặp cha-con; khi còn sản phẩm hoặc danh mục con thì chuyển sang ngừng sử dụng, nếu không còn liên kết thì mới xóa. Thương hiệu kiểm tra tên trùng và chỉ nhận logo URL HTTPS hoặc đường dẫn nội bộ; thương hiệu còn sản phẩm được ngừng sử dụng. Hai Admin Area controller đều yêu cầu role `Admin`, mọi lệnh ghi dùng POST và antiforgery; Razor có validation phía client/server, tìm kiếm, trạng thái rỗng và thông báo kết quả. Layout có liên kết danh mục/thương hiệu chỉ cho Admin.
+
+Phạm vi 10 nhóm danh mục lấy từ tài liệu khóa luận sẽ được seed idempotent ở 2.7, không seed nhãn hoặc thông số sản phẩm ở giai đoạn này. Chưa thay đổi schema hoặc dữ liệu SQL Server. Test authorization cho controller và antiforgery đã bổ sung. `dotnet build NEXORA.sln --no-restore` thành công (0 warning/0 error); `dotnet test NEXORA.sln --no-build --no-restore` đạt 34/34.
+
+#### 2.3 – Product & Product Image (đã hoàn tất)
+
+Đã thêm quy tắc Domain và service Application/Infrastructure cho tạo, sửa, tìm kiếm, lọc và phân trang sản phẩm. Giá dùng `decimal`, được kiểm tra trong giới hạn `decimal(18,2)` và tối đa hai chữ số thập phân; trạng thái chỉ nhận `ACTIVE`/`INACTIVE`; sản phẩm chỉ trỏ tới danh mục/thương hiệu đang hoạt động (hoặc giữ liên kết hiện tại khi sửa sản phẩm cũ). Không xóa cứng sản phẩm; thao tác ngừng kinh doanh giữ toàn bộ quan hệ nghiệp vụ.
+
+Ảnh hỗ trợ một ảnh đại diện và tối đa tám ảnh chi tiết mỗi lần tải. Hệ thống chỉ nhận JPEG/PNG/WebP, kiểm tra chữ ký byte thực tế cùng phần mở rộng, giới hạn 5 MB/ảnh, đổi tên GUID và lưu URL tương đối tại `wwwroot/uploads/products`. Thay ảnh đại diện giữ ảnh trước làm ảnh chi tiết; xóa ảnh chỉ nhắm file GUID trong thư mục upload NEXORA. Có preview phía trình duyệt; đã thêm `UseStaticFiles` để phục vụ file ảnh phát sinh sau khi ứng dụng khởi động. Chưa đổi schema hoặc ghi dữ liệu lên SQL Server.
+
+Đã thêm Admin CRUD/list/detail, tìm kiếm theo tên/mã, lọc danh mục/thương hiệu/trạng thái, phân trang server-side và endpoint POST chống CSRF. Build 0 warning/0 error, test đạt 49/49 ở thời điểm hoàn tất; test kiểm tra validation giá/trạng thái, chữ ký và phần mở rộng ảnh, tên file được sinh an toàn và thao tác lưu/xóa file upload.
+
+#### 2.4 – Specification động (đã hoàn tất)
+
+Đã xây dựng quản lý Specification dùng đúng các bảng `specifications`, `category_specifications`, `product_specifications`; không thêm cột cố định vào Product, không tạo bảng/cột/schema mới. DataType được giới hạn theo hợp đồng hiện có: `NUMBER`, `TEXT`, `ENUM`, `BOOLEAN`. Thông số có thể được gán theo danh mục với cờ lọc, bắt buộc và thứ tự. Gỡ gán bị từ chối khi còn giá trị sản phẩm hoặc quy tắc tư vấn; chuyển thông số sang kiểu khác bị từ chối khi đã có dữ liệu hoặc quy tắc. Trước khi đặt thuộc tính bắt buộc, kiểm tra sản phẩm đang kinh doanh đã có giá trị.
+
+Biểu mẫu sản phẩm dựng từ cấu hình Category, xác thực toàn bộ Specification gửi lên thuộc danh mục hiện tại, từ chối ID trùng, enforce trường bắt buộc và giữ giá trị nếu một trường tùy chọn không được gửi. NUMBER parse theo invariant culture, chuẩn hóa `value`, ghi riêng `numeric_value` và `display_value` theo `decimal(18,4)`; BOOLEAN ghi `true`/`false` cùng nhãn hiển thị tiếng Việt; ENUM mở, gợi ý dựa trên giá trị đang có và không yêu cầu bảng lựa chọn riêng. Khi đổi Category, sản phẩm có giá trị thông số không tương thích bị chặn để tránh làm mất/tách dữ liệu. Chi tiết Admin hiển thị giá trị động từ DB.
+
+Kiểm thử policy cho numeric invariant/range, enum mở, boolean, gán sai danh mục/ID trùng; model test xác nhận alternate key, unique index product-specification, index numeric và FK. `dotnet build` đạt 0 warning/0 error; `dotnet test` đạt 60/60. `dotnet ef migrations has-pending-model-changes` báo model không thay đổi. Không tạo migration mới và không ghi dữ liệu database trong phần 2.4.
+
+#### 2.5 – Catalog giao diện khách hàng (đã hoàn tất)
+
+Đã thay trang chủ tĩnh bằng trang chủ đọc danh mục/sản phẩm từ `ICustomerCatalogQueryService`; giới thiệu tư vấn ngôn ngữ tự nhiên đúng vai trò tính năng bắt buộc nhưng ghi rõ đang thuộc giai đoạn kế tiếp, không giả vờ đã có Recommendation Engine. Có danh sách sản phẩm, danh mục, kết quả tìm kiếm, lọc cơ bản, chi tiết sản phẩm, ảnh và bảng Specification động; trang không dùng product mock và có empty state. Header có tìm kiếm, navigation, footer; văn hóa request là `vi-VN`, giá hiển thị theo VNĐ, giao diện dùng Razor/Bootstrap 5 responsive.
+
+Ảnh khách hàng được phục vụ bằng Static File Middleware vì thư mục upload phát sinh khi chạy không có trong static asset manifest. Build sạch 0 warning/0 error; test suite hiện đạt 63/63 sau khi bổ sung query/pagination/so sánh. Phần 2.5 chỉ đọc DB; không chạy migration.
+
+#### 2.6 – Tìm kiếm, lọc động và so sánh UC-C09 (đã hoàn tất)
+
+Tìm theo tên/mã; lọc category, brand, giá hiệu lực; sort tên/giá; phân trang giới hạn phía server. Khi chọn category, facet chỉ lấy CategorySpecification đang bật `IsFilterable`; NUMBER dùng Min/Max từ `numeric_value`, ENUM/BOOLEAN lấy option từ dữ liệu thực, TEXT nhận giá trị nhập. Mỗi điều kiện được ghép trên `IQueryable` để EF sinh SQL; specification không thuộc bộ lọc category bị bỏ qua. Truy vấn mẫu được compile bằng SQL Server provider và test xác nhận các điều kiện Category/Brand/Price/Numeric/Value cùng OFFSET xuất hiện trong SQL.
+
+So sánh server nhận 2–3 mã sản phẩm, từ chối ID trùng, sản phẩm không còn kinh doanh và category khác nhau; dữ liệu ảnh/giá/thương hiệu và hợp các Specification hiện có được dựng trực tiếp từ DB. Hàng thiếu giá trị được ghi rõ, so sánh khác biệt được tô nền và có nút chỉ hiện hàng khác nhau. Selection UI hỗ trợ nhiều checkbox, chặn quá 3 và category khác khi JavaScript hoạt động; server vẫn kiểm tra lại. Browser đã chọn hai checkbox Laptop Alpha/Beta, submit form và xác nhận bảng so sánh hiển thị hai sản phẩm. Test policy cho giới hạn, category, missing values; pagination clamp. Build 0 warning/0 error; test 63/63 tại thời điểm hoàn tất phần 2.6.
+
+#### 2.7 – Seed data, tích hợp và kiểm thử toàn bộ (đã hoàn tất)
+
+Đã đối chiếu tài liệu khóa luận và seed đúng 10 Category: Điện thoại, Laptop, Máy tính bảng, Màn hình, Bàn phím, Chuột, Tai nghe, Đồng hồ thông minh, Máy ảnh, Phụ kiện công nghệ. Dữ liệu sản phẩm chỉ được tạo cho ba nhóm trọng tâm trong tài liệu (Điện thoại, Laptop, Máy tính bảng) và Phụ kiện công nghệ; sáu nhóm còn lại không có sản phẩm hoặc Specification giả định. Hai thương hiệu và 11 sản phẩm được gắn rõ nhãn demo; tên và mô tả ghi đây là dữ liệu mô phỏng, không đại diện thông số do nhà sản xuất xác nhận. Mô tả và phạm vi chi tiết nằm ở [`PHASE2_DEMO_DATA.md`](./PHASE2_DEMO_DATA.md).
+
+`CatalogDemoSeeder` chỉ chạy khi ứng dụng ở Development, bổ sung theo khóa nhận diện, bỏ qua tên/slug trùng, không sửa hoặc xóa dữ liệu đang có, không tạo dữ liệu khi Production. Seed chạy trong execution strategy và transaction Serializable. Lần chạy đầu đã thêm 10 categories, 2 brands, 11 specifications, 18 category assignments, 11 products và 52 product specification values; lần khởi động xác nhận tiếp theo báo thêm 0 hàng ở tất cả nhóm và vẫn tìm thấy 11 sản phẩm demo. Không seed ảnh, tồn kho, giỏ hàng, đơn hàng, giao dịch kho, đánh giá, khuyến mại, hồ sơ nhu cầu hay quy tắc tư vấn.
+
+**Kiểm chứng SQL Server Development (trạng thái sau nghiệm thu browser):** truy vấn chỉ đọc xác nhận server `PC01\\SQLEXPRESS`, database `NEXORA`, 27 bảng tổng cộng (22 nghiệp vụ, 4 bảng kỹ thuật Identity và `__EFMigrationsHistory`). Đếm được 10 categories, 2 brands, 11 products, 0 product images, 11 specifications, 18 category assignments, 52 product specification values (38 có `numeric_value`), 2 users với 3 gán role, 0 orders và 0 inventories. Bốn role tồn tại; user ID `2` đã được chủ dự án chỉ định và được gán role Admin bằng provisioning command Development; không tạo mật khẩu mặc định. User ID 1 vẫn là Customer; Customer QA ID 3 tạo để kiểm thử trong lượt này đã được dọn. `__EFMigrationsHistory` chỉ ghi `20261015173046_InitialFoundation`. Không chạy database update, migration hay thay đổi schema trong Phase 2. Dữ liệu test `P2ACCEPT` đã được dọn và các số lượng trên được xác nhận sau dọn.
+
+**Kiểm chứng HTTP và trình duyệt:** website Development được chạy tại `http://127.0.0.1:5058`. Anonymous GET tới trang chủ, Catalog, đăng ký và đăng nhập trả HTTP 200; `/Admin/Products` chuyển hướng HTTP 302 tới trang đăng nhập. Phiên trình duyệt có quyền Admin đã thực hiện CRUD/validation cho Category, Brand, Product, Specification, ảnh và ProductSpecification editor; đã kiểm tra catalog, search, Category/Brand/price/dynamic-spec filter, details, empty state, so sánh qua thao tác chọn hai checkbox và submit, route 3 sản phẩm, cùng request 4 ID bị từ chối. Customer QA tạm chỉ có role Customer đã đăng nhập được, truy cập Catalog, bị từ chối tại `/Admin/Products`, sau đó đăng xuất; tài khoản tạm đã được dọn. Kết quả đầy đủ, được phân loại theo unit/controller, HTTP smoke và browser test, nằm trong [`PHASE2_ACCEPTANCE.md`](./PHASE2_ACCEPTANCE.md).
+
+**Kiểm thử cuối Phase 2:** ngày 16/10/2026, `dotnet restore NEXORA.sln` thành công; `dotnet build NEXORA.sln` thành công với 0 warning/0 error; `dotnet test NEXORA.sln` đạt 64/64. `dotnet ef migrations has-pending-model-changes --no-build --project src/NEXORA.Infrastructure --startup-project src/NEXORA.Web --context AppDbContext` xác nhận model không thay đổi kể từ InitialFoundation. Không có migration mới. Mục tiêu tìm kiếm/lọc 3 giây theo NFR01 chưa đo; không tuyên bố đạt hiệu năng.
+
+**Kết quả nghiệm thu:** Phase 2 cung cấp nền catalog, quản trị danh mục/sản phẩm/Specification, ảnh tải lên, tìm kiếm/lọc/so sánh và seed Development. Kiểm thử chức năng, quyền, regression và secret scan đã đạt; commit local đã được tạo, không push. Mục tiêu tìm kiếm/lọc 3 giây theo NFR01 chưa đo. Tư vấn NLP là chức năng bắt buộc thuộc Phase 3 và chưa được triển khai trong Phase 2.
+
+**Tiêu chí Phase 2:** unit/model/controller/query tests bao phủ policy Specification, tính toàn vẹn truy vấn, giới hạn so sánh; HTTP smoke xác nhận trang khách và anonymous redirect; browser test xác nhận CRUD quản trị, Catalog, compare checkbox và quyền Customer-only như ghi trong acceptance report. NFR01 chưa đo.
+
+#### 2.8 – Nghiệm thu cuối Phase 2 (kiểm thử đạt, chờ checkpoint Git)
+
+Ngày 16/10/2026 đã kiểm tra lại Git và xác nhận checkpoint `fcd1153` tồn tại. `.gitignore` loại `bin/`, `obj/`, `appsettings.Development.json`, `.env`, secrets, khóa chứng thư và media upload; secret scan trên 70 file text thuộc commit không thấy dấu hiệu password, token, key hoặc connection string nhạy cảm. Development config và upload path đã được kiểm tra bằng `git check-ignore`. Commit local `feat: complete Phase 2 product catalog` đã được tạo sau staged diff review; không push.
+
+Đã xác minh cấu hình Development là `PC01\\SQLEXPRESS` / `NEXORA`, Windows Integrated Authentication. Chủ dự án xác nhận tài khoản Đỗ Duy Trường (ID `2`) là tài khoản đích. `DevelopmentAdminProvisioningCommand` đã chạy trong Development sau khi người vận hành đối chiếu tên/ID và nhập `GRANT ADMIN 2`; truy vấn chỉ đọc sau đó xác nhận user ID 2 thuộc role Admin. Provisioning command không đổi mật khẩu, không tạo tài khoản Admin hoặc mật khẩu mặc định. Các gán role Customer hiện có được giữ nguyên.
+
+Nghiệm thu browser đã thực hiện với phiên đang đăng nhập Admin: dashboard, CRUD Category/Brand/Product/Specification, validation, upload ảnh đúng/sai/giới hạn, dynamic Specification, Catalog, search/filter/detail, compare checkbox chọn hai sản phẩm rồi submit thành công, compare route và empty state. Một Customer QA tạm ID 3 được đăng ký qua UI, đăng nhập, được phép vào Catalog, bị từ chối tại `/Admin/Products` và đăng xuất; truy vấn role chỉ đọc xác nhận chỉ có Customer. Bản ghi QA do lượt này tạo đã được dọn sau khi xác nhận không có dữ liệu phụ thuộc. Đã sửa lỗi Razor Tag Helpers trong Areas, parse Range theo invariant culture, khôi phục metadata khi Specification lỗi, chặn Product ACTIVE thiếu Specification bắt buộc và cập nhật nội dung hướng dẫn ảnh. Anonymous HTTP smoke cho `/`, `/Catalog`, `/account/register`, `/account/login` trả 200; `/Admin/Products` chuyển hướng 302. Xem [`PHASE2_ACCEPTANCE.md`](./PHASE2_ACCEPTANCE.md) để biết phạm vi từng loại test.
+
+Sau sửa lỗi, `dotnet restore NEXORA.sln` thành công; `dotnet build NEXORA.sln` thành công với 0 warning/0 error; `dotnet test NEXORA.sln` đạt 64/64. `dotnet ef migrations has-pending-model-changes --no-build --project src/NEXORA.Infrastructure --startup-project src/NEXORA.Web --context AppDbContext` xác nhận model không thay đổi kể từ InitialFoundation. Truy vấn chỉ đọc xác nhận 22 bảng nghiệp vụ, 4 bảng kỹ thuật Identity và bảng history; InitialFoundation vẫn là migration duy nhất. Dữ liệu `P2ACCEPT` tạo riêng cho browser test đã được dọn; không có migration/schema update.
+
+Tài khoản ID 2 đã được cấp Admin theo xác nhận của chủ dự án. Browser test đã xác nhận compare checkbox/submit và Customer-only access denial bằng Customer QA tạm ID 3. Phase 2 đã đạt tiêu chí kiểm thử. Regression cuối: restore thành công, build 0 warning/0 error, test 64/64. Secret scan 70 file không phát hiện dấu hiệu bí mật; staged diff đã được rà soát và commit local `feat: complete Phase 2 product catalog` đã tạo. Không push.
 
 ### Phase 3 – Tư vấn lựa chọn sản phẩm bằng câu tiếng Việt (bắt buộc)
 
@@ -163,7 +231,7 @@ Các tiêu chí dưới đây là đề xuất nghiệm thu. Kết quả Phase 1
 Các mục sau cần quyết định tại giai đoạn thiết kế phù hợp vì tài liệu không chỉ rõ toàn bộ chi tiết triển khai:
 
 1. **Provider gửi email production:** abstraction đã có, nhưng chưa cấu hình dịch vụ gửi thư thật.
-2. **Tài khoản Admin ban đầu:** bốn role được tạo sau khi database được cập nhật; chưa tạo tài khoản đặc quyền. Cần chốt quy trình cấp tài khoản Admin an toàn, không dùng mật khẩu mặc định.
+2. **Tài khoản Admin ban đầu:** Development đã có quy trình provisioning có xác nhận và tài khoản ID 2 đã được chủ dự án cho phép cấp role Admin. Không tạo tài khoản hoặc mật khẩu mặc định. Trước Production cần xác định quy trình bootstrap đặc quyền riêng theo vận hành môi trường.
 3. **Transaction nghiệp vụ đặt hàng:** quy tắc miền và rowversion đã có; SQL Server retry cho lỗi tạm thời được bật (tối đa 3 lần, delay 5 giây). Phase 4 phải chạy transaction bên trong execution strategy, ghi Order, OrderDetail và cập nhật ReservedQuantity nguyên tử; giải phóng reservation khi hủy, giảm tồn/ghi giao dịch khi xuất. Khi rowversion xung đột phải tải lại và kiểm tra tồn trước retry có giới hạn; cần kiểm thử cạnh tranh trên SQL Server sau khi database được duyệt.
 4. **Log NFR10:** sử dụng `ILogger` và không log bí mật; nơi lưu, thời gian lưu và chính sách truy cập log chưa được quy định.
 5. **Parser tư vấn:** tập từ đồng nghĩa, cách xử lý tiền/đơn vị, ngưỡng xác nhận trường mơ hồ và bộ dữ liệu nghiệm thu phải được định nghĩa, không suy ra độ chính xác khi chưa đo.
