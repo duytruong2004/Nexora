@@ -1,0 +1,65 @@
+:root {
+    --nexora-ink: #10213a;
+    --nexora-blue: #2563eb;
+}
+
+html {
+    min-height: 100%;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    color: var(--nexora-ink);
+    background: #fff;
+}
+
+.nexora-navbar {
+    background: #10213a;
+}
+
+.nexora-hero {
+    background: linear-gradient(120deg, #f3f6fb 0%, #e8efff 100%);
+}
+
+.hero-mark {
+    display: grid;
+    width: min(100%, 17rem);
+    aspect-ratio: 1;
+    place-items: center;
+    margin-inline: auto;
+    border: 1px solid rgb(37 99 235 / 15%);
+    border-radius: 2.5rem;
+    color: var(--nexora-blue);
+    background: rgb(255 255 255 / 70%);
+    font-size: 10rem;
+    font-weight: 800;
+    line-height: 1;
+    box-shadow: 0 1rem 3rem rgb(16 33 58 / 8%);
+}
+
+.feature-card {
+    border-color: #e3e9f2;
+    border-radius: 1rem;
+    box-shadow: 0 .5rem 1.5rem rgb(16 33 58 / 4%);
+}
+
+.feature-number {
+    color: var(--nexora-blue);
+    font-size: .8rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+}
+
+.account-card {
+    max-width: 34rem;
+    margin-inline: auto;
+    border: 1px solid #e3e9f2;
+    border-radius: 1rem;
+    box-shadow: 0 1rem 3rem rgb(16 33 58 / 6%);
+}
+
+.mail-message {
+    overflow-wrap: anywhere;
+}

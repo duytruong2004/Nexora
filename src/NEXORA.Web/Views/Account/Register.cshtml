@@ -1,0 +1,42 @@
+@model NEXORA.Web.Models.RegisterViewModel
+@{
+    ViewData["Title"] = "Tạo tài khoản";
+}
+
+<div class="card account-card">
+    <div class="card-body p-4 p-md-5">
+        <p class="text-uppercase fw-semibold small text-primary mb-2">NEXORA</p>
+        <h1 class="h3 fw-bold mb-2">Tạo tài khoản khách hàng</h1>
+        <p class="text-secondary mb-4">Đăng ký để quản lý thông tin và đơn hàng của bạn.</p>
+        <form asp-action="Register" method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <div class="mb-3">
+                <label asp-for="FullName" class="form-label"></label>
+                <input asp-for="FullName" class="form-control" autocomplete="name" />
+                <span asp-validation-for="FullName" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" class="form-control" autocomplete="email" />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label"></label>
+                <input asp-for="Password" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="Password" class="text-danger"></span>
+                <div class="form-text">Tối thiểu 10 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.</div>
+            </div>
+            <div class="mb-4">
+                <label asp-for="ConfirmPassword" class="form-label"></label>
+                <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Tạo tài khoản</button>
+        </form>
+        <p class="text-center text-secondary mt-4 mb-0">Đã có tài khoản? <a asp-action="Login">Đăng nhập</a></p>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

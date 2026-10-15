@@ -1,0 +1,27 @@
+**/bin/
+**/obj/
+.vs/
+.idea/
+*.user
+*.suo
+*.log
+TestResults/
+*.db
+*.sqlite
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+**/secrets.json
+**/secrets.*.json
+**/appsettings.Local.json
+**/appsettings.Development.json
+**/appsettings.*.Local.json
+**/*.pfx
+**/*.p12
+**/*.key
+**/DataProtection-Keys/**
+
+# Locally uploaded product media
+**/wwwroot/uploads/**

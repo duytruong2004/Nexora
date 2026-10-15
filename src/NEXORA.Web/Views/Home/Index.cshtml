@@ -1,0 +1,59 @@
+@{
+    ViewData["Title"] = "Trang chủ";
+}
+
+<section class="nexora-hero rounded-4 p-4 p-lg-5 mb-5">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+            <p class="text-uppercase fw-semibold small text-primary mb-2">Thiết bị công nghệ cho nhu cầu của bạn</p>
+            <h1 class="display-5 fw-bold mb-3">Chào mừng đến với NEXORA</h1>
+            <p class="lead text-secondary mb-4">
+                Nền tảng mua sắm thiết bị công nghệ đang được xây dựng với trọng tâm là tư vấn sản phẩm theo nhu cầu,
+                thông tin kỹ thuật rõ ràng và quy trình đơn hàng minh bạch.
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-primary btn-lg" asp-controller="Account" asp-action="Register">Tạo tài khoản</a>
+                <a class="btn btn-outline-dark btn-lg" asp-controller="Account" asp-action="Login">Đăng nhập</a>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="hero-mark" aria-hidden="true">N</div>
+        </div>
+    </div>
+</section>
+
+<section aria-labelledby="foundation-title">
+    <div class="mb-4">
+        <p class="text-uppercase fw-semibold small text-primary mb-2">Nền tảng NEXORA</p>
+        <h2 id="foundation-title" class="h3 fw-bold">Thiết kế quanh nhu cầu thực tế</h2>
+    </div>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <article class="card h-100 feature-card">
+                <div class="card-body p-4">
+                    <span class="feature-number">01</span>
+                    <h3 class="h5 fw-semibold mt-3">Tư vấn theo nhu cầu</h3>
+                    <p class="text-secondary mb-0">Khách hàng có thể mô tả mục đích, ngân sách và ưu tiên bằng tiếng Việt.</p>
+                </div>
+            </article>
+        </div>
+        <div class="col-md-4">
+            <article class="card h-100 feature-card">
+                <div class="card-body p-4">
+                    <span class="feature-number">02</span>
+                    <h3 class="h5 fw-semibold mt-3">Thông số linh hoạt</h3>
+                    <p class="text-secondary mb-0">Dữ liệu kỹ thuật được tổ chức theo danh mục sản phẩm.</p>
+                </div>
+            </article>
+        </div>
+        <div class="col-md-4">
+            <article class="card h-100 feature-card">
+                <div class="card-body p-4">
+                    <span class="feature-number">03</span>
+                    <h3 class="h5 fw-semibold mt-3">Vận hành nhất quán</h3>
+                    <p class="text-secondary mb-0">Đơn hàng, số lượng giữ trước và tồn kho được thiết kế để cập nhật an toàn.</p>
+                </div>
+            </article>
+        </div>
+    </div>
+</section>

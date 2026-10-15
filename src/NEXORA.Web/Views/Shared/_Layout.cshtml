@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - NEXORA</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+          crossorigin="anonymous" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark nexora-navbar">
+            <div class="container">
+                <a class="navbar-brand fw-bold" asp-controller="Home" asp-action="Index">NEXORA</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavigation"
+                        aria-controls="mainNavigation" aria-expanded="false" aria-label="Mở điều hướng">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="mainNavigation">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+                        @if (User.IsInRole("Customer"))
+                        {
+                            <li class="nav-item"><a class="nav-link" asp-controller="RoleLanding" asp-action="Customer">Tài khoản</a></li>
+                        }
+                        @if (User.IsInRole("Sales"))
+                        {
+                            <li class="nav-item"><a class="nav-link" asp-controller="RoleLanding" asp-action="Sales">Bán hàng</a></li>
+                        }
+                        @if (User.IsInRole("Warehouse"))
+                        {
+                            <li class="nav-item"><a class="nav-link" asp-controller="RoleLanding" asp-action="Warehouse">Kho hàng</a></li>
+                        }
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item"><a class="nav-link" asp-controller="RoleLanding" asp-action="Admin">Quản trị</a></li>
+                        }
+                    </ul>
+                    <div class="d-flex align-items-center gap-2">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <span class="navbar-text d-none d-md-inline">Đã đăng nhập</span>
+                            <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+                                <button class="btn btn-outline-light btn-sm" type="submit">Đăng xuất</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <a class="btn btn-outline-light btn-sm" asp-controller="Account" asp-action="Login">Đăng nhập</a>
+                            <a class="btn btn-primary btn-sm" asp-controller="Account" asp-action="Register">Tạo tài khoản</a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container py-4 py-lg-5">
+        @if (TempData["StatusMessage"] is string statusMessage)
+        {
+            <div class="alert alert-info" role="status">@statusMessage</div>
+        }
+        @RenderBody()
+    </main>
+
+    <footer class="border-top py-4 mt-auto">
+        <div class="container d-flex flex-column flex-sm-row justify-content-between gap-2 text-secondary small">
+            <span>© @DateTime.UtcNow.Year NEXORA</span>
+            <span>Nền tảng thương mại điện tử thiết bị công nghệ</span>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+            crossorigin="anonymous"></script>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
