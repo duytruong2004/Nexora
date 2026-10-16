@@ -1,0 +1,26 @@
+@model MyAccountViewModel
+@{
+    ViewData["Title"] = "Tài khoản của tôi";
+}
+
+<div class="account-profile mx-auto">
+    <section class="card account-card border-0 shadow-sm">
+        <div class="card-body p-4 p-md-5">
+            <p class="text-uppercase fw-semibold small text-primary mb-2">Hồ sơ cá nhân</p>
+            <h1 class="h3 fw-bold mb-2">Tài khoản của tôi</h1>
+            <p class="text-secondary mb-4">Thông tin dưới đây chỉ thuộc tài khoản đang đăng nhập.</p>
+
+            <dl class="account-profile-details mb-4">
+                <div><dt>Họ và tên</dt><dd>@Model.FullName</dd></div>
+                <div><dt>Email đăng nhập</dt><dd>@Model.Email</dd></div>
+                <div><dt>Ngày tạo tài khoản</dt><dd><time datetime="@Model.CreatedAt.ToString("O")">@Model.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</time></dd></div>
+                <div><dt>Vai trò</dt><dd class="d-flex flex-wrap gap-2">@foreach (var role in Model.Roles) { <span class="badge text-bg-primary">@role</span> }</dd></div>
+            </dl>
+
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-primary" asp-controller="Catalog" asp-action="Index">Khám phá sản phẩm</a>
+                <a class="btn btn-outline-primary" asp-controller="Consultation" asp-action="Index">Tư vấn sản phẩm</a>
+            </div>
+        </div>
+    </section>
+</div>

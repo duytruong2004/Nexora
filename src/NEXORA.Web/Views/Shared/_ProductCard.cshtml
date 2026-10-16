@@ -1,14 +1,25 @@
 @model NEXORA.Application.Catalog.CatalogProductCard
 <article class="card h-100 product-card border-0 shadow-sm">
     <a asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id" class="product-card-image text-decoration-none">
-        @if (Model.PrimaryImageUrl is not null) { <img src="@Model.PrimaryImageUrl" alt="@Model.Name" loading="lazy" /> }
-        else { <span>Chưa có ảnh</span> }
+        @await Html.PartialAsync("_ProductImage", new NEXORA.Web.Models.ProductImageDisplayViewModel(Model.PrimaryImageUrl, Model.Name, "card"))
     </a>
     <div class="card-body d-flex flex-column">
-        <div class="small text-secondary mb-1">@Model.CategoryName · @Model.BrandName</div>
-        <h3 class="h6 fw-semibold"><a asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id" class="product-card-title text-decoration-none">@Model.Name</a></h3>
-        <p class="small text-secondary mb-3">Mã: @Model.Sku</p>
-        <div class="mt-auto d-flex align-items-baseline gap-2"><strong class="text-primary">@((Model.DiscountPrice ?? Model.Price).ToString("N0")) ₫</strong>@if (Model.DiscountPrice.HasValue) { <del class="small text-secondary">@Model.Price.ToString("N0") ₫</del> }</div>
-        <a class="btn btn-outline-primary btn-sm mt-3" asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id">Xem chi tiết</a>
+        <div class="product-card-meta small mb-2"><span>@Model.CategoryName</span><span aria-hidden="true">·</span><span>@Model.BrandName</span></div>
+        <h3 class="h6 fw-semibold product-card-heading"><a asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id" class="product-card-title text-decoration-none">@Model.Name</a></h3>
+        <p class="small text-secondary product-card-sku">Mã: @Model.Sku</p>
+        @if (Model.KeySpecifications.Count > 0)
+        {
+            <ul class="product-card-specs small" aria-label="Thông số chính">
+                @foreach (var specification in Model.KeySpecifications)
+                {
+                    var value = specification.DisplayValue ?? (specification.DataType == "NUMBER" && !string.IsNullOrWhiteSpace(specification.Unit) ? $"{specification.Value} {specification.Unit}" : specification.Value);
+                    <li><span>@specification.Name</span><strong>@value</strong></li>
+                }
+            </ul>
+        }
+        <div class="mt-auto pt-2">
+            <div class="d-flex flex-wrap align-items-baseline gap-2"><strong class="product-card-price">@((Model.DiscountPrice ?? Model.Price).ToString("N0")) ₫</strong>@if (Model.DiscountPrice.HasValue) { <del class="small text-secondary">@Model.Price.ToString("N0") ₫</del> }</div>
+            <a class="btn btn-outline-primary btn-sm w-100 mt-3" asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id">Xem chi tiết</a>
+        </div>
     </div>
 </article>

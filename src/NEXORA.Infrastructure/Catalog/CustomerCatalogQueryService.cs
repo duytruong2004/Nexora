@@ -295,8 +295,23 @@ public sealed class CustomerCatalogQueryService(AppDbContext db) : ICustomerCata
             product.Brand.Name,
             product.Price,
             product.DiscountPrice,
-            product.Images.Where(image => image.IsPrimary)
+            product.Images.OrderByDescending(image => image.IsPrimary).ThenBy(image => image.SortOrder)
                 .Select(image => image.ImageUrl)
                 .FirstOrDefault(),
-            product.Description);
+            product.Description)
+        {
+            KeySpecifications = product.Specifications
+                .Where(value => value.Specification.IsActive)
+                .OrderBy(value => value.Specification.Name)
+                .Take(3)
+                .Select(value => new CatalogProductSpecification(
+                    value.SpecificationId,
+                    value.Specification.Name,
+                    value.Specification.DataType,
+                    value.Specification.Unit,
+                    value.Value,
+                    value.NumericValue,
+                    value.DisplayValue))
+                .ToList()
+        };
 }

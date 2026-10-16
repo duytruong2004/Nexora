@@ -34,7 +34,7 @@ public sealed class SpecificationsController(
         try
         {
             await specifications.SaveAsync(new SpecificationInput(null, model.Name, model.Unit, model.DataType), cancellationToken);
-            TempData["Success"] = "Đã tạo Specification.";
+            TempData["Success"] = "Đã tạo thông số kỹ thuật.";
             return RedirectToAction(nameof(Index));
         }
         catch (CatalogValidationException exception)
@@ -75,7 +75,7 @@ public sealed class SpecificationsController(
         try
         {
             await specifications.SaveAsync(new SpecificationInput(id, model.Name, model.Unit, model.DataType), cancellationToken);
-            TempData["Success"] = "Đã cập nhật Specification.";
+            TempData["Success"] = "Đã cập nhật thông số kỹ thuật.";
             return RedirectToAction(nameof(Index));
         }
         catch (CatalogValidationException exception)
@@ -90,8 +90,8 @@ public sealed class SpecificationsController(
     public async Task<IActionResult> Deactivate(int id, CancellationToken cancellationToken)
     {
         TempData["Success"] = await specifications.DeactivateAsync(id, cancellationToken)
-            ? "Specification đã ngừng sử dụng. Dữ liệu và liên kết hiện tại được giữ nguyên."
-            : "Không tìm thấy Specification.";
+            ? "Thông số kỹ thuật đã ngừng sử dụng. Dữ liệu và liên kết hiện tại được giữ nguyên."
+            : "Không tìm thấy thông số kỹ thuật.";
         return RedirectToAction(nameof(Index));
     }
 
@@ -137,8 +137,8 @@ public sealed class SpecificationsController(
         {
             TempData["Success"] = await specifications.RemoveCategorySpecificationAsync(
                 categoryId, specificationId, cancellationToken)
-                ? "Đã gỡ Specification khỏi danh mục."
-                : "Specification không còn được gán cho danh mục.";
+                ? "Đã gỡ thông số kỹ thuật khỏi danh mục."
+                : "Thông số kỹ thuật không còn được gán cho danh mục.";
         }
         catch (CatalogValidationException exception)
         {

@@ -1,0 +1,38 @@
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment HostEnvironment
+
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+    bool IsActive(string targetController, string? targetAction = null) =>
+        controller == targetController && (targetAction is null || action == targetAction);
+    string Active(string targetController, string? targetAction = null) => IsActive(targetController, targetAction) ? "active" : string.Empty;
+}
+
+<div class="admin-brand">
+    <a class="admin-brand-link" asp-area="" asp-controller="Home" asp-action="Index" aria-label="NEXORA trang chủ">
+        <span class="admin-brand-mark" aria-hidden="true">N</span>
+        <span><strong>NEXORA</strong><small>ADMIN CONSOLE</small></span>
+    </a>
+</div>
+
+<nav class="admin-menu" aria-label="Điều hướng quản trị">
+    <span class="admin-menu-label">Không gian làm việc</span>
+    <a class="admin-menu-link @(controller == "RoleLanding" ? "active" : string.Empty)" aria-current="@(controller == "RoleLanding" ? "page" : null)" asp-area="" asp-controller="RoleLanding" asp-action="Admin">
+        <span class="admin-menu-icon" aria-hidden="true">⌂</span><span>Tổng quan</span>
+    </a>
+
+    <span class="admin-menu-label">Danh mục sản phẩm</span>
+    <a class="admin-menu-link @Active("Categories")" aria-current="@(IsActive("Categories") ? "page" : null)" asp-area="Admin" asp-controller="Categories" asp-action="Index"><span class="admin-menu-icon" aria-hidden="true">▦</span><span>Danh mục</span></a>
+    <a class="admin-menu-link @Active("Brands")" aria-current="@(IsActive("Brands") ? "page" : null)" asp-area="Admin" asp-controller="Brands" asp-action="Index"><span class="admin-menu-icon" aria-hidden="true">◇</span><span>Thương hiệu</span></a>
+    <a class="admin-menu-link @Active("Products")" aria-current="@(IsActive("Products") ? "page" : null)" asp-area="Admin" asp-controller="Products" asp-action="Index"><span class="admin-menu-icon" aria-hidden="true">▣</span><span>Sản phẩm</span></a>
+    <a class="admin-menu-link @Active("Specifications")" aria-current="@(IsActive("Specifications") ? "page" : null)" asp-area="Admin" asp-controller="Specifications" asp-action="Index"><span class="admin-menu-icon" aria-hidden="true">≡</span><span>Thông số kỹ thuật</span></a>
+
+    <span class="admin-menu-label">Tư vấn thông minh</span>
+    <a class="admin-menu-link @Active("Consultation", "UsageNeeds")" aria-current="@(IsActive("Consultation", "UsageNeeds") ? "page" : null)" asp-area="Admin" asp-controller="Consultation" asp-action="UsageNeeds"><span class="admin-menu-icon" aria-hidden="true">✳</span><span>Nhu cầu sử dụng</span></a>
+    <a class="admin-menu-link @Active("Consultation", "Rules")" aria-current="@(IsActive("Consultation", "Rules") ? "page" : null)" asp-area="Admin" asp-controller="Consultation" asp-action="Rules"><span class="admin-menu-icon" aria-hidden="true">⚙</span><span>Quy tắc xếp hạng</span></a>
+</nav>
+
+<div class="admin-sidebar-footer">
+    <span class="admin-status-dot" aria-hidden="true"></span>
+    <span><strong>@HostEnvironment.EnvironmentName</strong><small>Đang ở chế độ quản trị</small></span>
+</div>

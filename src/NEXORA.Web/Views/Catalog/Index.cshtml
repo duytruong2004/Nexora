@@ -8,10 +8,18 @@
 }
 <div class="mb-4"><p class="text-uppercase small fw-semibold text-primary mb-1">Danh mục sản phẩm</p><h1 class="h2 mb-1">@ViewData["Title"]</h1>@if (!string.IsNullOrWhiteSpace(Model.Filter.Search)) { <p class="text-secondary mb-0">Kết quả cho “@Model.Filter.Search”</p> }</div>
 
+<div class="d-flex justify-content-end d-lg-none mb-3">
+    <button class="btn btn-outline-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#catalogFilters" aria-controls="catalogFilters">Lọc sản phẩm</button>
+</div>
 <div class="row g-4">
-    <aside class="col-lg-3">
+    <aside id="catalogFilters" class="offcanvas-lg offcanvas-start col-lg-3 catalog-filter-offcanvas" tabindex="-1" aria-labelledby="catalogFiltersTitle">
+        <div class="offcanvas-header d-lg-none">
+            <h2 class="offcanvas-title h5" id="catalogFiltersTitle">Lọc sản phẩm</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Đóng bộ lọc"></button>
+        </div>
+        <div class="offcanvas-body p-0">
         <form method="get" asp-action="Index" class="card border-0 shadow-sm p-3 p-lg-4 sticky-lg-top catalog-filter">
-            <h2 class="h5 mb-3">Lọc sản phẩm</h2>
+            <h2 class="h5 mb-3 d-none d-lg-block">Lọc sản phẩm</h2>
             <div class="mb-3"><label for="catalogSearch" class="form-label">Từ khóa</label><input id="catalogSearch" name="search" value="@Model.Filter.Search" class="form-control" placeholder="Tên hoặc mã sản phẩm" /></div>
             <div class="mb-3"><label for="categoryId" class="form-label">Danh mục</label><select id="categoryId" name="categoryId" class="form-select"><option value="">Tất cả danh mục</option>@foreach (var category in Model.Page.Categories) { <option value="@category.Id" selected="@(category.Id == Model.Filter.CategoryId ? "selected" : null)">@category.Name</option> }</select></div>
             <div class="mb-3"><label for="brandId" class="form-label">Thương hiệu</label><select id="brandId" name="brandId" class="form-select"><option value="">Tất cả thương hiệu</option>@foreach (var brand in Model.Page.Brands) { <option value="@brand.Id" selected="@(brand.Id == Model.Filter.BrandId ? "selected" : null)">@brand.Name</option> }</select></div>
@@ -39,6 +47,7 @@
             <div class="mb-3"><label for="sortBy" class="form-label">Sắp xếp</label><select id="sortBy" name="sortBy" class="form-select"><option value="name-asc" selected="@(Model.Filter.SortBy is null or "name-asc" ? "selected" : null)">Tên A–Z</option><option value="name-desc" selected="@(Model.Filter.SortBy == "name-desc" ? "selected" : null)">Tên Z–A</option><option value="price-low" selected="@(Model.Filter.SortBy == "price-low" ? "selected" : null)">Giá thấp đến cao</option><option value="price-high" selected="@(Model.Filter.SortBy == "price-high" ? "selected" : null)">Giá cao đến thấp</option></select></div>
             <div class="d-grid gap-2"><button class="btn btn-primary" type="submit">Áp dụng bộ lọc</button><a asp-action="Index" class="btn btn-outline-secondary">Xóa bộ lọc</a></div>
         </form>
+        </div>
     </aside>
     <section class="col-lg-9" aria-label="Danh sách sản phẩm">
         <div class="d-flex justify-content-between align-items-center mb-3"><span class="small text-secondary">@Model.Page.TotalCount sản phẩm</span><span class="small text-secondary">Trang @Model.Page.Page / @Model.Page.PageCount</span></div>

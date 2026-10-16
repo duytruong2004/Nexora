@@ -1,7 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using NEXORA.Application.Admin;
 using NEXORA.Application.Catalog;
+using NEXORA.Application.Consultation;
 using NEXORA.Infrastructure.Catalog;
+using NEXORA.Infrastructure.Admin;
+using NEXORA.Infrastructure.Consultation;
 using NEXORA.Infrastructure.Persistence;
 
 namespace NEXORA.Infrastructure;
@@ -26,7 +30,13 @@ public static class DependencyInjection
         services.AddScoped<ISpecificationManagementService, SpecificationManagementService>();
         services.AddScoped<IProductSpecificationManagementService, ProductSpecificationManagementService>();
         services.AddScoped<ICustomerCatalogQueryService, CustomerCatalogQueryService>();
+        services.AddScoped<IAdminDashboardQueryService, SqlAdminDashboardQueryService>();
         services.AddScoped<ICatalogDemoSeeder, CatalogDemoSeeder>();
+        services.AddSingleton<IRequirementParser, VietnameseRequirementParser>();
+        services.AddScoped<IConsultationDataSource, SqlConsultationDataSource>();
+        services.AddScoped<IConsultationManagementService, ConsultationManagementService>();
+        services.AddScoped<IConsultationService, ConsultationOrchestrator>();
+        services.AddScoped<IConsultationDemoSeeder, ConsultationDemoSeeder>();
 
         return services;
     }

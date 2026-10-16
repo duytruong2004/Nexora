@@ -1,0 +1,175 @@
+@model CustomerConsultationViewModel
+@{
+    ViewData["Title"] = "Tư vấn sản phẩm";
+    var profile = Model.Outcome?.Profile;
+}
+
+<section class="consultation-page-hero rounded-4 p-4 p-lg-5 mb-4" aria-labelledby="consultation-page-title">
+    <p class="text-uppercase small fw-semibold text-info mb-2">NEXORA Consultation</p>
+    <h1 id="consultation-page-title" class="display-6 fw-bold">Tìm thiết bị phù hợp với nhu cầu của bạn</h1>
+    <p class="lead text-white-50 mb-0">Mô tả bằng tiếng Việt. NEXORA tra cứu sản phẩm và quy tắc tư vấn đang lưu trong hệ thống.</p>
+</section>
+
+<div class="row g-4 align-items-start">
+    <div class="col-lg-5">
+        <form asp-controller="Consultation" asp-action="Submit" method="post" id="consultation-form" class="card consultation-card p-3 p-lg-4" aria-busy="false">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label fw-semibold"></label>
+                <textarea asp-for="Description" class="form-control consultation-prompt" rows="4" maxlength="1200" placeholder="Ví dụ: Laptop dưới 25 triệu để lập trình, ưu tiên RAM lớn và máy nhẹ"></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+            <p class="small text-secondary mb-2">Chọn câu gợi ý để điền nhanh</p>
+            <div class="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Câu gợi ý tư vấn">
+                <button type="button" class="btn btn-sm btn-outline-secondary suggestion" aria-pressed="false" data-text="Laptop dưới 25 triệu, lập trình, ưu tiên RAM và máy nhẹ">Laptop lập trình</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary suggestion" aria-pressed="false" data-text="Điện thoại khoảng 12 triệu để học tập, ưu tiên pin tốt">Điện thoại học tập</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary suggestion" aria-pressed="false" data-text="Máy tính bảng từ 7 đến 13 triệu để học online, ưu tiên pin tốt">Máy tính bảng học online</button>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-6"><label asp-for="ConfirmedCategory" class="form-label">Danh mục (có thể chỉnh)</label><select asp-for="ConfirmedCategory" asp-items="Model.CategoryOptions" class="form-select"><option value="">Để hệ thống nhận diện</option></select></div>
+                <div class="col-md-6"><label asp-for="ConfirmedUsage" class="form-label">Mục đích (có thể chỉnh)</label><select asp-for="ConfirmedUsage" asp-items="Model.UsageOptions" class="form-select"><option value="">Để hệ thống nhận diện</option></select></div>
+            </div>
+            <button class="btn btn-primary btn-lg consultation-submit" type="submit" id="consultation-submit">Tư vấn sản phẩm</button>
+            <div id="consultation-loading" class="consultation-loading small mt-2" role="status" aria-live="polite" hidden>
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                <span>Đang phân tích yêu cầu và tra cứu dữ liệu sản phẩm…</span>
+            </div>
+            <p class="small text-secondary mt-3 mb-0">Mô tả được xử lý trong ứng dụng; kết quả dựa trên dữ liệu sản phẩm hiện có.</p>
+        </form>
+    </div>
+
+    <div class="col-lg-7">
+        @if (Model.Outcome is null)
+        {
+            <aside class="card consultation-card consultation-instructions" aria-labelledby="consultation-help-title">
+                <p class="text-uppercase small fw-semibold text-primary mb-2">Bắt đầu trong một câu</p>
+                <h2 id="consultation-help-title" class="h5">Bạn có thể mô tả</h2>
+                <ul class="text-secondary mb-0">
+                    <li>Loại thiết bị và khoảng giá.</li>
+                    <li>Mục đích như học tập, văn phòng, lập trình hoặc chơi game.</li>
+                    <li>Thông số tối thiểu hoặc ưu tiên như RAM, pin và trọng lượng.</li>
+                </ul>
+            </aside>
+        }
+        else
+        {
+            <section class="card consultation-card p-3 p-lg-4 mb-4" aria-labelledby="consultation-profile-title">
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                    <div><p class="small text-uppercase fw-semibold text-primary mb-1">Phân tích yêu cầu</p><h2 id="consultation-profile-title" class="h5 mb-0">@Model.Outcome.Message</h2></div>
+                    @if (Model.Outcome.ElapsedMilliseconds > 0) { <span class="badge text-bg-light">@Model.Outcome.ElapsedMilliseconds ms</span> }
+                </div>
+                @if (profile is not null)
+                {
+                    <section class="consultation-recognized-group" aria-labelledby="recognized-needs-title">
+                        <h3 id="recognized-needs-title">Nhu cầu hệ thống nhận diện</h3>
+                        <dl class="consultation-recognized-list">
+                            <dt>Danh mục</dt><dd>@(profile.Category.Value ?? "Chưa xác định") <span class="text-secondary fw-normal">(@profile.Category.State)</span></dd>
+                            <dt>Mục đích</dt><dd>@(profile.UsageNeed.Value ?? "Chưa xác định") <span class="text-secondary fw-normal">(@profile.UsageNeed.State)</span></dd>
+                            <dt>Ngân sách</dt><dd>
+                                @switch (profile.Budget.Kind)
+                                {
+                                    case BudgetKind.Maximum: <text>Tối đa @profile.Budget.MaximumVnd?.ToString("N0") ₫</text>; break;
+                                    case BudgetKind.Range: <text>@profile.Budget.MinimumVnd?.ToString("N0") – @profile.Budget.MaximumVnd?.ToString("N0") ₫</text>; break;
+                                    case BudgetKind.Approximate: <text>Khoảng @profile.Budget.TargetVnd?.ToString("N0") ₫ (tham khảo)</text>; break;
+                                    default: <text>Chưa nêu</text>; break;
+                                }
+                            </dd>
+                        </dl>
+                    </section>
+                    <section class="consultation-recognized-group" aria-labelledby="recognized-hard-title">
+                        <h3 id="recognized-hard-title">Điều kiện bắt buộc</h3>
+                        @if (profile.HardConstraints.Count > 0)
+                        {
+                            <div class="d-flex flex-wrap gap-2">@foreach (var item in profile.HardConstraints) { <span class="badge text-bg-danger">@item.SpecificationName @item.Operator @item.Value @item.Unit</span> }</div>
+                        }
+                        else { <p class="small text-secondary mb-0">Chưa nhận diện thấy thông số bắt buộc trong mô tả.</p> }
+                    </section>
+                    <section class="consultation-recognized-group" aria-labelledby="recognized-preferences-title">
+                        <h3 id="recognized-preferences-title">Tiêu chí ưu tiên</h3>
+                        @if (profile.SoftPreferences.Count > 0)
+                        {
+                            <div class="d-flex flex-wrap gap-2">@foreach (var item in profile.SoftPreferences) { <span class="badge text-bg-primary">@item.SpecificationName · @item.Direction</span> }</div>
+                        }
+                        else { <p class="small text-secondary mb-0">Chưa nhận diện thấy tiêu chí ưu tiên trong mô tả.</p> }
+                    </section>
+                    @if (profile.ClarificationQuestions.Count > 0)
+                    {
+                        <div class="alert alert-warning mt-3 mb-0" role="status"><strong>Cần bạn bổ sung</strong><ul class="mb-0 mt-2">@foreach (var question in profile.ClarificationQuestions) { <li>@question</li> }</ul></div>
+                    }
+                    @if (profile.Warnings.Count > 0)
+                    {
+                        <div class="small text-secondary mt-3" role="note">@foreach (var warning in profile.Warnings) { <div>@warning</div> }</div>
+                    }
+                }
+            </section>
+
+            @if (Model.Outcome.Kind == ConsultationOutcomeKind.Results)
+            {
+                <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-3">
+                    <div><p class="text-uppercase small fw-semibold text-primary mb-1">Kết quả tra cứu</p><h2 class="h4 mb-0">Sản phẩm đề xuất</h2></div>
+                    @if (Model.Outcome.Recommendations.Count >= 2)
+                    {
+                        <form asp-controller="Catalog" asp-action="Compare" method="get" class="m-0">
+                            @foreach (var item in Model.Outcome.Recommendations.Take(3)) { <input type="hidden" name="ids" value="@item.Product.Id" /> }
+                            <button class="btn btn-sm btn-outline-primary" type="submit">So sánh tối đa 3</button>
+                        </form>
+                    }
+                </div>
+                <div class="d-grid gap-3">
+                    @for (var index = 0; index < Model.Outcome.Recommendations.Count; index++)
+                    {
+                        var item = Model.Outcome.Recommendations[index];
+                        <article class="card consultation-result-card">
+                            <div class="row g-0 align-items-stretch">
+                                <div class="col-12 col-md-4"><div class="consultation-result-image">@await Html.PartialAsync("_ProductImage", new NEXORA.Web.Models.ProductImageDisplayViewModel(item.Product.PrimaryImageUrl, item.Product.Name, "consultation"))</div></div>
+                                <div class="col-12 col-md-8"><div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start gap-2"><div><p class="small text-primary fw-semibold mb-1">@item.Product.CategoryName · @item.Product.BrandName</p><h3 class="h5"><a class="text-decoration-none" asp-controller="Catalog" asp-action="Details" asp-route-id="@item.Product.Id">@item.Product.Name</a></h3></div><span class="badge text-bg-primary align-self-start">Điểm @item.Score.ToString("0.000")</span></div>
+                                    <p class="fw-bold text-primary mb-3">@((item.Product.DiscountPrice ?? item.Product.Price).ToString("N0")) ₫</p>
+                                    @if (item.Reasons.Count > 0)
+                                    {
+                                        <div class="consultation-result-reasons"><h4>Lý do đề xuất · @(index + 1)</h4><ul>@foreach (var reason in item.Reasons) { <li>@reason</li> }</ul></div>
+                                    }
+                                    @if (item.Limitations.Count > 0) { <div class="small text-secondary mt-2">@foreach (var limitation in item.Limitations) { <div>@limitation</div> }</div> }
+                                    <a asp-controller="Catalog" asp-action="Details" asp-route-id="@item.Product.Id" class="btn btn-sm btn-outline-primary mt-3">Xem chi tiết</a>
+                                </div></div>
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+            else if (Model.Outcome.Kind == ConsultationOutcomeKind.NoMatchingProducts)
+            {
+                <div class="consultation-empty p-4" role="status"><p class="text-uppercase small fw-semibold text-primary mb-1">Chưa có kết quả phù hợp</p><h2 class="h5">Không tìm thấy sản phẩm thỏa điều kiện</h2><p class="text-secondary mb-0">Các điều kiện bắt buộc được giữ nguyên. Bạn có thể điều chỉnh mô tả hoặc danh mục rồi thử lại.</p></div>
+            }
+            else if (Model.Outcome.Kind == ConsultationOutcomeKind.InvalidInput)
+            {
+                <div class="alert alert-danger" role="alert"><h2 class="h6">Không thể xử lý yêu cầu</h2>@Model.Outcome.Message</div>
+            }
+            else
+            {
+                <div class="consultation-empty p-4" role="status"><p class="text-uppercase small fw-semibold text-primary mb-1">Cần làm rõ nhu cầu</p><h2 class="h5">Hãy trả lời các câu hỏi phía trên</h2><p class="text-secondary mb-0">Sau khi bổ sung thông tin, bạn có thể gửi lại mô tả để tiếp tục tra cứu.</p></div>
+            }
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const form = document.getElementById('consultation-form');
+            const input = document.getElementById('Description');
+            for (const button of document.querySelectorAll('.suggestion')) {
+                button.addEventListener('click', () => {
+                    input.value = button.dataset.text ?? '';
+                    for (const suggestion of document.querySelectorAll('.suggestion')) suggestion.setAttribute('aria-pressed', suggestion === button ? 'true' : 'false');
+                    input.focus();
+                });
+            }
+            form.addEventListener('submit', () => {
+                form.setAttribute('aria-busy', 'true');
+                document.getElementById('consultation-submit').disabled = true;
+                document.getElementById('consultation-loading').hidden = false;
+            });
+        })();
+    </script>
+}

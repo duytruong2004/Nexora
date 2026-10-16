@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using System.Globalization;
 using NEXORA.Application.Catalog;
 using NEXORA.Application.Email;
+using NEXORA.Application.Consultation;
 using NEXORA.Domain.Security;
 using NEXORA.Infrastructure;
 using NEXORA.Infrastructure.Identity;
@@ -108,6 +109,8 @@ if (app.Environment.IsDevelopment() && !commandArguments.IsRequested)
     await using var scope = app.Services.CreateAsyncScope();
     var demoSeeder = scope.ServiceProvider.GetRequiredService<ICatalogDemoSeeder>();
     await demoSeeder.SeedAsync(app.Lifetime.ApplicationStopping);
+    var consultationSeeder = scope.ServiceProvider.GetRequiredService<IConsultationDemoSeeder>();
+    await consultationSeeder.SeedAsync(app.Lifetime.ApplicationStopping);
 }
 
 if (commandArguments.IsRequested)

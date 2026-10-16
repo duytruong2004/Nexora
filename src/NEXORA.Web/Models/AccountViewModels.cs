@@ -65,3 +65,9 @@ public sealed class ResetPasswordViewModel
     [Display(Name = "Xác nhận mật khẩu mới")]
     public string ConfirmPassword { get; set; } = string.Empty;
 }
+
+public sealed record MyAccountViewModel(
+    string FullName,
+    string Email,
+    DateTime CreatedAt,
+    IReadOnlyList<string> Roles);

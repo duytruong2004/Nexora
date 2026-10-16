@@ -1,11 +1,59 @@
+@using NEXORA.Application.Admin
 @{
     ViewData["Title"] ??= "Workspace";
+    var metrics = ViewData["AdminDashboardMetrics"] as AdminDashboardMetrics;
+    if (ViewData["UseAdminLayout"] is true)
+    {
+        Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    }
 }
 
-<section class="card account-card">
-    <div class="card-body p-4 p-md-5">
-        <p class="text-uppercase fw-semibold small text-primary mb-2">Truy cập theo vai trò</p>
-        <h1 class="h3 fw-bold">@ViewData["Title"]</h1>
-        <p class="text-secondary mb-0">Đăng nhập và kiểm tra quyền cho vai trò này đã được thiết lập.</p>
-    </div>
-</section>
+@if (ViewData["UseAdminLayout"] is true)
+{
+    <section class="admin-welcome mb-4">
+        <div>
+            <p class="text-uppercase small fw-semibold mb-2">Không gian quản trị NEXORA</p>
+            <h1 class="h2 mb-2">Quản lý cửa hàng từ một nơi</h1>
+            <p class="mb-0">Chọn một module để cập nhật danh mục, thông tin sản phẩm hoặc cấu hình tư vấn.</p>
+        </div>
+        <span class="admin-welcome-mark" aria-hidden="true">N</span>
+    </section>
+
+    @if (metrics is not null)
+    {
+        <section class="admin-dashboard-metrics mb-4" aria-label="Số liệu hiện tại từ hệ thống">
+            <div class="row g-3">
+                <div class="col-6 col-xl"><article class="admin-stat-card"><span>Tổng sản phẩm</span><strong>@metrics.TotalProducts.ToString("N0")</strong></article></div>
+                <div class="col-6 col-xl"><article class="admin-stat-card"><span>Đang kinh doanh</span><strong>@metrics.ActiveProducts.ToString("N0")</strong></article></div>
+                <div class="col-6 col-xl"><article class="admin-stat-card"><span>Danh mục</span><strong>@metrics.TotalCategories.ToString("N0")</strong></article></div>
+                <div class="col-6 col-xl"><article class="admin-stat-card"><span>Nhu cầu tư vấn</span><strong>@metrics.TotalUsageNeeds.ToString("N0")</strong></article></div>
+                <div class="col-12 col-xl"><article class="admin-stat-card"><span>Quy tắc tư vấn</span><strong>@metrics.TotalRecommendationRules.ToString("N0")</strong></article></div>
+            </div>
+            <p class="small text-secondary mt-2 mb-0">Đếm trực tiếp từ dữ liệu hiện có trong SQL Server.</p>
+        </section>
+    }
+
+    <section aria-labelledby="admin-modules-title">
+        <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+            <div><p class="text-uppercase small fw-semibold text-primary mb-1">Điều hướng nhanh</p><h2 id="admin-modules-title" class="h4 mb-0">Các module quản trị</h2></div>
+        </div>
+        <div class="row g-3">
+            <div class="col-sm-6 col-xl-4"><a class="admin-module-card" asp-area="Admin" asp-controller="Products" asp-action="Index"><span class="admin-module-icon" aria-hidden="true">▣</span><span><strong>Sản phẩm</strong><small>Tìm, chỉnh sửa và quản lý thông tin sản phẩm</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a></div>
+            <div class="col-sm-6 col-xl-4"><a class="admin-module-card" asp-area="Admin" asp-controller="Categories" asp-action="Index"><span class="admin-module-icon" aria-hidden="true">▦</span><span><strong>Danh mục</strong><small>Tổ chức nhóm sản phẩm và thuộc tính</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a></div>
+            <div class="col-sm-6 col-xl-4"><a class="admin-module-card" asp-area="Admin" asp-controller="Brands" asp-action="Index"><span class="admin-module-icon" aria-hidden="true">◇</span><span><strong>Thương hiệu</strong><small>Quản lý thương hiệu đang kinh doanh</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a></div>
+            <div class="col-sm-6 col-xl-4"><a class="admin-module-card" asp-area="Admin" asp-controller="Specifications" asp-action="Index"><span class="admin-module-icon" aria-hidden="true">≡</span><span><strong>Thông số kỹ thuật</strong><small>Cấu hình thông số kỹ thuật động</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a></div>
+            <div class="col-sm-6 col-xl-4"><a class="admin-module-card" asp-area="Admin" asp-controller="Consultation" asp-action="UsageNeeds"><span class="admin-module-icon" aria-hidden="true">✳</span><span><strong>Nhu cầu tư vấn</strong><small>Quản lý mục đích sử dụng được nhận diện</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a></div>
+            <div class="col-sm-6 col-xl-4"><a class="admin-module-card" asp-area="Admin" asp-controller="Consultation" asp-action="Rules"><span class="admin-module-icon" aria-hidden="true">⚙</span><span><strong>Quy tắc xếp hạng</strong><small>Cấu hình điều kiện và trọng số tư vấn</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a></div>
+        </div>
+    </section>
+}
+else
+{
+    <section class="card account-card">
+        <div class="card-body p-4 p-md-5">
+            <p class="text-uppercase fw-semibold small text-primary mb-2">Truy cập theo vai trò</p>
+            <h1 class="h3 fw-bold">@ViewData["Title"]</h1>
+            <p class="text-secondary mb-0">Đăng nhập và kiểm tra quyền cho vai trò này đã được thiết lập.</p>
+        </div>
+    </section>
+}

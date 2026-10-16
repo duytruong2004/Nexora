@@ -169,7 +169,7 @@ Bộ kiểm thử tư vấn do khóa luận đề xuất gồm:
 | TC-NLP08 | Đầu vào rỗng/vô nghĩa/parser lỗi cho phép nhập lại hoặc dùng bộ lọc, không sinh gợi ý giả |
 | TC-NLP09 | Câu thuộc phạm vi danh mục thử đạt ngưỡng thời gian NFR01 trong môi trường được ghi |
 
-Các ca trên là kế hoạch chưa chạy. Chỉ ghi nhận pass/fail sau khi triển khai và lưu kết quả thực tế.
+Trạng thái TC-NLP01–TC-NLP09 và phân loại unit, SQL Server integration, HTTP smoke, browser/manual sau lượt nghiệm thu được ghi tại [`PHASE3_ACCEPTANCE.md`](./PHASE3_ACCEPTANCE.md). Browser đã kiểm tra luồng tư vấn và một phần Admin; responsive ở 390×844 và phiên Customer thực tế vẫn chờ kiểm tra thủ công.
 
 ## 8. Bằng chứng triển khai và nghiệm thu Phase 2
 
@@ -184,9 +184,25 @@ Các ca trên là kế hoạch chưa chạy. Chỉ ghi nhận pass/fail sau khi 
 | FR11 / UC-C09 / BR07 | Catalog comparison | Browser chọn hai checkbox cùng Category, nút submit bật, form GET tới `Compare?ids=1&ids=2`; bảng so sánh hiện đủ hai sản phẩm; 4 ID bị từ chối | Browser selection và kết quả đã kiểm tra |
 | BR08 / NFR03 | Identity & Access / Admin authorization | Admin dashboard mở trong phiên Admin (DB xác nhận ID 2); Customer QA tạm ID 3 chỉ có role Customer bị từ chối `/Admin/Products`; anonymous `/Admin/Products` chuyển về login; controller test yêu cầu Admin | Browser authorization đã kiểm tra; Customer QA user đã dọn sau khi không phát sinh dữ liệu phụ thuộc |
 
-Kiểm thử trên browser không thay thế unit tests hoặc HTTP smoke. Số lần chạy, tình trạng 64/64 tests, database counts, schema/migration và các giới hạn xác thực được ghi tại [`PHASE2_ACCEPTANCE.md`](./PHASE2_ACCEPTANCE.md). Natural Language Consultation (FR08–FR10, UC-C08, BR15–BR19) vẫn bắt buộc nhưng chưa thuộc Phase 2 và chưa triển khai.
+Kiểm thử trên browser không thay thế unit tests hoặc HTTP smoke. Số lần chạy, tình trạng 64/64 tests, database counts, schema/migration và các giới hạn xác thực của Phase 2 được ghi tại [`PHASE2_ACCEPTANCE.md`](./PHASE2_ACCEPTANCE.md). Consultation được triển khai trong Phase 3; bằng chứng và giới hạn nghiệm thu được ghi tại [`PHASE3_ACCEPTANCE.md`](./PHASE3_ACCEPTANCE.md).
 
-## 9. Ghi chú về phạm vi Use Case
+## 9. Truy vết triển khai Phase 3
+
+| Yêu cầu | Module/điểm triển khai | Bằng chứng | Trạng thái/giới hạn |
+|---|---|---|---|
+| FR08, BR15–BR16 / UC-C08 | `VietnameseRequirementParser`, requirement profile, clarification flow | Unit/HTTP smoke và browser: câu đủ, câu mơ hồ/thiếu thông tin | Browser hỏi làm rõ khi thiếu; rule-based, chưa dùng NLP mô hình thống kê |
+| FR09, BR17–BR18 / UC-C08 | `ConsultationOrchestrator`, SQL candidate source, `ConsultationScoring` | Unit/SQL integration; browser max budget, RAM/SSD hard constraint, no-result và thay weight | Candidate truy vấn SQL; không nới điều kiện cứng; rank thay đổi theo trọng số DB |
+| FR10, BR19 / UC-C08 | Explanation/result view model và Razor view | Unit + browser đối chiếu giá trị, ngưỡng và thiếu Specification pin | Không suy ra thời lượng pin; độ bao phủ phụ thuộc catalog |
+| TC-NLP01–02 | Parser/normalizer | Unit + HTTP smoke + browser cho `20tr`/`20 triệu` | Đã kiểm tra; xem acceptance report |
+| TC-NLP03–04, BR16–17 | Clarification/hard filter | Unit + SQL integration + HTTP/browser | Đã kiểm tra; không có kết quả giữ nguyên điều kiện |
+| TC-NLP05, NFR09 | Deterministic rank/tie-break | Unit test + 5 HTTP lần lặp | Đã kiểm tra trên dataset hiện tại |
+| TC-NLP06, NFR08 | Explanation | Unit + browser: giá trị/ngưỡng thật và thiếu Specification pin cho Laptop | Đạt trong giới hạn dữ liệu; không suy ra thời lượng pin |
+| TC-NLP07 | DB-backed weights/scoring | Unit, SQL integration và browser Admin trên sản phẩm demo; xếp hạng đổi sau sửa weight | Đã kiểm tra; test config tạm được dọn, giá không đổi |
+| TC-NLP08 | Input validation/parser | Unit + HTTP smoke | Đã kiểm tra chuỗi rỗng/vô nghĩa; không sinh kết quả giả |
+| TC-NLP09 / NFR01 | Web consultation endpoint | 5 request warmed, avg 15 ms/max 17 ms, 11 products | Đo cục bộ; không phải benchmark production/load |
+| Admin quản lý `usage_needs`/`recommendation_rules` | Admin Consultation MVC/service | Browser Admin create/edit; rule validation, toggle/edit checkbox, đổi weight và kiểm tra rank; SQL CRUD integration; anonymous HTTP 302 | Customer session và nút “Bật” qua automation chưa xác minh dứt điểm; responsive còn manual |
+
+## 10. Ghi chú về phạm vi Use Case
 
 - Danh mục Use Case trong tài liệu có 46 UC; mã được dùng xuyên suốt đặc tả và sơ đồ.
 - FR18 và FR26 yêu cầu nhân viên đăng nhập nhưng danh mục UC không có UC đăng nhập riêng cho Sales/Warehouse. Ma trận giữ nguyên danh mục gốc và liên kết hai FR với module xác thực dùng chung, không tạo mã UC mới.

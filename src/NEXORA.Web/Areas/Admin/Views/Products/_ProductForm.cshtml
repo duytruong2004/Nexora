@@ -1,15 +1,41 @@
 @model NEXORA.Web.Areas.Admin.Models.ProductFormViewModel
+
 <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-<div class="row g-3">
-    <div class="col-md-6"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger"></span></div>
-    <div class="col-md-6"><label asp-for="Sku" class="form-label"></label><input asp-for="Sku" class="form-control" autocomplete="off" /><span asp-validation-for="Sku" class="text-danger"></span></div>
-    <div class="col-md-6"><label asp-for="CategoryId" class="form-label"></label><select asp-for="CategoryId" asp-items="Model.CategoryOptions" class="form-select"><option value="0">Chọn danh mục</option></select><span asp-validation-for="CategoryId" class="text-danger"></span></div>
-    <div class="col-md-6"><label asp-for="BrandId" class="form-label"></label><select asp-for="BrandId" asp-items="Model.BrandOptions" class="form-select"><option value="0">Chọn thương hiệu</option></select><span asp-validation-for="BrandId" class="text-danger"></span></div>
-    <div class="col-12"><label asp-for="Description" class="form-label"></label><textarea asp-for="Description" class="form-control" rows="4"></textarea><span asp-validation-for="Description" class="text-danger"></span></div>
-    <div class="col-md-4"><label asp-for="Price" class="form-label"></label><div class="input-group"><input asp-for="Price" class="form-control" type="number" min="0" step="0.01" /><span class="input-group-text">₫</span></div><span asp-validation-for="Price" class="text-danger"></span></div>
-    <div class="col-md-4"><label asp-for="DiscountPrice" class="form-label"></label><div class="input-group"><input asp-for="DiscountPrice" class="form-control" type="number" min="0" step="0.01" /><span class="input-group-text">₫</span></div><span asp-validation-for="DiscountPrice" class="text-danger"></span></div>
-    <div class="col-md-4"><label asp-for="WarrantyMonths" class="form-label"></label><input asp-for="WarrantyMonths" class="form-control" type="number" min="0" max="360" /><span asp-validation-for="WarrantyMonths" class="text-danger"></span></div>
-    <div class="col-md-6"><label asp-for="Status" class="form-label"></label><select asp-for="Status" class="form-select"><option value="ACTIVE">Đang kinh doanh</option><option value="INACTIVE">Ngừng kinh doanh</option></select><span asp-validation-for="Status" class="text-danger"></span><div class="form-text">Nếu danh mục có Specification bắt buộc, nhập đủ thông số trên trang chi tiết rồi mới chuyển sang Đang kinh doanh.</div></div>
-    <div class="col-md-6"><label asp-for="PrimaryImage" class="form-label"></label><input asp-for="PrimaryImage" class="form-control" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" /><span asp-validation-for="PrimaryImage" class="text-danger"></span><div class="form-text">JPEG, PNG hoặc WebP, tối đa 5 MB. Ảnh mới sẽ thành ảnh đại diện; ảnh hiện tại được giữ lại như ảnh chi tiết.</div><div id="primaryPreview" class="image-preview mt-2"></div></div>
-    <div class="col-12"><label asp-for="DetailImages" class="form-label"></label><input asp-for="DetailImages" class="form-control" type="file" multiple accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" /><span asp-validation-for="DetailImages" class="text-danger"></span><div class="form-text">Tối đa 8 ảnh chi tiết mỗi lần tải.</div><div id="detailsPreview" class="image-preview-list mt-2"></div></div>
-</div>
+
+<section class="admin-form-section" aria-labelledby="product-information-title">
+    <div class="admin-form-section-heading">
+        <span class="admin-form-section-index">01</span>
+        <div><h2 id="product-information-title">Thông tin sản phẩm</h2><p>Tên, mã định danh và vị trí sản phẩm trong catalog.</p></div>
+    </div>
+    <div class="row g-3">
+        <div class="col-md-6"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger"></span></div>
+        <div class="col-md-6"><label asp-for="Sku" class="form-label"></label><input asp-for="Sku" class="form-control" autocomplete="off" /><span asp-validation-for="Sku" class="text-danger"></span></div>
+        <div class="col-md-6"><label asp-for="CategoryId" class="form-label"></label><select asp-for="CategoryId" asp-items="Model.CategoryOptions" class="form-select"><option value="0">Chọn danh mục</option></select><span asp-validation-for="CategoryId" class="text-danger"></span></div>
+        <div class="col-md-6"><label asp-for="BrandId" class="form-label"></label><select asp-for="BrandId" asp-items="Model.BrandOptions" class="form-select"><option value="0">Chọn thương hiệu</option></select><span asp-validation-for="BrandId" class="text-danger"></span></div>
+        <div class="col-12"><label asp-for="Description" class="form-label"></label><textarea asp-for="Description" class="form-control" rows="4"></textarea><span asp-validation-for="Description" class="text-danger"></span></div>
+    </div>
+</section>
+
+<section class="admin-form-section" aria-labelledby="product-pricing-title">
+    <div class="admin-form-section-heading">
+        <span class="admin-form-section-index">02</span>
+        <div><h2 id="product-pricing-title">Giá và kinh doanh</h2><p>Giá hiện hành và trạng thái hiển thị trong cửa hàng.</p></div>
+    </div>
+    <div class="row g-3">
+        <div class="col-md-4"><label asp-for="Price" class="form-label"></label><div class="input-group"><input asp-for="Price" class="form-control" type="number" min="0" step="0.01" /><span class="input-group-text">₫</span></div><span asp-validation-for="Price" class="text-danger"></span></div>
+        <div class="col-md-4"><label asp-for="DiscountPrice" class="form-label"></label><div class="input-group"><input asp-for="DiscountPrice" class="form-control" type="number" min="0" step="0.01" /><span class="input-group-text">₫</span></div><span asp-validation-for="DiscountPrice" class="text-danger"></span></div>
+        <div class="col-md-4"><label asp-for="WarrantyMonths" class="form-label"></label><input asp-for="WarrantyMonths" class="form-control" type="number" min="0" max="360" /><span asp-validation-for="WarrantyMonths" class="text-danger"></span></div>
+        <div class="col-12"><label asp-for="Status" class="form-label"></label><select asp-for="Status" class="form-select"><option value="ACTIVE">Đang kinh doanh</option><option value="INACTIVE">Ngừng kinh doanh</option></select><span asp-validation-for="Status" class="text-danger"></span><div class="form-text">Nếu danh mục có thông số kỹ thuật bắt buộc, hãy nhập đủ thông số trước khi chuyển sang Đang kinh doanh.</div></div>
+    </div>
+</section>
+
+<section class="admin-form-section" aria-labelledby="product-images-title">
+    <div class="admin-form-section-heading">
+        <span class="admin-form-section-index">03</span>
+        <div><h2 id="product-images-title">Hình ảnh</h2><p>Ảnh đại diện giúp khách nhận diện sản phẩm trong danh sách.</p></div>
+    </div>
+    <div class="row g-3">
+        <div class="col-md-6"><label asp-for="PrimaryImage" class="form-label"></label><input asp-for="PrimaryImage" class="form-control" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" /><span asp-validation-for="PrimaryImage" class="text-danger"></span><div class="form-text">JPEG, PNG hoặc WebP, tối đa 5 MB. Ảnh mới thành ảnh đại diện; ảnh hiện tại được giữ làm ảnh chi tiết.</div><div id="primaryPreview" class="image-preview mt-2"></div></div>
+        <div class="col-12"><label asp-for="DetailImages" class="form-label"></label><input asp-for="DetailImages" class="form-control" type="file" multiple accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" /><span asp-validation-for="DetailImages" class="text-danger"></span><div class="form-text">Có thể tải tối đa 8 ảnh chi tiết mỗi lần.</div><div id="detailsPreview" class="image-preview-list mt-2"></div></div>
+    </div>
+</section>

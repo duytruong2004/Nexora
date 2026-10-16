@@ -1,0 +1,44 @@
+@model RecommendationRuleFormViewModel
+@{
+    var isEdit = Model.Id.HasValue;
+    ViewData["Title"] = isEdit ? "Sửa quy tắc tư vấn" : "Thêm quy tắc tư vấn";
+}
+
+<div class="mb-4"><a asp-action="Rules" class="text-decoration-none">← Quy tắc tư vấn</a><h1 class="h2 mt-2">@ViewData["Title"]</h1></div>
+<form asp-action="@(isEdit ? "EditRule" : "CreateRule")" asp-route-id="@Model.Id" method="post" class="card border-0 shadow-sm p-4 catalog-form">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    @if (isEdit) { <input asp-for="Id" type="hidden" /> }
+    <div class="row g-3">
+        <div class="col-md-6"><label asp-for="UsageNeedId" class="form-label"></label><select asp-for="UsageNeedId" asp-items="Model.UsageNeedOptions" class="form-select"><option value="0">Chọn nhu cầu</option></select><span asp-validation-for="UsageNeedId" class="text-danger"></span></div>
+        <div class="col-md-6"><label asp-for="CategoryId" class="form-label"></label><select asp-for="CategoryId" asp-items="Model.CategoryOptions" class="form-select" id="rule-category"><option value="0">Chọn danh mục</option></select><span asp-validation-for="CategoryId" class="text-danger"></span></div>
+        <div class="col-md-6"><label asp-for="SpecificationId" class="form-label"></label><select asp-for="SpecificationId" class="form-select" id="rule-specification"><option value="0">Chọn thông số kỹ thuật</option>
+            @foreach (var item in Model.SpecificationOptions) { <option value="@item.Id" data-category="@item.CategoryId">@item.CategoryName · @item.Name (@item.DataType@(item.Unit is null ? "" : $", {item.Unit}"))</option> }
+        </select><span asp-validation-for="SpecificationId" class="text-danger"></span></div>
+        <div class="col-md-6"><label asp-for="Operator" class="form-label"></label><select asp-for="Operator" asp-items="Model.OperatorOptions" class="form-select"></select><span asp-validation-for="Operator" class="text-danger"></span></div>
+        <div class="col-md-6"><label asp-for="ThresholdValue" class="form-label"></label><input asp-for="ThresholdValue" class="form-control" /><span asp-validation-for="ThresholdValue" class="text-danger"></span><div class="form-text">NUMBER dùng dấu chấm thập phân; đơn vị lấy từ thông số kỹ thuật.</div></div>
+        <div class="col-md-6"><label asp-for="Weight" class="form-label"></label><input asp-for="Weight" class="form-control" type="number" min="0" max="99999.9999" step="0.0001" /><span asp-validation-for="Weight" class="text-danger"></span></div>
+        <div class="col-md-6 form-check ms-2"><input asp-for="IsRequired" class="form-check-input" /><label asp-for="IsRequired" class="form-check-label"></label><div class="form-text">Nếu bật, sản phẩm không đạt ngưỡng sẽ bị loại trước khi chấm điểm.</div></div>
+        <div class="col-md-6 form-check ms-2"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div>
+    </div>
+    <div class="d-flex gap-2 mt-4"><button class="btn btn-primary" type="submit">Lưu quy tắc</button><a asp-action="Rules" class="btn btn-outline-secondary">Hủy</a></div>
+</form>
+@section Scripts {
+    <script>
+        (() => {
+            const category = document.getElementById('rule-category');
+            const specification = document.getElementById('rule-specification');
+            const updateOptions = () => {
+                const selectedCategory = category.value;
+                for (const option of specification.options) {
+                    if (!option.dataset.category) continue;
+                    const visible = option.dataset.category === selectedCategory;
+                    option.hidden = !visible;
+                    option.disabled = !visible;
+                    if (!visible && option.selected) specification.value = '0';
+                }
+            };
+            category.addEventListener('change', updateOptions);
+            updateOptions();
+        })();
+    </script>
+}

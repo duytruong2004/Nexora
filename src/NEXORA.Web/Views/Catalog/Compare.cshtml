@@ -13,7 +13,8 @@ else if (Model.Comparison is { } comparison)
     <div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table comparison-table align-middle mb-0"><thead class="table-light"><tr><th class="comparison-spec-head" scope="col">Thông tin</th>
         @foreach (var product in comparison.Products)
         {
-            <th scope="col"><div class="comparison-product-image">@if (product.Images.FirstOrDefault(image => image.IsPrimary) is { } image) { <img src="@image.ImageUrl" alt="@product.Name" /> } else { <span>Chưa có ảnh</span> }</div><a asp-action="Details" asp-route-id="@product.Id" class="comparison-product-name">@product.Name</a><div class="small text-secondary fw-normal mt-1">@product.BrandName</div><strong class="d-block text-primary mt-2">@((product.DiscountPrice ?? product.Price).ToString("N0")) ₫</strong></th>
+            var primaryImage = product.Images.FirstOrDefault(image => image.IsPrimary) ?? product.Images.OrderBy(image => image.SortOrder).FirstOrDefault();
+            <th scope="col"><div class="comparison-product-image">@await Html.PartialAsync("_ProductImage", new NEXORA.Web.Models.ProductImageDisplayViewModel(primaryImage?.ImageUrl, product.Name, "comparison"))</div><a asp-action="Details" asp-route-id="@product.Id" class="comparison-product-name">@product.Name</a><div class="small text-secondary fw-normal mt-1">@product.BrandName</div><strong class="d-block text-primary mt-2">@((product.DiscountPrice ?? product.Price).ToString("N0")) ₫</strong></th>
         }
     </tr></thead><tbody>
         <tr><th scope="row">Danh mục</th>@foreach (var product in comparison.Products) { <td>@product.CategoryName</td> }</tr>

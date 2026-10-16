@@ -3,22 +3,22 @@
     ViewData["Title"] = "Trang chủ";
 }
 
-<section class="nexora-hero rounded-4 p-4 p-lg-5 mb-5">
+<section class="nexora-hero rounded-4 p-4 p-lg-5 mb-5" aria-labelledby="home-title">
     <div class="row align-items-center g-4">
         <div class="col-lg-8">
-            <p class="text-uppercase fw-semibold small text-primary mb-2">Thiết bị công nghệ theo nhu cầu</p>
-            <h1 class="display-5 fw-bold mb-3">Chọn đúng thiết bị. Dùng đúng mục đích.</h1>
-            <p class="lead text-secondary mb-4">Khám phá danh mục, xem thông số kỹ thuật rõ ràng và tìm sản phẩm phù hợp với công việc hằng ngày.</p>
-            <div class="d-flex flex-wrap gap-2"><a class="btn btn-primary btn-lg" asp-controller="Catalog" asp-action="Index">Khám phá sản phẩm</a>@if (User.Identity?.IsAuthenticated != true) { <a class="btn btn-outline-dark btn-lg" asp-controller="Account" asp-action="Register">Tạo tài khoản</a> }</div>
+            <p class="text-uppercase fw-semibold small text-primary mb-2">Khám phá công nghệ theo cách của bạn</p>
+            <h1 id="home-title" class="display-5 fw-bold mb-3">Chọn đúng thiết bị. Dùng đúng mục đích.</h1>
+            <p class="lead mb-4">Tìm kiếm theo danh mục, đối chiếu thông số và nhận gợi ý dựa trên nhu cầu thực tế của bạn.</p>
+            <div class="d-flex flex-wrap gap-2"><a class="btn btn-primary btn-lg" asp-controller="Catalog" asp-action="Index">Khám phá sản phẩm</a><a class="btn btn-outline-primary btn-lg" asp-controller="Consultation" asp-action="Index">Bắt đầu tư vấn <span aria-hidden="true">→</span></a></div>
         </div>
-        <div class="col-lg-4"><div class="hero-mark" aria-hidden="true">N</div></div>
+        <div class="col-lg-4"><div class="hero-mark" aria-hidden="true">N</div><p class="small text-secondary text-center mt-3 mb-0">Danh mục rõ ràng · Thông số minh bạch</p></div>
     </div>
 </section>
 
 <section class="mb-5" aria-labelledby="consultation-title">
     <div class="consultation-banner rounded-4 p-4 p-lg-5 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-4">
-        <div><p class="text-uppercase small fw-semibold mb-2">Điểm khác biệt NEXORA</p><h2 id="consultation-title" class="h3 fw-bold">Mô tả nhu cầu bằng tiếng Việt</h2><p class="mb-0 text-secondary">Tư vấn lựa chọn sản phẩm bằng ngôn ngữ tự nhiên là tính năng cốt lõi của khóa luận, đang được xây dựng cho giai đoạn tiếp theo.</p></div>
-        <a class="btn btn-outline-primary btn-lg flex-shrink-0" asp-controller="Catalog" asp-action="Index">Xem sản phẩm hiện có</a>
+        <div><p class="text-uppercase small fw-semibold mb-2">Tư vấn thông minh NEXORA</p><h2 id="consultation-title" class="h3 fw-bold">Mô tả nhu cầu bằng tiếng Việt</h2><p class="mb-0 text-secondary">Nêu ngân sách, mục đích và điều bạn ưu tiên. Gợi ý được xếp hạng từ sản phẩm cùng thông số đang có trong hệ thống.</p></div>
+        <a class="btn btn-primary btn-lg flex-shrink-0" asp-controller="Consultation" asp-action="Index">Tư vấn ngay <span aria-hidden="true">→</span></a>
     </div>
 </section>
 
@@ -40,7 +40,7 @@
 </section>
 
 <section aria-labelledby="featured-title">
-    <div class="d-flex justify-content-between align-items-end gap-3 mb-3"><div><p class="text-uppercase small fw-semibold text-primary mb-1">Từ danh mục hiện có</p><h2 id="featured-title" class="h3 fw-bold mb-0">Sản phẩm mới</h2></div></div>
+    <div class="d-flex justify-content-between align-items-end gap-3 mb-3"><div><p class="text-uppercase small fw-semibold text-primary mb-1">Từ danh mục hiện có</p><h2 id="featured-title" class="h3 fw-bold mb-0">Sản phẩm đang kinh doanh</h2></div><a asp-controller="Catalog" asp-action="Index" class="text-decoration-none">Xem tất cả <span aria-hidden="true">→</span></a></div>
     @if (Model.Data.Products.Count == 0)
     {
         <div class="catalog-empty rounded-4 p-4 text-secondary">Chưa có sản phẩm đang kinh doanh. Quản trị viên có thể thêm sản phẩm từ khu vực Admin.</div>

@@ -1,0 +1,34 @@
+@model UsageNeedAdminPageViewModel
+@{
+    ViewData["Title"] = "Nhu cầu tư vấn";
+    var activeNeeds = Model.Items.Count(item => item.IsActive);
+    var configuredRules = Model.Items.Sum(item => item.RuleCount);
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div><p class="text-uppercase small fw-semibold text-primary mb-1">Quản trị tư vấn</p><h1 class="h2 mb-0">Nhu cầu sử dụng</h1></div>
+    <div class="d-flex gap-2"><a asp-action="Rules" class="btn btn-outline-primary">Quy tắc tư vấn</a><a asp-action="CreateUsageNeed" class="btn btn-primary">Thêm nhu cầu</a></div>
+</div>
+<p class="text-secondary mb-4">Quản lý các mục đích mà bộ tư vấn dùng để chọn quy tắc xếp hạng.</p>
+<div class="row g-3 mb-4" aria-label="Thống kê nhu cầu tư vấn">
+    <div class="col-sm-4"><section class="admin-stat-card"><span>Tổng nhu cầu</span><strong>@Model.Items.Count</strong></section></div>
+    <div class="col-sm-4"><section class="admin-stat-card"><span>Đang hoạt động</span><strong>@activeNeeds</strong></section></div>
+    <div class="col-sm-4"><section class="admin-stat-card"><span>Quy tắc được gắn</span><strong>@configuredRules</strong></section></div>
+</div>
+<div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table admin-data-table admin-data-table--usage-needs align-middle mb-0">
+    <thead class="table-light"><tr><th>Mã</th><th>Nhu cầu</th><th>Mô tả</th><th>Quy tắc</th><th>Trạng thái</th><th></th></tr></thead>
+    <tbody>
+    @if (Model.Items.Count == 0) { <tr><td colspan="6" class="text-center text-secondary py-5">Chưa cấu hình nhu cầu tư vấn.</td></tr> }
+    @foreach (var item in Model.Items)
+    {
+        <tr><td><code>@item.Code</code></td><td class="fw-semibold">@item.Name</td><td><span class="admin-description-clamp" title="@item.Description">@(item.Description ?? "—")</span></td><td>@item.RuleCount</td>
+            <td><span class="badge @(item.IsActive ? "text-bg-success" : "text-bg-secondary")">@(item.IsActive ? "Hoạt động" : "Đã ngừng")</span></td>
+            <td class="text-end text-nowrap"><div class="admin-table-actions"><a asp-action="EditUsageNeed" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Sửa</a>
+                <form asp-action="ToggleUsageNeed" method="post" class="d-inline"><input type="hidden" name="id" value="@item.Id" /><input type="hidden" name="isActive" value="@(!item.IsActive)" />
+                    <button class="btn btn-sm @(item.IsActive ? "btn-outline-danger" : "btn-outline-success")" type="submit">@(item.IsActive ? "Ngừng" : "Bật")</button>
+                </form>
+            </div></td>
+        </tr>
+    }
+    </tbody>
+</table></div></div>

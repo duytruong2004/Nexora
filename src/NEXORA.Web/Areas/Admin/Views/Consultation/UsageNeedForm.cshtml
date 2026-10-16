@@ -1,0 +1,16 @@
+@model UsageNeedFormViewModel
+@{
+    var isEdit = Model.Id.HasValue;
+    ViewData["Title"] = isEdit ? "Sửa nhu cầu tư vấn" : "Thêm nhu cầu tư vấn";
+}
+
+<div class="mb-4"><a asp-action="UsageNeeds" class="text-decoration-none">← Nhu cầu tư vấn</a><h1 class="h2 mt-2">@ViewData["Title"]</h1></div>
+<form asp-action="@(isEdit ? "EditUsageNeed" : "CreateUsageNeed")" asp-route-id="@Model.Id" method="post" class="card border-0 shadow-sm p-4 catalog-form">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    @if (isEdit) { <input asp-for="Id" type="hidden" /> }
+    <div class="mb-3"><label asp-for="Code" class="form-label"></label><input asp-for="Code" class="form-control" autocomplete="off" /><span asp-validation-for="Code" class="text-danger"></span><div class="form-text">Mã dùng để ánh xạ mục đích đã nhận diện, ví dụ PROGRAMMING.</div></div>
+    <div class="mb-3"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger"></span></div>
+    <div class="mb-3"><label asp-for="Description" class="form-label"></label><textarea asp-for="Description" class="form-control" rows="3"></textarea><span asp-validation-for="Description" class="text-danger"></span></div>
+    <div class="form-check mb-4"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div>
+    <div class="d-flex gap-2"><button class="btn btn-primary" type="submit">Lưu</button><a asp-action="UsageNeeds" class="btn btn-outline-secondary">Hủy</a></div>
+</form>

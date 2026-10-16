@@ -137,9 +137,9 @@ public sealed class SpecificationFormViewModel
 {
     public int? Id { get; set; }
 
-    [Required(ErrorMessage = "Vui lòng nhập tên thông số.")]
+    [Required(ErrorMessage = "Vui lòng nhập tên thông số kỹ thuật.")]
     [StringLength(160)]
-    [Display(Name = "Tên thông số")]
+    [Display(Name = "Tên thông số kỹ thuật")]
     public string Name { get; set; } = string.Empty;
 
     [StringLength(40)]

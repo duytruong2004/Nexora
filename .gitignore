@@ -1,5 +1,11 @@
 **/bin/
 **/obj/
+# Temporary custom build output used during Phase 3 verification
+/src/NEXORA.Application/artifacts/
+/src/NEXORA.Domain/artifacts/
+/src/NEXORA.Infrastructure/artifacts/
+/src/NEXORA.Web/artifacts/
+/tests/NEXORA.Tests/artifacts/
 .vs/
 .idea/
 *.user

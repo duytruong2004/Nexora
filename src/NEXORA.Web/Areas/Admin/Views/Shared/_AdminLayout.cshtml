@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - NEXORA Admin</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+</head>
+<body class="nexora-admin-body">
+    <div class="admin-shell">
+        <aside class="admin-sidebar d-none d-lg-flex">
+            <partial name="~/Areas/Admin/Views/Shared/_AdminNavigation.cshtml" />
+        </aside>
+
+        <div class="offcanvas offcanvas-start admin-mobile-sidebar d-lg-none" tabindex="-1" id="adminNavigation" aria-labelledby="adminNavigationTitle">
+            <div class="offcanvas-header">
+                <h2 class="visually-hidden" id="adminNavigationTitle">Điều hướng quản trị</h2>
+                <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="offcanvas" aria-label="Đóng menu"></button>
+            </div>
+            <div class="offcanvas-body p-0"><partial name="~/Areas/Admin/Views/Shared/_AdminNavigation.cshtml" /></div>
+        </div>
+
+        <div class="admin-main">
+            <header class="admin-topbar">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn btn-light admin-mobile-toggle d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminNavigation" aria-controls="adminNavigation" aria-label="Mở menu quản trị"><span aria-hidden="true">☰</span></button>
+                    <div>
+                        <div class="admin-breadcrumb"><a asp-area="" asp-controller="RoleLanding" asp-action="Admin">Workspace</a><span aria-hidden="true">/</span><span>Quản trị</span></div>
+                        <div class="admin-topbar-title">@ViewData["Title"]</div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2 gap-md-3">
+                    <a class="btn btn-sm btn-outline-primary d-none d-sm-inline-flex" asp-area="" asp-controller="Home" asp-action="Index" target="_blank" rel="noopener">Xem cửa hàng <span class="ms-1" aria-hidden="true">↗</span></a>
+                    <div class="admin-user-chip"><span class="admin-avatar" aria-hidden="true">@((User.Identity?.Name?.FirstOrDefault() ?? 'A').ToString().ToUpperInvariant())</span><span class="d-none d-md-inline">@User.Identity?.Name</span>@if (User.IsInRole("Admin")) { <span class="admin-role-badge">Admin</span> }</div>
+                    <form asp-area="" asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">Đăng xuất</button>
+                    </form>
+                </div>
+            </header>
+
+            <main class="admin-content" id="main-content">
+                @if (TempData["StatusMessage"] is string statusMessage)
+                {
+                    <div class="alert alert-info admin-alert" role="status">@statusMessage</div>
+                }
+                @if (TempData["Success"] is string successMessage)
+                {
+                    <div class="alert alert-success admin-alert" role="status"><span class="me-2" aria-hidden="true">✓</span>@successMessage</div>
+                }
+                @if (TempData["Error"] is string errorMessage)
+                {
+                    <div class="alert alert-danger admin-alert" role="alert"><span class="me-2" aria-hidden="true">!</span>@errorMessage</div>
+                }
+                @RenderBody()
+            </main>
+
+            <footer class="admin-footer"><span>© @DateTime.UtcNow.Year NEXORA</span><span>Quản trị danh mục và tư vấn sản phẩm</span></footer>
+        </div>
+    </div>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

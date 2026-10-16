@@ -69,6 +69,24 @@ public sealed class AccountController(
     [HttpGet]
     public IActionResult AccessDenied() => View();
 
+    [Authorize]
+    [HttpGet]
+    public async Task<IActionResult> Profile()
+    {
+        var user = await userManager.GetUserAsync(User);
+        if (user is null || !user.IsActive)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        var roles = await userManager.GetRolesAsync(user);
+        return View(new MyAccountViewModel(
+            user.FullName,
+            user.Email ?? string.Empty,
+            user.CreatedAt,
+            roles.OrderBy(role => role, StringComparer.Ordinal).ToArray()));
+    }
+
     [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]

@@ -14,7 +14,10 @@ public sealed record CatalogProductCard(
     decimal Price,
     decimal? DiscountPrice,
     string? PrimaryImageUrl,
-    string? Description);
+    string? Description)
+{
+    public IReadOnlyList<CatalogProductSpecification> KeySpecifications { get; init; } = [];
+}
 
 public sealed record CatalogProductSpecification(
     int SpecificationId,

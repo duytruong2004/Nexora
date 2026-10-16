@@ -1,10 +1,10 @@
 @model NEXORA.Web.Areas.Admin.Models.ProductSpecificationEditorViewModel
 @{
-    ViewData["Title"] = "Thông số sản phẩm";
+    ViewData["Title"] = "Thông số kỹ thuật sản phẩm";
 }
 <div class="mb-4"><a asp-controller="Products" asp-action="Details" asp-route-id="@Model.ProductId" class="text-decoration-none">← Sản phẩm</a><p class="text-uppercase small fw-semibold text-primary mt-3 mb-1">Thông số động · @Model.CategoryName</p><h1 class="h2">@Model.ProductName</h1></div>
 <form asp-action="Edit" asp-route-id="@Model.ProductId" method="post" class="card border-0 shadow-sm p-4"><input asp-for="ProductId" type="hidden" /><div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-    @if (Model.Values.Count == 0) { <div class="alert alert-info">Danh mục này chưa được gán Specification. Hãy gán thông số tại trang quản trị danh mục.</div> }
+    @if (Model.Values.Count == 0) { <div class="alert alert-info">Danh mục này chưa được gán thông số kỹ thuật. Hãy gán thông số tại trang quản trị danh mục.</div> }
     @for (var index = 0; index < Model.Values.Count; index++)
     {
         var item = Model.Values[index];

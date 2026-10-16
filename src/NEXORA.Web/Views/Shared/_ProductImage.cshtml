@@ -1,0 +1,19 @@
+@model NEXORA.Web.Models.ProductImageDisplayViewModel
+<div class="nexora-product-visual nexora-product-visual--@Model.Variant">
+    @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+    {
+        <img src="@Model.ImageUrl" alt="@Model.AltText" loading="lazy" decoding="async" />
+    }
+    else
+    {
+        <div class="nexora-product-visual-placeholder" role="img" aria-label="@Model.AltText: hình ảnh chưa được cập nhật">
+            <svg class="nexora-product-visual-icon" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+                <rect x="9" y="13" width="46" height="38" rx="7" fill="none" stroke="currentColor" stroke-width="2.5" />
+                <circle cx="23" cy="26" r="4" fill="currentColor" />
+                <path d="m14 45 13-12 8 7 6-5 9 10" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" />
+                <path d="M19 7h26" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.5" opacity=".55" />
+            </svg>
+            <span>Hình ảnh đang được cập nhật</span>
+        </div>
+    }
+</div>
