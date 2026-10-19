@@ -7,7 +7,37 @@
 <div class="mb-4"><a asp-controller="Catalog" asp-action="Index" asp-route-categoryId="@product.CategoryId" class="text-decoration-none">← @product.CategoryName</a></div>
 <div class="row g-4 g-lg-5">
     <div class="col-lg-6"><div class="mb-3">@await Html.PartialAsync("_ProductImage", new NEXORA.Web.Models.ProductImageDisplayViewModel(primary?.ImageUrl, product.Name, "detail"))</div>@if (product.Images.Count > 1) { <div class="row g-2">@foreach (var image in product.Images.Where(image => image.Id != primary?.Id)) { <div class="col-3"><div class="product-gallery-thumb"><img src="@image.ImageUrl" alt="Ảnh chi tiết @product.Name" loading="lazy" decoding="async" /></div></div> }</div> }</div>
-    <div class="col-lg-6"><p class="text-uppercase small fw-semibold text-primary mb-2">@product.CategoryName · @product.BrandName</p><h1 class="display-6 fw-bold">@product.Name</h1><p class="text-secondary">Mã sản phẩm: @product.Sku</p><div class="d-flex align-items-baseline gap-2 mb-3"><strong class="h2 text-primary mb-0">@((product.DiscountPrice ?? product.Price).ToString("N0")) ₫</strong>@if (product.DiscountPrice.HasValue) { <del class="text-secondary">@product.Price.ToString("N0") ₫</del> }</div><p class="text-secondary">Bảo hành: @product.WarrantyMonths tháng</p><div class="border-top pt-3"><h2 class="h5">Mô tả</h2><p class="text-secondary">@(product.Description ?? "Thông tin mô tả đang được cập nhật.")</p></div><div class="d-flex flex-wrap gap-2 mt-4"><a asp-controller="Catalog" asp-action="Index" asp-route-categoryId="@product.CategoryId" class="btn btn-outline-primary">Xem thêm @product.CategoryName</a></div></div>
+    <div class="col-lg-6"><p class="text-uppercase small fw-semibold text-primary mb-2">@product.CategoryName · @product.BrandName</p><h1 class="display-6 fw-bold">@product.Name</h1><p class="text-secondary">Mã sản phẩm: @product.Sku</p><div class="d-flex align-items-baseline gap-2 mb-3"><strong class="h2 text-primary mb-0">@((product.DiscountPrice ?? product.Price).ToString("N0")) ₫</strong>@if (product.DiscountPrice.HasValue) { <del class="text-secondary">@product.Price.ToString("N0") ₫</del> }</div>
+        @if (product.AvailableQuantity is > 0)
+        {
+            <p><span class="badge rounded-pill product-stock-badge product-stock-badge--available">Còn hàng</span><span class="small text-secondary ms-2">Có thể bán: @product.AvailableQuantity</span></p>
+        }
+        else if (product.AvailableQuantity == 0)
+        {
+            <p><span class="badge rounded-pill product-stock-badge product-stock-badge--unavailable">Hết hàng</span></p>
+        }
+        else
+        {
+            <p><span class="badge rounded-pill product-stock-badge product-stock-badge--unknown">Chưa có hàng</span></p>
+        }
+        <p class="text-secondary">Bảo hành: @product.WarrantyMonths tháng</p><div class="border-top pt-3"><h2 class="h5">Mô tả</h2><p class="text-secondary">@(product.Description ?? "Thông tin mô tả đang được cập nhật.")</p></div>
+        @if (User.IsInRole("Customer"))
+        {
+            var canAddToCart = product.AvailableQuantity is > 0;
+            <form asp-controller="Cart" asp-action="Add" method="post" class="d-flex flex-wrap align-items-end gap-2 mt-4">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="productId" value="@product.Id" />
+                <input type="hidden" name="returnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
+                <div><label class="form-label small mb-1" for="cartQuantity">Số lượng</label><input class="form-control" id="cartQuantity" name="quantity" type="number" value="@(canAddToCart ? 1 : 0)" min="1" max="@(product.AvailableQuantity ?? 0)" inputmode="numeric" disabled="@(canAddToCart ? null : "disabled")" /></div>
+                <button class="btn btn-primary" type="submit" disabled="@(canAddToCart ? null : "disabled")" aria-disabled="@(canAddToCart ? "false" : "true")">Thêm vào giỏ hàng</button>
+            </form>
+            @if (!canAddToCart)
+            {
+                <p class="small text-secondary mt-2 mb-0">Sản phẩm hiện đang hết hàng. Vui lòng quay lại sau.</p>
+            }
+        }
+        <div class="d-flex flex-wrap gap-2 mt-3"><a asp-controller="Catalog" asp-action="Index" asp-route-categoryId="@product.CategoryId" class="btn btn-outline-primary">Xem thêm @product.CategoryName</a></div>
+    </div>
 </div>
 <section class="mt-5" aria-labelledby="specifications-title"><h2 id="specifications-title" class="h3 mb-3">Thông số kỹ thuật</h2>
     @if (product.Specifications.Count == 0) { <div class="catalog-empty rounded-4 p-4 text-secondary">Thông số kỹ thuật đang được cập nhật.</div> }

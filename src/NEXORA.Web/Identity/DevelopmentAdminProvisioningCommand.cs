@@ -4,29 +4,34 @@ using NEXORA.Infrastructure.Identity;
 
 namespace NEXORA.Web.Identity;
 
-public sealed record ProvisioningCommandArguments(bool IsRequested, string[] HostArguments)
+public sealed record ProvisioningCommandArguments(
+    bool IsRequested,
+    bool IsDevelopmentInventorySeedRequested,
+    string[] HostArguments)
 {
     public static ProvisioningCommandArguments Parse(string[] args)
     {
         var commandIndexes = args
             .Select((value, index) => (value, index))
-            .Where(item => string.Equals(item.value, "--provision-admin", StringComparison.Ordinal))
+            .Where(item => string.Equals(item.value, "--provision-admin", StringComparison.Ordinal) ||
+                           string.Equals(item.value, "--seed-development-inventory", StringComparison.Ordinal))
             .Select(item => item.index)
             .ToArray();
 
         if (commandIndexes.Length == 0)
         {
-            return new ProvisioningCommandArguments(false, args);
+            return new ProvisioningCommandArguments(false, false, args);
         }
 
         if (commandIndexes.Length != 1 || args.Length != 1)
         {
-            throw new ArgumentException(
-                "Use --provision-admin by itself. The command prompts for an existing account interactively.",
-                nameof(args));
+            throw new ArgumentException("Use one Development provisioning command by itself.", nameof(args));
         }
 
-        return new ProvisioningCommandArguments(true, []);
+        return new ProvisioningCommandArguments(
+            true,
+            string.Equals(args[0], "--seed-development-inventory", StringComparison.Ordinal),
+            []);
     }
 }
 
@@ -89,5 +94,47 @@ public static class DevelopmentAdminProvisioningCommand
         logger.LogWarning("Admin role granted through the local Development console. UserId={UserId}", user.Id);
         Console.WriteLine("Đã cấp role Admin cho tài khoản đã chọn.");
         return 0;
+    }
+}
+
+public static class DevelopmentInventoryProvisioningCommand
+{
+    public static async Task<int> ExecuteAsync(
+        IServiceProvider services,
+        string? connectionString,
+        ILogger logger,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString) || !TargetsDevelopmentDatabase(connectionString))
+        {
+            logger.LogError("Development inventory provisioning refused because the configured SQL target is not the approved local NEXORA database.");
+            Console.WriteLine("Từ chối seed: cấu hình phải trỏ tới instance PC01\\SQLEXPRESS và database NEXORA.");
+            return 2;
+        }
+
+        await using var scope = services.CreateAsyncScope();
+        var seeder = scope.ServiceProvider.GetRequiredService<NEXORA.Application.Commerce.IDevelopmentInventorySeeder>();
+        await seeder.SeedMissingAsync(cancellationToken);
+        Console.WriteLine("Đã bổ sung bản ghi tồn mô phỏng còn thiếu; tồn hiện có được giữ nguyên.");
+        logger.LogInformation("Development inventory seeding command completed.");
+        return 0;
+    }
+
+    public static bool TargetsDevelopmentDatabase(string connectionString)
+    {
+        try
+        {
+            var connection = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(connectionString);
+            var expectedServer = $@"{Environment.MachineName}\SQLEXPRESS";
+            var server = connection.DataSource.Trim();
+            var isLocalExpress = string.Equals(server, expectedServer, StringComparison.OrdinalIgnoreCase) ||
+                                 (string.Equals(Environment.MachineName, "PC01", StringComparison.OrdinalIgnoreCase) &&
+                                  string.Equals(server, @".\SQLEXPRESS", StringComparison.OrdinalIgnoreCase));
+            return isLocalExpress && string.Equals(connection.InitialCatalog, "NEXORA", StringComparison.OrdinalIgnoreCase);
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
     }
 }

@@ -508,6 +508,10 @@ namespace NEXORA.Infrastructure.Persistence.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("cancelled_at");
 
+                    b.Property<Guid?>("CheckoutRequestId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("checkout_request_id");
+
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("completed_at");
@@ -568,6 +572,11 @@ namespace NEXORA.Infrastructure.Persistence.Migrations
 
                     b.HasAlternateKey("Id", "UserId")
                         .HasName("ak_orders_id_user_id");
+
+                    b.HasIndex("CheckoutRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_orders_checkout_request_id")
+                        .HasFilter("[checkout_request_id] IS NOT NULL");
 
                     b.HasIndex("ConfirmedBy");
 

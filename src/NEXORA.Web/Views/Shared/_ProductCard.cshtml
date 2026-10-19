@@ -5,6 +5,18 @@
     </a>
     <div class="card-body d-flex flex-column">
         <div class="product-card-meta small mb-2"><span>@Model.CategoryName</span><span aria-hidden="true">·</span><span>@Model.BrandName</span></div>
+        @if (Model.AvailableQuantity is > 0)
+        {
+            <span class="badge rounded-pill product-stock-badge product-stock-badge--available align-self-start mb-2">Còn hàng</span>
+        }
+        else if (Model.AvailableQuantity == 0)
+        {
+            <span class="badge rounded-pill product-stock-badge product-stock-badge--unavailable align-self-start mb-2">Hết hàng</span>
+        }
+        else
+        {
+            <span class="badge rounded-pill product-stock-badge product-stock-badge--unknown align-self-start mb-2">Chưa có hàng</span>
+        }
         <h3 class="h6 fw-semibold product-card-heading"><a asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id" class="product-card-title text-decoration-none">@Model.Name</a></h3>
         <p class="small text-secondary product-card-sku">Mã: @Model.Sku</p>
         @if (Model.KeySpecifications.Count > 0)
@@ -20,6 +32,19 @@
         <div class="mt-auto pt-2">
             <div class="d-flex flex-wrap align-items-baseline gap-2"><strong class="product-card-price">@((Model.DiscountPrice ?? Model.Price).ToString("N0")) ₫</strong>@if (Model.DiscountPrice.HasValue) { <del class="small text-secondary">@Model.Price.ToString("N0") ₫</del> }</div>
             <a class="btn btn-outline-primary btn-sm w-100 mt-3" asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id">Xem chi tiết</a>
+            @if (User.IsInRole("Customer"))
+            {
+                <form asp-controller="Cart" asp-action="Add" method="post" class="d-grid w-100 mt-2" data-catalog-cart-add>
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="productId" value="@Model.Id" />
+                    <input type="hidden" name="quantity" value="1" />
+                    <input type="hidden" name="returnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
+                    <button class="btn btn-primary btn-sm w-100" type="submit" data-catalog-cart-add-button disabled="@(Model.AvailableQuantity is > 0 ? null : "disabled")" aria-disabled="@(Model.AvailableQuantity is > 0 ? "false" : "true")" title="@(Model.AvailableQuantity is not > 0 ? "Sản phẩm hiện chưa có hàng để bán" : null)">
+                        <span data-catalog-cart-add-label>Thêm vào giỏ hàng</span>
+                        <span class="spinner-border spinner-border-sm d-none" data-catalog-cart-add-spinner aria-hidden="true"></span>
+                    </button>
+                </form>
+            }
         </div>
     </div>
 </article>

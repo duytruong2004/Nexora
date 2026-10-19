@@ -17,6 +17,9 @@ public sealed record CatalogProductCard(
     string? Description)
 {
     public IReadOnlyList<CatalogProductSpecification> KeySpecifications { get; init; } = [];
+
+    /// <summary>Null means the product has no inventory record.</summary>
+    public int? AvailableQuantity { get; init; }
 }
 
 public sealed record CatalogProductSpecification(
@@ -41,7 +44,11 @@ public sealed record CatalogProductDetails(
     string? Description,
     int WarrantyMonths,
     IReadOnlyList<ProductImageItem> Images,
-    IReadOnlyList<CatalogProductSpecification> Specifications);
+    IReadOnlyList<CatalogProductSpecification> Specifications)
+{
+    /// <summary>Null means the product has no inventory record.</summary>
+    public int? AvailableQuantity { get; init; }
+}
 
 public sealed record CatalogSearchFilter(
     string? Search,

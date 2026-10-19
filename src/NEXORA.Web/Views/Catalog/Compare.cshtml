@@ -19,6 +19,7 @@ else if (Model.Comparison is { } comparison)
     </tr></thead><tbody>
         <tr><th scope="row">Danh mục</th>@foreach (var product in comparison.Products) { <td>@product.CategoryName</td> }</tr>
         <tr><th scope="row">Mã sản phẩm</th>@foreach (var product in comparison.Products) { <td>@product.Sku</td> }</tr>
+        <tr><th scope="row">Tình trạng tồn kho</th>@foreach (var product in comparison.Products) { <td>@(product.AvailableQuantity is > 0 ? $"Còn hàng ({product.AvailableQuantity})" : product.AvailableQuantity == 0 ? "Hết hàng" : "Chưa có hàng")</td> }</tr>
         @foreach (var specification in comparison.Specifications)
         {
             <tr class="@(specification.IsDifferent ? "comparison-different" : "")" data-different="@(specification.IsDifferent ? "true" : "false")"><th scope="row">@specification.Name@(specification.Unit is null ? "" : $" ({specification.Unit})")</th>

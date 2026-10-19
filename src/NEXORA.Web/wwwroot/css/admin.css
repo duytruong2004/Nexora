@@ -167,3 +167,12 @@
     .admin-form-section + .admin-form-section { margin-top: 1.2rem; padding-top: 1.2rem; }
     .admin-welcome-mark { display: none; }
 }
+.promotion-product-picker { border: 1px solid var(--nx-line, #dbe3f0); border-radius: 1rem; padding: 1rem; min-width: 0; }
+.promotion-product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); gap: .65rem; max-height: 24rem; overflow: auto; }
+.promotion-product-option { display: flex; align-items: flex-start; gap: .7rem; padding: .8rem; border: 1px solid var(--nx-line, #dbe3f0); border-radius: .8rem; background: #fff; cursor: pointer; min-width: 0; }
+.promotion-product-option:has(input:checked) { border-color: var(--nx-blue, #2563eb); background: #eff6ff; }
+.promotion-product-option input { margin-top: .25rem; accent-color: var(--nx-blue, #2563eb); }
+.promotion-product-option span { display: grid; min-width: 0; }
+.promotion-product-option strong, .promotion-product-option small { overflow-wrap: anywhere; }
+.promotion-product-option small { color: var(--nx-muted, #64748b); }
+@media (max-width: 575.98px) { .promotion-product-picker { padding: .8rem; } .promotion-product-grid { max-height: 18rem; } }

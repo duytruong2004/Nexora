@@ -1,0 +1,42 @@
+@model NEXORA.Web.Areas.Admin.Models.PromotionFormViewModel
+@{
+    ViewData["Title"] = Model.Id is null ? "Tạo khuyến mại" : "Sửa khuyến mại";
+    var actionName = Model.Id is null ? "Create" : "Edit";
+}
+<div class="mb-4"><p class="text-uppercase small fw-semibold text-primary mb-1">Quản trị bán hàng</p><h1 class="h2 mb-1">@ViewData["Title"]</h1><p class="small text-secondary mb-0">Thời gian nhập theo giờ địa phương của máy chủ. Mức tiền cố định được trừ một lần trên mỗi dòng sản phẩm.</p></div>
+<form asp-action="@actionName" asp-route-id="@Model.Id" method="post" class="card border-0 shadow-sm p-4">
+    @Html.AntiForgeryToken()
+    <input asp-for="Id" type="hidden" />
+    <div asp-validation-summary="All" class="text-danger small mb-3"></div>
+    <div class="row g-3">
+        <div class="col-md-8"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger small"></span></div>
+        <div class="col-md-4"><label asp-for="DiscountType" class="form-label"></label><select asp-for="DiscountType" class="form-select"><option value="PERCENTAGE">Phần trăm</option><option value="FIXED_AMOUNT">Số tiền cố định / dòng</option></select><span asp-validation-for="DiscountType" class="text-danger small"></span></div>
+        <div class="col-md-4"><label asp-for="DiscountValue" class="form-label"></label><input asp-for="DiscountValue" class="form-control" type="number" min="0" step="0.01" /><span asp-validation-for="DiscountValue" class="text-danger small"></span></div>
+        <div class="col-md-4"><label asp-for="StartDate" class="form-label"></label><input asp-for="StartDate" class="form-control" type="datetime-local" value="@Model.StartDate.ToString("yyyy-MM-ddTHH:mm")" /><span asp-validation-for="StartDate" class="text-danger small"></span></div>
+        <div class="col-md-4"><label asp-for="EndDate" class="form-label"></label><input asp-for="EndDate" class="form-control" type="datetime-local" value="@Model.EndDate.ToString("yyyy-MM-ddTHH:mm")" /><span asp-validation-for="EndDate" class="text-danger small"></span></div>
+        <div class="col-12"><label asp-for="Description" class="form-label"></label><textarea asp-for="Description" class="form-control" rows="3"></textarea><span asp-validation-for="Description" class="text-danger small"></span></div>
+        <div class="col-12"><div class="form-check"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div></div>
+        <div class="col-12">
+            <fieldset class="promotion-product-picker" data-promotion-product-picker>
+                <legend class="form-label">Sản phẩm áp dụng</legend>
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                    <span class="small text-secondary" data-selected-product-count aria-live="polite"></span>
+                    <button class="btn btn-sm btn-outline-primary" type="button" data-select-all-products aria-pressed="false">Chọn tất cả</button>
+                </div>
+                <div class="promotion-product-grid">
+            @foreach (var product in Model.Products)
+            {
+                var selected = Model.SelectedProductIds.Contains(product.Id);
+                <label class="promotion-product-option"><input type="checkbox" name="SelectedProductIds" value="@product.Id" checked="@(selected ? "checked" : null)" /><span><strong>@product.Name</strong><small>@product.Sku</small></span></label>
+            }
+                </div>
+                <span asp-validation-for="SelectedProductIds" class="text-danger small"></span>
+            </fieldset>
+        </div>
+    </div>
+    <div class="d-flex flex-wrap gap-2 mt-4"><button class="btn btn-primary" type="submit">Lưu chương trình</button><a class="btn btn-outline-secondary" asp-action="Index">Hủy</a></div>
+</form>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/admin-promotions-form.js" asp-append-version="true"></script>
+}

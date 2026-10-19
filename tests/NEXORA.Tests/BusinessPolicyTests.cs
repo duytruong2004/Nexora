@@ -98,4 +98,44 @@ public sealed class BusinessPolicyTests
         promotion.IsActive = false;
         Assert.False(promotion.IsApplicableAt(new DateTime(2026, 10, 16, 0, 0, 0, DateTimeKind.Utc)));
     }
+
+    [Fact]
+    public void PromotionPricingPolicy_UsesLargestSingleEligibleDiscount()
+    {
+        var result = PromotionPricingPolicy.SelectBest(1_000m, 2,
+        [
+            new PromotionOffer(12, "Phần trăm", PromotionDiscountTypes.Percentage, 10m),
+            new PromotionOffer(8, "Số tiền", PromotionDiscountTypes.FixedAmount, 350m),
+            new PromotionOffer(2, "Không hợp lệ", PromotionDiscountTypes.Percentage, 101m)
+        ]);
+
+        Assert.Equal(8, result.PromotionId);
+        Assert.Equal("Số tiền", result.PromotionName);
+        Assert.Equal(350m, result.Amount);
+    }
+
+    [Fact]
+    public void PromotionPricingPolicy_FixedAmountIsAppliedOncePerLineAndCappedAtLineTotal()
+    {
+        var regular = PromotionPricingPolicy.SelectBest(1_000m, 4,
+            [new PromotionOffer(1, "Giảm cố định", PromotionDiscountTypes.FixedAmount, 250m)]);
+        var capped = PromotionPricingPolicy.SelectBest(100m, 1,
+            [new PromotionOffer(1, "Giảm lớn", PromotionDiscountTypes.FixedAmount, 500m)]);
+
+        Assert.Equal(250m, regular.Amount);
+        Assert.Equal(100m, capped.Amount);
+    }
+
+    [Fact]
+    public void PromotionPricingPolicy_RoundsPercentAndBreaksTiesDeterministically()
+    {
+        var result = PromotionPricingPolicy.SelectBest(1.05m, 1,
+        [
+            new PromotionOffer(9, "Later id", PromotionDiscountTypes.Percentage, 10m),
+            new PromotionOffer(3, "Earlier id", PromotionDiscountTypes.Percentage, 10m)
+        ]);
+
+        Assert.Equal(3, result.PromotionId);
+        Assert.Equal(0.11m, result.Amount);
+    }
 }

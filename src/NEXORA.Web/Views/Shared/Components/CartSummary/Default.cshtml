@@ -1,0 +1,6 @@
+@model int
+<a class="storefront-nav-link nav-cart-link" data-cart-summary-link asp-controller="Cart" asp-action="Index" aria-label="Giỏ hàng, @Model sản phẩm">
+    <span aria-hidden="true">🛒</span>
+    <span>Giỏ hàng</span>
+    <span data-cart-count class="badge rounded-pill text-bg-primary @(Model > 0 ? string.Empty : "d-none")">@(Model > 99 ? "99+" : Model)</span>
+</a>

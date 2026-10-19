@@ -187,6 +187,10 @@ internal sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
             .HasDatabaseName("ix_orders_user_status_order_date");
         entity.HasIndex(x => new { x.Status, x.OrderDate })
             .HasDatabaseName("ix_orders_status_order_date");
+        entity.HasIndex(x => x.CheckoutRequestId)
+            .IsUnique()
+            .HasFilter("[checkout_request_id] IS NOT NULL")
+            .HasDatabaseName("ux_orders_checkout_request_id");
         entity.HasOne<NEXORA.Infrastructure.Identity.AppUser>().WithMany()
             .HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
         entity.HasOne<NEXORA.Infrastructure.Identity.AppUser>().WithMany()

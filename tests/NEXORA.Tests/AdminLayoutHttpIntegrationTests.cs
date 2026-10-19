@@ -12,6 +12,7 @@ using Microsoft.Extensions.Options;
 using NEXORA.Application.Admin;
 using NEXORA.Application.Catalog;
 using NEXORA.Application.Consultation;
+using NEXORA.Application.Commerce;
 using NEXORA.Web.Controllers;
 
 namespace NEXORA.Tests;
@@ -41,6 +42,8 @@ public sealed class AdminLayoutHttpIntegrationTests
         builder.Services.AddSingleton<ICustomerCatalogQueryService, TestCustomerCatalogQueryService>();
         builder.Services.AddSingleton<IAdminDashboardQueryService, TestAdminDashboardQueryService>();
         builder.Services.AddSingleton<IConsultationManagementService, TestConsultationManagementService>();
+        builder.Services.AddSingleton<IAdminPromotionManagementService, TestAdminPromotionManagementService>();
+        builder.Services.AddSingleton<ICartService, TestCartService>();
 
         await using var app = builder.Build();
         app.UseDeveloperExceptionPage();
@@ -132,6 +135,40 @@ public sealed class AdminLayoutHttpIntegrationTests
             Assert.Equal(HttpStatusCode.OK, customerCatalogResponse.StatusCode);
             Assert.Contains("Kết quả cho “laptop”", await customerCatalogResponse.Content.ReadAsStringAsync(), StringComparison.Ordinal);
 
+            using var stockCatalogResponse = await client.GetAsync("/Catalog?testRole=Customer&search=ui-stock-test");
+            var stockCatalogHtml = await stockCatalogResponse.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.OK, stockCatalogResponse.StatusCode);
+            Assert.Contains("Còn hàng", stockCatalogHtml, StringComparison.Ordinal);
+            Assert.Contains("Hết hàng", stockCatalogHtml, StringComparison.Ordinal);
+            Assert.Contains("Chưa có hàng", stockCatalogHtml, StringComparison.Ordinal);
+            Assert.Equal(3, System.Text.RegularExpressions.Regex.Matches(stockCatalogHtml, "data-catalog-cart-add-button").Count);
+            Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(stockCatalogHtml, "data-catalog-cart-add-button[^>]*\\sdisabled(?:\\s|=|>)").Count);
+            Assert.Contains("aria-disabled=\"true\"", stockCatalogHtml, StringComparison.Ordinal);
+            Assert.Contains("aria-disabled=\"false\"", stockCatalogHtml, StringComparison.Ordinal);
+
+            using var outOfStockDetailsResponse = await client.GetAsync("/Catalog/Details/42?testRole=Customer");
+            var outOfStockDetailsHtml = await outOfStockDetailsResponse.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.OK, outOfStockDetailsResponse.StatusCode);
+            Assert.Contains("Hết hàng", outOfStockDetailsHtml, StringComparison.Ordinal);
+            Assert.Contains("Sản phẩm hiện đang hết hàng. Vui lòng quay lại sau.", outOfStockDetailsHtml, StringComparison.Ordinal);
+            Assert.Matches("<input[^>]*id=\"cartQuantity\"[^>]*\\sdisabled(?:\\s|=|>)", outOfStockDetailsHtml);
+            Assert.Matches("<button[^>]*\\sdisabled(?:\\s|=|>)", outOfStockDetailsHtml);
+
+            using var inStockDetailsResponse = await client.GetAsync("/Catalog/Details/43?testRole=Customer");
+            var inStockDetailsHtml = await inStockDetailsResponse.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.OK, inStockDetailsResponse.StatusCode);
+            Assert.Contains("Có thể bán: 3", inStockDetailsHtml, StringComparison.Ordinal);
+            Assert.Contains("max=\"3\"", inStockDetailsHtml, StringComparison.Ordinal);
+            Assert.DoesNotMatch("<input[^>]*id=\"cartQuantity\"[^>]*\\sdisabled(?:\\s|=|>)", inStockDetailsHtml);
+            Assert.DoesNotMatch("<button[^>]*\\sdisabled(?:\\s|=|>)", inStockDetailsHtml);
+
+            using var missingInventoryDetailsResponse = await client.GetAsync("/Catalog/Details/44?testRole=Customer");
+            var missingInventoryDetailsHtml = await missingInventoryDetailsResponse.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.OK, missingInventoryDetailsResponse.StatusCode);
+            Assert.Contains("Chưa có hàng", missingInventoryDetailsHtml, StringComparison.Ordinal);
+            Assert.Matches("<input[^>]*id=\"cartQuantity\"[^>]*\\sdisabled(?:\\s|=|>)", missingInventoryDetailsHtml);
+            Assert.Matches("<button[^>]*\\sdisabled(?:\\s|=|>)", missingInventoryDetailsHtml);
+
             using var adminCompareResponse = await client.GetAsync("/Catalog/Compare?ids=1&ids=2&testRole=Admin");
             Assert.Equal(HttpStatusCode.OK, adminCompareResponse.StatusCode);
             Assert.Contains("So sánh sản phẩm", await adminCompareResponse.Content.ReadAsStringAsync(), StringComparison.Ordinal);
@@ -171,6 +208,18 @@ public sealed class AdminLayoutHttpIntegrationTests
             Assert.Contains("RAM", rulesHtml, StringComparison.Ordinal);
             Assert.DoesNotContain("Dung lượng pin", rulesHtml, StringComparison.Ordinal);
             Assert.Contains("name=\"usageNeedId\"", rulesHtml, StringComparison.Ordinal);
+
+            using var promotionsResponse = await client.GetAsync("/Admin/Promotions");
+            var promotionsHtml = await promotionsResponse.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.OK, promotionsResponse.StatusCode);
+            Assert.Contains("Khuyến mại", promotionsHtml, StringComparison.Ordinal);
+            Assert.Contains("không cộng dồn", promotionsHtml, StringComparison.OrdinalIgnoreCase);
+
+            using var customerPromotionsResponse = await client.GetAsync("/Admin/Promotions?testRole=Customer");
+            Assert.Equal(HttpStatusCode.Forbidden, customerPromotionsResponse.StatusCode);
+
+            using var anonymousPromotionsResponse = await client.GetAsync("/Admin/Promotions?testRole=Anonymous");
+            Assert.Equal(HttpStatusCode.Unauthorized, anonymousPromotionsResponse.StatusCode);
         }
         finally
         {
@@ -242,21 +291,40 @@ public sealed class AdminLayoutHttpIntegrationTests
 
         public Task<CatalogProductPage> SearchAsync(CatalogSearchFilter filter, CancellationToken cancellationToken = default)
         {
-            var items = filter.Search == "ui-product-image-test"
-                ? new CatalogProductCard(1, 1, "Ảnh kiểm thử giao diện", "UI-VISUAL-1", "Laptop", "Demo", 10000000m, null, null, null)
-                {
-                    KeySpecifications = [new CatalogProductSpecification(1, "RAM", "NUMBER", "GB", "16", 16m, null)]
-                }
-                : null;
-            var products = items is null ? Array.Empty<CatalogProductCard>() : [items];
-            return Task.FromResult(new CatalogProductPage(products, [], [], [], null, products.Length, filter.Page, filter.PageSize));
+            CatalogProductCard[] items = filter.Search switch
+            {
+                "ui-product-image-test" =>
+                [
+                    new CatalogProductCard(1, 1, "Ảnh kiểm thử giao diện", "UI-VISUAL-1", "Laptop", "Demo", 10000000m, null, null, null)
+                    {
+                        KeySpecifications = [new CatalogProductSpecification(1, "RAM", "NUMBER", "GB", "16", 16m, null)]
+                    }
+                ],
+                "ui-stock-test" =>
+                [
+                    new CatalogProductCard(2, 1, "Sản phẩm còn hàng", "UI-STOCK-AVAILABLE", "Laptop", "Demo", 10000000m, null, null, null) { AvailableQuantity = 3 },
+                    new CatalogProductCard(3, 1, "Sản phẩm hết hàng", "UI-STOCK-EMPTY", "Laptop", "Demo", 10000000m, null, null, null) { AvailableQuantity = 0 },
+                    new CatalogProductCard(4, 1, "Sản phẩm thiếu Inventory", "UI-STOCK-MISSING", "Laptop", "Demo", 10000000m, null, null, null)
+                ],
+                _ => []
+            };
+            return Task.FromResult(new CatalogProductPage(items, [], [], [], null, items.Length, filter.Page, filter.PageSize));
         }
 
         public Task<CatalogCategoryOption?> GetCategoryAsync(int categoryId, CancellationToken cancellationToken = default) =>
             Task.FromResult<CatalogCategoryOption?>(null);
 
         public Task<CatalogProductDetails?> GetProductAsync(int productId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<CatalogProductDetails?>(null);
+            Task.FromResult<CatalogProductDetails?>(productId switch
+            {
+                42 => new CatalogProductDetails(42, "Sản phẩm hết hàng", "san-pham-het-hang", "UI-STOCK-DETAIL", "Laptop", 1,
+                    "Demo", 10_000_000m, null, "Thông tin kiểm thử", 12, [], []) { AvailableQuantity = 0 },
+                43 => new CatalogProductDetails(43, "Sản phẩm còn hàng", "san-pham-con-hang", "UI-STOCK-DETAIL-2", "Laptop", 1,
+                    "Demo", 10_000_000m, null, "Thông tin kiểm thử", 12, [], []) { AvailableQuantity = 3 },
+                44 => new CatalogProductDetails(44, "Sản phẩm chưa có Inventory", "san-pham-chua-co-inventory", "UI-STOCK-DETAIL-3", "Laptop", 1,
+                    "Demo", 10_000_000m, null, "Thông tin kiểm thử", 12, [], []),
+                _ => null
+            });
 
         public Task<CatalogComparison> CompareAsync(IReadOnlyList<int> productIds, CancellationToken cancellationToken = default) =>
             Task.FromResult(new CatalogComparison([], []));
@@ -301,6 +369,24 @@ public sealed class AdminLayoutHttpIntegrationTests
             Task.FromResult(true);
 
         public Task<bool> SetRecommendationRuleActiveAsync(int id, bool isActive, CancellationToken cancellationToken = default) =>
+            Task.FromResult(true);
+    }
+
+    private sealed class TestAdminPromotionManagementService : IAdminPromotionManagementService
+    {
+        public Task<IReadOnlyList<PromotionAdminRow>> GetPromotionsAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<PromotionAdminRow>>([]);
+
+        public Task<IReadOnlyList<PromotionProductOption>> GetProductsAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<PromotionProductOption>>([]);
+
+        public Task<PromotionAdminForm?> GetPromotionAsync(int id, CancellationToken cancellationToken = default) =>
+            Task.FromResult<PromotionAdminForm?>(null);
+
+        public Task<int> SaveAsync(PromotionAdminForm input, CancellationToken cancellationToken = default) =>
+            Task.FromResult(input.Id ?? 1);
+
+        public Task<bool> SetActiveAsync(int id, bool isActive, CancellationToken cancellationToken = default) =>
             Task.FromResult(true);
     }
 }

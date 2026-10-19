@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace NEXORA.Tests;
 
+[Collection(SqlServerIntegrationCollection.Name)]
 public sealed class ConsultationSqlServerIntegrationTests
 {
     [SqlServerFact]

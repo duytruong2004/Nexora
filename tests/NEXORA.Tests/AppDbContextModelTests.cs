@@ -76,6 +76,9 @@ public sealed class AppDbContextModelTests
         Assert.Contains(order.GetForeignKeys(), foreignKey => foreignKey.Properties.Any(property => property.Name == "UserId"));
         Assert.Contains(relationalModel.Tables.Single(table => table.Name == "orders").CheckConstraints,
             constraint => constraint.Name == "ck_orders_status_valid");
+        Assert.Contains(order.GetIndexes(), index => index.IsUnique &&
+            index.GetFilter() == "[checkout_request_id] IS NOT NULL" &&
+            index.Properties.Select(property => property.Name).SequenceEqual(["CheckoutRequestId"]));
     }
 
     [Fact]

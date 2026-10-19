@@ -6,6 +6,7 @@ using NEXORA.Infrastructure.Persistence;
 
 namespace NEXORA.Tests;
 
+[Collection(SqlServerIntegrationCollection.Name)]
 public sealed class AdminDashboardSqlServerIntegrationTests
 {
     [SqlServerFact]

@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NEXORA.Application.Email;
+using NEXORA.Application.Commerce;
 using NEXORA.Infrastructure.Identity;
 using NEXORA.Web.Controllers;
 
@@ -46,6 +47,7 @@ public sealed class AccountProfileHttpIntegrationTests
             .AddRoleStore<TestRoleStore>()
             .AddSignInManager();
         builder.Services.AddSingleton<TestIdentityData>();
+        builder.Services.AddSingleton<ICartService, TestCartService>();
         builder.Services.AddSingleton<IEmailSender, TestEmailSender>();
         builder.Services
             .AddControllersWithViews()

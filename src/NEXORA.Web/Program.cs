@@ -3,6 +3,7 @@ using System.Globalization;
 using NEXORA.Application.Catalog;
 using NEXORA.Application.Email;
 using NEXORA.Application.Consultation;
+using NEXORA.Application.Commerce;
 using NEXORA.Domain.Security;
 using NEXORA.Infrastructure;
 using NEXORA.Infrastructure.Identity;
@@ -111,21 +112,36 @@ if (app.Environment.IsDevelopment() && !commandArguments.IsRequested)
     await demoSeeder.SeedAsync(app.Lifetime.ApplicationStopping);
     var consultationSeeder = scope.ServiceProvider.GetRequiredService<IConsultationDemoSeeder>();
     await consultationSeeder.SeedAsync(app.Lifetime.ApplicationStopping);
+    if (DevelopmentInventoryProvisioningCommand.TargetsDevelopmentDatabase(connectionString))
+    {
+        var inventorySeeder = scope.ServiceProvider.GetRequiredService<IDevelopmentInventorySeeder>();
+        await inventorySeeder.SeedMissingAsync(app.Lifetime.ApplicationStopping);
+    }
+    else
+    {
+        app.Logger.LogWarning("Development inventory seed skipped because the configured target is not PC01\\SQLEXPRESS / NEXORA.");
+    }
 }
 
 if (commandArguments.IsRequested)
 {
     if (!app.Environment.IsDevelopment())
     {
-        app.Logger.LogCritical("Admin provisioning is available only in the Development environment.");
+        app.Logger.LogCritical("Development provisioning commands are available only in the Development environment.");
         Environment.ExitCode = 1;
         return;
     }
 
-    Environment.ExitCode = await DevelopmentAdminProvisioningCommand.ExecuteAsync(
-        app.Services,
-        app.Logger,
-        app.Lifetime.ApplicationStopping);
+    Environment.ExitCode = commandArguments.IsDevelopmentInventorySeedRequested
+        ? await DevelopmentInventoryProvisioningCommand.ExecuteAsync(
+            app.Services,
+            connectionString,
+            app.Logger,
+            app.Lifetime.ApplicationStopping)
+        : await DevelopmentAdminProvisioningCommand.ExecuteAsync(
+            app.Services,
+            app.Logger,
+            app.Lifetime.ApplicationStopping);
     return;
 }
 

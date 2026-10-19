@@ -58,6 +58,11 @@ public sealed class ProductManagementService(AppDbContext db) : IProductManageme
                 product.Price,
                 product.DiscountPrice,
                 product.Status,
+                product.Inventory == null ? (int?)null : product.Inventory.QuantityInStock,
+                product.Inventory == null ? (int?)null : product.Inventory.ReservedQuantity,
+                product.Inventory == null
+                    ? (int?)null
+                    : product.Inventory.QuantityInStock - product.Inventory.ReservedQuantity,
                 product.Images.Where(image => image.IsPrimary)
                     .Select(image => image.ImageUrl)
                     .FirstOrDefault()))
@@ -219,11 +224,17 @@ public sealed class ProductManagementService(AppDbContext db) : IProductManageme
         if (input.Id is null)
         {
             product.CreatedAt = product.UpdatedAt;
+            product.Inventory = new Inventory
+            {
+                UpdatedAt = product.UpdatedAt
+            };
             db.Products.Add(product);
         }
 
         try
         {
+            // Product and Inventory are inserted by this single SaveChanges call; EF Core
+            // uses one database transaction for the graph so neither row can persist alone.
             await db.SaveChangesAsync(cancellationToken);
         }
         catch (DbUpdateException exception) when (exception.GetBaseException() is SqlException { Number: 2601 or 2627 })

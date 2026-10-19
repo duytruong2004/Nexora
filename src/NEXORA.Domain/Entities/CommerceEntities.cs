@@ -35,6 +35,7 @@ public static class OrderStatuses
 public sealed class Order
 {
     public int Id { get; set; }
+    public Guid? CheckoutRequestId { get; set; }
     public int UserId { get; set; }
     public string CustomerName { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;

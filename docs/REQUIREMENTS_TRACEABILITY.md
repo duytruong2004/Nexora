@@ -202,7 +202,22 @@ Kiểm thử trên browser không thay thế unit tests hoặc HTTP smoke. Số 
 | TC-NLP09 / NFR01 | Web consultation endpoint | 5 request warmed, avg 15 ms/max 17 ms, 11 products | Đo cục bộ; không phải benchmark production/load |
 | Admin quản lý `usage_needs`/`recommendation_rules` | Admin Consultation MVC/service | Browser Admin create/edit; rule validation, toggle/edit checkbox, đổi weight và kiểm tra rank; SQL CRUD integration; anonymous HTTP 302 | Customer session và nút “Bật” qua automation chưa xác minh dứt điểm; responsive còn manual |
 
-## 10. Ghi chú về phạm vi Use Case
+## 10. Truy vết triển khai Phase 4
+
+| Yêu cầu | Module | Trạng thái Phase 4 |
+|---|---|---|
+| FR13 / UC-C11 | Cart – `carts`, `cart_items`, `products`, `inventories` | Implemented; unit + SQL integration đạt thêm/cộng/update/remove, ownership, live stock/promotion; Catalog và Cart user-confirmed manual PASS (2026-10-19) |
+| FR14 / UC-C12 | Checkout, Order Pricing, Inventory Reservation – `orders`, `order_details`, `inventories`, `inventory_transactions` | SQL Server integration đạt reservation transaction, concurrency, idempotent replay và snapshot; Checkout user-confirmed manual PASS (2026-10-19) |
+| FR15 / UC-C13 | My Orders – `orders`, `order_details` | SQL ownership xác nhận chủ đơn đọc được list/detail; user khác nhận null/NotFound. Danh sách/chi tiết user-confirmed manual PASS (2026-10-19) |
+| FR16 / UC-C14, BR01 | Order Cancellation, Inventory Release | SQL integration đạt chỉ owner hủy PENDING; hủy lặp bị từ chối và chỉ tạo một `RELEASE`. Hủy đơn user-confirmed manual PASS (2026-10-19) |
+| BR03 | Inventory availability/concurrency | Rowversion + CHECK + serializable transaction/retry; SQL race test đạt một order và một `InsufficientStock`; Catalog/tồn user-confirmed manual PASS (2026-10-19) |
+| BR10 | Promotion calculation | Mức giảm lớn nhất, không cộng dồn; fixed amount một lần/dòng. Unit + SQL pricing và Admin create/toggle đạt; Admin Promotions user-confirmed manual PASS (2026-10-19) |
+| BR11–BR12 | Order snapshot/pricing | SQL snapshot/đổi giá regression đạt: `Product.Price` đổi nhưng `OrderDetail.UnitPrice` cũ được giữ; Checkout/đơn user-confirmed manual PASS (2026-10-19) |
+| Idempotency | `orders.checkout_request_id` + `ux_orders_checkout_request_id` | Migration `20261016133620_AddCheckoutRequestId` áp dụng trên `NEXORA_IntegrationTests` và Development `NEXORA`; cùng request của owner trả lại OrderId, không tạo đơn trùng |
+
+Không có bảng nghiệp vụ mới. `NEXORA` và `NEXORA_IntegrationTests` đều ghi nhận `20261015173046_InitialFoundation` cùng `20261016133620_AddCheckoutRequestId`; mỗi database giữ nguyên tổng 27 bảng vật lý (22 bảng chính thức, 4 bảng Identity và migration history). Migration thêm một nullable column và unique filtered index. EF Core xác nhận model không có pending drift. Read-only verification ngày 2026-10-19 xác nhận history, cột `uniqueidentifier NULL` và unique filtered index trên cả hai database. Chủ dự án xác nhận Manual UAT 6/6 PASS ngày 2026-10-19: Catalog/tồn, Cart, Checkout, Orders/hủy, Admin Promotions, responsive desktop/tablet/mobile. Đây là xác nhận của người dùng; Codex không chạy browser automation và không tạo ảnh kiểm thử. **Phase 4: COMPLETED.**
+
+## 11. Ghi chú về phạm vi Use Case
 
 - Danh mục Use Case trong tài liệu có 46 UC; mã được dùng xuyên suốt đặc tả và sơ đồ.
 - FR18 và FR26 yêu cầu nhân viên đăng nhập nhưng danh mục UC không có UC đăng nhập riêng cho Sales/Warehouse. Ma trận giữ nguyên danh mục gốc và liên kết hai FR với module xác thực dùng chung, không tạo mã UC mới.

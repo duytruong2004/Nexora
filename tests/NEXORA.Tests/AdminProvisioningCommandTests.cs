@@ -19,7 +19,30 @@ public sealed class AdminProvisioningCommandTests
         var parsed = ProvisioningCommandArguments.Parse(["--provision-admin"]);
 
         Assert.True(parsed.IsRequested);
+        Assert.False(parsed.IsDevelopmentInventorySeedRequested);
         Assert.Empty(parsed.HostArguments);
+    }
+
+    [Fact]
+    public void Parse_DevelopmentInventorySeedCommandConsumesOnlyTheStandaloneCommand()
+    {
+        var parsed = ProvisioningCommandArguments.Parse(["--seed-development-inventory"]);
+
+        Assert.True(parsed.IsRequested);
+        Assert.True(parsed.IsDevelopmentInventorySeedRequested);
+        Assert.Empty(parsed.HostArguments);
+    }
+
+    [Fact]
+    public void DevelopmentInventoryCommand_OnlyAcceptsTheConfiguredDevelopmentDatabase()
+    {
+        Assert.True(DevelopmentInventoryProvisioningCommand.TargetsDevelopmentDatabase(
+            "Server=PC01\\SQLEXPRESS;Database=NEXORA;Integrated Security=True;TrustServerCertificate=True"));
+        Assert.False(DevelopmentInventoryProvisioningCommand.TargetsDevelopmentDatabase(
+            "Server=PC01\\SQLEXPRESS;Database=NEXORA_IntegrationTests;Integrated Security=True"));
+        Assert.False(DevelopmentInventoryProvisioningCommand.TargetsDevelopmentDatabase(
+            "Server=OTHER\\SQLEXPRESS;Database=NEXORA;Integrated Security=True"));
+        Assert.False(DevelopmentInventoryProvisioningCommand.TargetsDevelopmentDatabase("not a connection string"));
     }
 
     [Fact]

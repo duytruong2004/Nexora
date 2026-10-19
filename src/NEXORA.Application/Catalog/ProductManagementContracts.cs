@@ -29,6 +29,9 @@ public sealed record ProductAdminRow(
     decimal Price,
     decimal? DiscountPrice,
     string Status,
+    int? QuantityInStock,
+    int? ReservedQuantity,
+    int? AvailableQuantity,
     string? PrimaryImageUrl);
 
 public sealed record ProductAdminPage(

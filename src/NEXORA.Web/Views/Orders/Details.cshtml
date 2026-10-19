@@ -1,0 +1,50 @@
+@model NEXORA.Application.Commerce.OrderDetailView
+@{
+    ViewData["Title"] = $"Đơn hàng #{Model.Id}";
+}
+
+<section class="page-heading mb-4">
+    <p class="text-uppercase small fw-semibold text-primary mb-2">NEXORA · Đơn hàng của tôi</p>
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+        <div><h1 class="display-6 fw-bold mb-2">Đơn hàng #@Model.Id</h1><p class="text-secondary mb-0">Đặt lúc @Model.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p></div>
+        <span class="badge rounded-pill fs-6 @(Model.Status == "PENDING" ? "text-bg-warning" : Model.Status == "CANCELLED" ? "text-bg-secondary" : Model.Status == "COMPLETED" ? "text-bg-success" : "text-bg-primary")">@Model.Status</span>
+    </div>
+</section>
+
+<div class="row g-4 align-items-start">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm overflow-hidden">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light"><tr><th>Sản phẩm</th><th class="text-center">SL</th><th class="text-end">Đơn giá</th><th class="text-end">Giảm</th><th class="text-end">Thành tiền</th></tr></thead>
+                    <tbody>
+                    @foreach (var line in Model.Lines)
+                    {
+                        <tr><td>@line.ProductName</td><td class="text-center">@line.Quantity</td><td class="text-end text-nowrap">@line.UnitPrice.ToString("N0") ₫</td><td class="text-end text-nowrap">@line.DiscountAmount.ToString("N0") ₫</td><td class="text-end fw-semibold text-nowrap">@line.TotalPrice.ToString("N0") ₫</td></tr>
+                    }
+                    </tbody>
+                    <tfoot><tr><th colspan="4" class="text-end">Tổng đơn hàng</th><th class="text-end text-primary text-nowrap">@Model.TotalAmount.ToString("N0") ₫</th></tr></tfoot>
+                </table>
+            </div>
+        </div>
+        @if (Model.CanCancel)
+        {
+            <form asp-action="Cancel" method="post" class="card border-0 shadow-sm p-4 mt-4" onsubmit="return confirm('Bạn có chắc muốn hủy đơn hàng này?');">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <label for="reason" class="form-label">Lý do hủy (không bắt buộc)</label>
+                <textarea id="reason" name="reason" class="form-control mb-3" maxlength="1000" rows="2"></textarea>
+                <button class="btn btn-outline-danger align-self-start" type="submit">Hủy đơn hàng</button>
+            </form>
+        }
+    </div>
+    <div class="col-lg-4">
+        <section class="card border-0 shadow-sm p-4" aria-labelledby="delivery-title">
+            <h2 id="delivery-title" class="h5 mb-3">Thông tin nhận hàng</h2>
+            <dl class="mb-0"><dt class="small text-secondary">Người nhận</dt><dd>@Model.CustomerName</dd><dt class="small text-secondary">Số điện thoại</dt><dd>@Model.Phone</dd><dt class="small text-secondary">Địa chỉ</dt><dd>@Model.ShippingAddress</dd>
+            @if (!string.IsNullOrWhiteSpace(Model.Note)) { <dt class="small text-secondary">Ghi chú</dt><dd>@Model.Note</dd> }
+            @if (Model.CancelledAt is not null) { <dt class="small text-secondary">Đã hủy lúc</dt><dd>@Model.CancelledAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd> }
+            @if (!string.IsNullOrWhiteSpace(Model.CancelReason)) { <dt class="small text-secondary">Lý do hủy</dt><dd>@Model.CancelReason</dd> }</dl>
+        </section>
+    </div>
+</div>

@@ -2,7 +2,7 @@
     const form = document.getElementById('compareSelectionForm');
     if (!form) return;
 
-    const checkboxes = [...form.querySelectorAll('.compare-product')];
+    const checkboxes = [...document.querySelectorAll('.compare-product[form="compareSelectionForm"]')];
     const submit = document.getElementById('compareSelectionSubmit');
     const status = document.getElementById('compareSelectionStatus');
 

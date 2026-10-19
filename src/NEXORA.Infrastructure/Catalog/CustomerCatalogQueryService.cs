@@ -86,6 +86,7 @@ public sealed class CustomerCatalogQueryService(AppDbContext db) : ICustomerCata
     {
         var product = await VisibleProducts()
             .Where(item => item.Id == productId)
+            .AsSplitQuery()
             .Select(item => new
             {
                 item.Id,
@@ -99,6 +100,9 @@ public sealed class CustomerCatalogQueryService(AppDbContext db) : ICustomerCata
                 item.DiscountPrice,
                 item.Description,
                 item.WarrantyMonths,
+                AvailableQuantity = item.Inventory == null
+                    ? (int?)null
+                    : item.Inventory.QuantityInStock - item.Inventory.ReservedQuantity,
                 Images = item.Images.OrderByDescending(image => image.IsPrimary)
                     .ThenBy(image => image.SortOrder)
                     .Select(image => new ProductImageItem(image.Id, image.ImageUrl, image.IsPrimary, image.SortOrder))
@@ -133,7 +137,10 @@ public sealed class CustomerCatalogQueryService(AppDbContext db) : ICustomerCata
                 product.Description,
                 product.WarrantyMonths,
                 product.Images,
-                product.Specifications);
+                product.Specifications)
+            {
+                AvailableQuantity = product.AvailableQuantity
+            };
     }
 
     public async Task<CatalogComparison> CompareAsync(
@@ -300,6 +307,9 @@ public sealed class CustomerCatalogQueryService(AppDbContext db) : ICustomerCata
                 .FirstOrDefault(),
             product.Description)
         {
+            AvailableQuantity = product.Inventory == null
+                ? (int?)null
+                : product.Inventory.QuantityInStock - product.Inventory.ReservedQuantity,
             KeySpecifications = product.Specifications
                 .Where(value => value.Specification.IsActive)
                 .OrderBy(value => value.Specification.Name)
