@@ -4,6 +4,7 @@ using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +14,7 @@ using NEXORA.Application.Admin;
 using NEXORA.Application.Catalog;
 using NEXORA.Application.Consultation;
 using NEXORA.Application.Commerce;
+using NEXORA.Domain.Entities;
 using NEXORA.Web.Controllers;
 
 namespace NEXORA.Tests;
@@ -44,6 +46,12 @@ public sealed class AdminLayoutHttpIntegrationTests
         builder.Services.AddSingleton<IConsultationManagementService, TestConsultationManagementService>();
         builder.Services.AddSingleton<IAdminPromotionManagementService, TestAdminPromotionManagementService>();
         builder.Services.AddSingleton<ICartService, TestCartService>();
+        builder.Services.AddSingleton<ISalesOrderManagementService, TestSalesOrderManagementService>();
+        builder.Services.AddSingleton<IOrderCancellationReviewService, TestCancellationReviewService>();
+        builder.Services.AddIdentityCore<NEXORA.Infrastructure.Identity.AppUser>()
+            .AddUserStore<TestAppUserStore>();
+        builder.Services.AddSingleton<TestCustomerOrderService>();
+        builder.Services.AddSingleton<ICustomerOrderService>(services => services.GetRequiredService<TestCustomerOrderService>());
 
         await using var app = builder.Build();
         app.UseDeveloperExceptionPage();
@@ -74,6 +82,8 @@ public sealed class AdminLayoutHttpIntegrationTests
             Assert.Contains("Quản lý cửa hàng từ một nơi", html, StringComparison.Ordinal);
             Assert.Contains("Quy tắc xếp hạng", html, StringComparison.Ordinal);
             Assert.Contains("Thông số kỹ thuật", html, StringComparison.Ordinal);
+            Assert.Contains("href=\"/Admin/Orders", html, StringComparison.Ordinal);
+            Assert.Contains(">Đơn hàng</span>", html, StringComparison.Ordinal);
             Assert.Contains("Tổng sản phẩm</span><strong>123</strong>", html, StringComparison.Ordinal);
             Assert.Contains("Đang kinh doanh</span><strong>117</strong>", html, StringComparison.Ordinal);
             Assert.Contains("Danh mục</span><strong>45</strong>", html, StringComparison.Ordinal);
@@ -130,6 +140,11 @@ public sealed class AdminLayoutHttpIntegrationTests
             Assert.Equal(HttpStatusCode.OK, customerHomeResponse.StatusCode);
             AssertCommonNavigation(customerHomeHtml);
             Assert.DoesNotContain("href=\"/workspace/Admin\">Quản trị</a>", customerHomeHtml, StringComparison.Ordinal);
+
+            using var salesHomeResponse = await client.GetAsync("/?testRole=Sales");
+            var salesHomeHtml = await salesHomeResponse.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.OK, salesHomeResponse.StatusCode);
+            Assert.Contains("href=\"/Sales/Orders\">Quản lý đơn</a>", salesHomeHtml, StringComparison.Ordinal);
 
             using var customerCatalogResponse = await client.GetAsync("/Catalog?testRole=Customer&search=laptop");
             Assert.Equal(HttpStatusCode.OK, customerCatalogResponse.StatusCode);
@@ -220,6 +235,79 @@ public sealed class AdminLayoutHttpIntegrationTests
 
             using var anonymousPromotionsResponse = await client.GetAsync("/Admin/Promotions?testRole=Anonymous");
             Assert.Equal(HttpStatusCode.Unauthorized, anonymousPromotionsResponse.StatusCode);
+
+            using var adminOrdersResponse = await client.GetAsync("/Admin/Orders?testRole=Admin");
+            var adminOrdersHtml = await adminOrdersResponse.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.OK, adminOrdersResponse.StatusCode);
+            Assert.Contains("Đơn hàng", adminOrdersHtml, StringComparison.Ordinal);
+            Assert.Contains("Giám sát bán hàng", adminOrdersHtml, StringComparison.Ordinal);
+            using var adminOrderDetailsResponse = await client.GetAsync("/Admin/Orders/Details/701?testRole=Admin");
+            Assert.Equal(HttpStatusCode.OK, adminOrderDetailsResponse.StatusCode);
+            var adminOrderDetailsHtml = await adminOrderDetailsResponse.Content.ReadAsStringAsync();
+            Assert.Contains("Xác nhận đơn", adminOrderDetailsHtml, StringComparison.Ordinal);
+            Assert.Contains("Yêu cầu hủy", adminOrderDetailsHtml, StringComparison.Ordinal);
+            Assert.Contains("name=\"__RequestVerificationToken\"", adminOrderDetailsHtml, StringComparison.Ordinal);
+
+            using var customerOrderDetailsResponse = await client.GetAsync("/Orders/Details/701?testRole=Customer");
+            var customerOrderDetailsHtml = await customerOrderDetailsResponse.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.OK, customerOrderDetailsResponse.StatusCode);
+            Assert.Contains("Gửi yêu cầu hủy", customerOrderDetailsHtml, StringComparison.Ordinal);
+            Assert.Contains("name=\"RequestId\"", customerOrderDetailsHtml, StringComparison.Ordinal);
+            var antiforgeryToken = System.Text.RegularExpressions.Regex.Match(
+                customerOrderDetailsHtml,
+                "name=\\\"__RequestVerificationToken\\\" type=\\\"hidden\\\" value=\\\"([^\\\"]+)\\\"");
+            var cancellationRequestId = System.Text.RegularExpressions.Regex.Match(
+                customerOrderDetailsHtml,
+                "name=\\\"RequestId\\\" value=\\\"([^\\\"]+)\\\"");
+            Assert.True(antiforgeryToken.Success, "The customer cancellation form must render an antiforgery token.");
+            Assert.True(cancellationRequestId.Success, "The customer form must render a stable request id.");
+            using var cancellationPost = await client.PostAsync("/Orders/RequestCancellation/701?testRole=Customer",
+                new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    ["__RequestVerificationToken"] = antiforgeryToken.Groups[1].Value,
+                    ["RequestId"] = cancellationRequestId.Groups[1].Value,
+                    ["Reason"] = "HTTP QA cancellation request"
+                }));
+            Assert.Equal(HttpStatusCode.Redirect, cancellationPost.StatusCode);
+            Assert.Equal(12, app.Services.GetRequiredService<TestCustomerOrderService>().LastRequestUserId);
+            Assert.Equal("HTTP QA cancellation request", app.Services.GetRequiredService<TestCustomerOrderService>().LastRequestReason);
+            using var customerOtherOrderResponse = await client.GetAsync("/Orders/Details/702?testRole=Customer");
+            Assert.Equal(HttpStatusCode.NotFound, customerOtherOrderResponse.StatusCode);
+
+            using var customerAdminOrdersResponse = await client.GetAsync("/Admin/Orders?testRole=Customer");
+            Assert.Equal(HttpStatusCode.Forbidden, customerAdminOrdersResponse.StatusCode);
+            using var customerAdminCancellationReviewResponse = await client.PostAsync(
+                "/Admin/Orders/ReviewCancellation/701?testRole=Customer&decision=approve",
+                new FormUrlEncodedContent([]));
+            Assert.Equal(HttpStatusCode.Forbidden, customerAdminCancellationReviewResponse.StatusCode);
+
+            using var salesOrdersResponse = await client.GetAsync("/Sales/Orders?testRole=Sales");
+            var salesOrdersHtml = await salesOrdersResponse.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.OK, salesOrdersResponse.StatusCode);
+            Assert.Contains("Không gian Sales", salesOrdersHtml, StringComparison.Ordinal);
+            Assert.Contains("NEXORA QA Sales Order", salesOrdersHtml, StringComparison.Ordinal);
+            Assert.Contains("nexora-navbar", salesOrdersHtml, StringComparison.Ordinal);
+            Assert.Contains("href=\"/Sales/Orders/Details/701\"", salesOrdersHtml, StringComparison.Ordinal);
+
+            using var salesWorkspaceResponse = await client.GetAsync("/workspace/Sales?testRole=Sales");
+            Assert.Equal(HttpStatusCode.Redirect, salesWorkspaceResponse.StatusCode);
+            Assert.EndsWith("/Sales/Orders", salesWorkspaceResponse.Headers.Location?.OriginalString, StringComparison.OrdinalIgnoreCase);
+
+            using var salesDetailResponse = await client.GetAsync("/Sales/Orders/Details/701?testRole=Sales");
+            var salesDetailHtml = await salesDetailResponse.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.OK, salesDetailResponse.StatusCode);
+            Assert.Contains("Xác nhận đơn", salesDetailHtml, StringComparison.Ordinal);
+            Assert.Contains("name=\"__RequestVerificationToken\"", salesDetailHtml, StringComparison.Ordinal);
+
+            using var customerSalesOrdersResponse = await client.GetAsync("/Sales/Orders?testRole=Customer");
+            Assert.Equal(HttpStatusCode.Forbidden, customerSalesOrdersResponse.StatusCode);
+            using var warehouseSalesCancellationReviewResponse = await client.PostAsync(
+                "/Sales/Orders/ReviewCancellation/701?testRole=Warehouse&decision=approve",
+                new FormUrlEncodedContent([]));
+            Assert.Equal(HttpStatusCode.Forbidden, warehouseSalesCancellationReviewResponse.StatusCode);
+
+            using var customerSalesMutationResponse = await client.PostAsync("/Sales/Orders/Confirm/701?testRole=Customer", content: null);
+            Assert.Equal(HttpStatusCode.Forbidden, customerSalesMutationResponse.StatusCode);
         }
         finally
         {
@@ -229,6 +317,16 @@ public sealed class AdminLayoutHttpIntegrationTests
 
     private static string FindWebProjectRoot()
     {
+        var configuredRepositoryRoot = Environment.GetEnvironmentVariable("NEXORA_REPOSITORY_ROOT");
+        if (!string.IsNullOrWhiteSpace(configuredRepositoryRoot))
+        {
+            var configuredProjectRoot = Path.Combine(configuredRepositoryRoot, "src", "NEXORA.Web");
+            if (File.Exists(Path.Combine(configuredProjectRoot, "NEXORA.Web.csproj")))
+            {
+                return configuredProjectRoot;
+            }
+        }
+
         foreach (var start in new[] { AppContext.BaseDirectory, Directory.GetCurrentDirectory() })
         {
             var current = new DirectoryInfo(start);
@@ -273,7 +371,7 @@ public sealed class AdminLayoutHttpIntegrationTests
             selectedRole = string.IsNullOrWhiteSpace(selectedRole) ? "Admin" : selectedRole;
             var identity = new ClaimsIdentity(
             [
-                new Claim(ClaimTypes.NameIdentifier, "admin-layout-test-only"),
+                new Claim(ClaimTypes.NameIdentifier, string.Equals(selectedRole, "Customer", StringComparison.OrdinalIgnoreCase) ? "12" : "4"),
                 new Claim(ClaimTypes.Name, "Admin UI Test"),
                 new Claim(ClaimTypes.Role, selectedRole)
             ],
@@ -282,6 +380,126 @@ public sealed class AdminLayoutHttpIntegrationTests
             return Task.FromResult(AuthenticateResult.Success(
                 new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme.Name)));
         }
+    }
+
+    private sealed class TestSalesOrderManagementService : ISalesOrderManagementService
+    {
+        private static StaffOrderDetail Detail { get; } = new(
+            701,
+            12,
+            new DateTime(2026, 10, 20, 10, 0, 0, DateTimeKind.Utc),
+            OrderStatuses.Pending,
+            "NEXORA QA Sales Order",
+            "0000000000",
+            "QA address",
+            null,
+            4,
+            new DateTime(2026, 10, 20, 10, 5, 0, DateTimeKind.Utc),
+            null,
+            null,
+            null,
+            1_000m,
+            [new StaffOrderDetailLine(7, "QA snapshot product", 1, 1_000m, 0m, 1_000m)])
+        {
+            CancelRequestStatus = OrderCancellationRequestStatuses.Pending,
+            CancelRequestReason = "HTTP view-only cancellation fixture",
+            CancelRequestId = Guid.NewGuid(),
+            CancelRequestedAt = new DateTime(2026, 10, 20, 10, 10, 0, DateTimeKind.Utc)
+        };
+
+        public Task<StaffOrderPage> SearchAsync(StaffOrderFilter filter, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new StaffOrderPage(
+                [new StaffOrderListItem(701, Detail.OrderDate, Detail.Status, Detail.CustomerName, Detail.Phone, Detail.TotalAmount, 1)],
+                1,
+                Math.Max(1, filter.Page),
+                25));
+
+        public Task<StaffOrderDetail?> GetAsync(int orderId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<StaffOrderDetail?>(orderId == Detail.Id ? Detail : null);
+
+        public Task<OrderTransitionResult> TransitionAsync(
+            int orderId,
+            int actorUserId,
+            OrderWorkflowAction action,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new OrderTransitionResult(orderId == Detail.Id
+                ? OrderTransitionFailure.None
+                : OrderTransitionFailure.NotFound));
+    }
+
+    private sealed class TestCancellationReviewService : IOrderCancellationReviewService
+    {
+        public Task<CancellationReviewResult> ReviewAsync(
+            int orderId,
+            int reviewerUserId,
+            bool approve,
+            string? decisionNote,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new CancellationReviewResult(CancellationReviewFailure.None,
+                approve ? OrderCancellationRequestStatuses.Approved : OrderCancellationRequestStatuses.Rejected));
+    }
+
+    private sealed class TestCustomerOrderService : ICustomerOrderService
+    {
+        public int? LastRequestUserId { get; private set; }
+        public string? LastRequestReason { get; private set; }
+
+        public Task<IReadOnlyList<OrderListItem>> GetOrdersAsync(int userId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<OrderListItem>>([]);
+
+        public Task<OrderDetailView?> GetOrderAsync(int userId, int orderId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<OrderDetailView?>(userId == 12 && orderId == 701
+                ? new OrderDetailView(
+                    701,
+                    new DateTime(2026, 10, 20, 10, 0, 0, DateTimeKind.Utc),
+                    OrderStatuses.Confirmed,
+                    "NEXORA HTTP QA Customer",
+                    "0000000000",
+                    "QA address",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    1_000m,
+                    [new OrderDetailLine(7, "QA snapshot", 1, 1_000m, 0m, 1_000m)])
+                : null);
+
+        public Task<CancelOrderResult> CancelAsync(int userId, int orderId, string? reason, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new CancelOrderResult(CancelOrderFailure.None));
+
+        public Task<CustomerCancellationResult> RequestCancellationAsync(
+            int userId,
+            int orderId,
+            Guid requestId,
+            string? reason,
+            CancellationToken cancellationToken = default)
+        {
+            LastRequestUserId = userId;
+            LastRequestReason = reason;
+            return Task.FromResult(new CustomerCancellationResult(
+                CustomerCancellationFailure.None,
+                OrderCancellationRequestStatuses.Pending,
+                OrderStatuses.Confirmed));
+        }
+    }
+
+    private sealed class TestAppUserStore : IUserStore<NEXORA.Infrastructure.Identity.AppUser>
+    {
+        public Task<IdentityResult> CreateAsync(NEXORA.Infrastructure.Identity.AppUser user, CancellationToken cancellationToken) => Task.FromResult(IdentityResult.Success);
+        public Task<IdentityResult> UpdateAsync(NEXORA.Infrastructure.Identity.AppUser user, CancellationToken cancellationToken) => Task.FromResult(IdentityResult.Success);
+        public Task<IdentityResult> DeleteAsync(NEXORA.Infrastructure.Identity.AppUser user, CancellationToken cancellationToken) => Task.FromResult(IdentityResult.Success);
+        public Task<NEXORA.Infrastructure.Identity.AppUser?> FindByIdAsync(string userId, CancellationToken cancellationToken) => Task.FromResult<NEXORA.Infrastructure.Identity.AppUser?>(null);
+        public Task<NEXORA.Infrastructure.Identity.AppUser?> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken) => Task.FromResult<NEXORA.Infrastructure.Identity.AppUser?>(null);
+        public Task<string> GetUserIdAsync(NEXORA.Infrastructure.Identity.AppUser user, CancellationToken cancellationToken) => Task.FromResult(user.Id.ToString());
+        public Task<string?> GetUserNameAsync(NEXORA.Infrastructure.Identity.AppUser user, CancellationToken cancellationToken) => Task.FromResult(user.UserName);
+        public Task SetUserNameAsync(NEXORA.Infrastructure.Identity.AppUser user, string? userName, CancellationToken cancellationToken) { user.UserName = userName; return Task.CompletedTask; }
+        public Task<string?> GetNormalizedUserNameAsync(NEXORA.Infrastructure.Identity.AppUser user, CancellationToken cancellationToken) => Task.FromResult(user.NormalizedUserName);
+        public Task SetNormalizedUserNameAsync(NEXORA.Infrastructure.Identity.AppUser user, string? normalizedName, CancellationToken cancellationToken) { user.NormalizedUserName = normalizedName; return Task.CompletedTask; }
+        public void Dispose() { }
     }
 
     private sealed class TestCustomerCatalogQueryService : ICustomerCatalogQueryService

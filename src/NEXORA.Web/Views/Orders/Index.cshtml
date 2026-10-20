@@ -31,7 +31,13 @@ else
                         <td class="fw-semibold">#@order.Id</td>
                         <td>@order.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
                         <td>@order.ProductCount</td>
-                        <td><span class="badge rounded-pill @StatusClass(order.Status)">@StatusLabel(order.Status)</span></td>
+                        <td>
+                            <span class="badge rounded-pill @StatusClass(order.Status)">@StatusLabel(order.Status)</span>
+                            @if (order.CancelRequestStatus is not null)
+                            {
+                                <span class="badge rounded-pill @CancellationRequestPresentation.BadgeClass(order.CancelRequestStatus)">@CancellationRequestPresentation.Label(order.CancelRequestStatus)</span>
+                            }
+                        </td>
                         <td class="text-end fw-semibold text-nowrap">@order.TotalAmount.ToString("N0") ₫</td>
                         <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@order.Id">Xem chi tiết</a></td>
                     </tr>

@@ -1,0 +1,103 @@
+@model WarehouseOrderDetailsViewModel
+@{
+    ViewData["Title"] = $"Chuẩn bị đơn #{Model.Order.OrderId}";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <p class="text-uppercase small fw-semibold text-primary mb-1">Warehouse · Chuẩn bị hàng</p>
+        <h1 class="h2 mb-1">Đơn hàng #@Model.Order.OrderId</h1>
+        <span class="badge @OrderStatusPresentation.BadgeClass(Model.Order.Status)">@OrderStatusPresentation.Label(Model.Order.Status)</span>
+    </div>
+    <a class="btn btn-outline-secondary" asp-area="Warehouse" asp-controller="Orders" asp-action="Index">Quay lại hàng đợi</a>
+</div>
+
+@if (Model.Order.CancellationRequestStatus == "PENDING")
+{
+    <div class="alert alert-warning" role="alert">
+        <strong>Yêu cầu hủy đang chờ xử lý.</strong>
+        Kho có thể tiếp tục chuẩn bị, nhưng hệ thống sẽ từ chối xuất kho cho đến khi Sales/Admin từ chối yêu cầu.
+        <div class="mt-1">Lý do: @Model.Order.CancellationRequestReason</div>
+    </div>
+}
+else if (Model.Order.CancellationRequestStatus == "REJECTED")
+{
+    <div class="alert alert-info" role="status">Yêu cầu hủy đã bị từ chối. Đơn tiếp tục quy trình chuẩn bị kho.</div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <h2 class="h5 mb-0">Danh sách cần soạn</h2>
+                <span class="small text-secondary">@Model.Order.Lines.Count dòng hàng</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light"><tr><th>Sản phẩm / SKU</th><th class="text-end">SL đơn</th><th class="text-end">Tồn thực tế</th><th class="text-end">Đang giữ</th><th class="text-end">Giữ cho đơn</th><th class="text-end">Có thể bán</th></tr></thead>
+                    <tbody>
+                    @foreach (var line in Model.Order.Lines)
+                    {
+                        <tr>
+                            <td><span class="fw-semibold">@line.ProductName</span><small class="d-block text-secondary">SKU: @line.Sku</small></td>
+                            <td class="text-end fw-semibold">@line.Quantity</td>
+                            <td class="text-end">@(line.QuantityInStock?.ToString() ?? "Thiếu tồn kho")</td>
+                            <td class="text-end">@(line.ReservedQuantity?.ToString() ?? "—")</td>
+                            <td class="text-end">@(line.ReservedForThisOrder?.ToString() ?? "—")</td>
+                            <td class="text-end">@(line.AvailableQuantity?.ToString() ?? "—")</td>
+                        </tr>
+                    }
+                    @if (Model.Order.Lines.Count == 0)
+                    {
+                        <tr><td colspan="6" class="text-center text-secondary py-4">Đơn chưa có dòng sản phẩm hợp lệ.</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer bg-white small text-secondary">Số “Đang giữ” là tổng reservation của sản phẩm; “Giữ cho đơn” được đối chiếu từ ledger RESERVE/RELEASE/OUT của đơn này.</div>
+        </section>
+
+        <section class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h2 class="h5">Thông tin đóng gói và giao nhận</h2>
+                <dl class="row mb-0">
+                    <dt class="col-sm-3">Người nhận</dt><dd class="col-sm-9">@Model.Order.RecipientName</dd>
+                    <dt class="col-sm-3">Địa chỉ</dt><dd class="col-sm-9 text-break">@Model.Order.ShippingAddress</dd>
+                    <dt class="col-sm-3">Ghi chú đơn</dt><dd class="col-sm-9">@(string.IsNullOrWhiteSpace(Model.Order.ShippingNote) ? "—" : Model.Order.ShippingNote)</dd>
+                </dl>
+                <p class="small text-secondary mt-3 mb-0">Mở chi tiết chỉ để xem và chuẩn bị hàng; schema hiện tại không lưu người/thời điểm tiếp nhận hoặc hoàn thành chuẩn bị.</p>
+            </div>
+        </section>
+    </div>
+
+    <div class="col-lg-4">
+        <section class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h2 class="h5">Xác nhận xuất kho</h2>
+                <p class="small text-secondary">Xuất toàn bộ đơn trong một transaction. Nếu một dòng không đủ reservation hoặc ghi OUT thất bại, toàn bộ thao tác sẽ rollback.</p>
+                @if (Model.Order.Status == "EXPORTED")
+                {
+                    <div class="alert alert-success mb-0" role="status">Đơn đã xuất kho. Không thể xuất lại.</div>
+                }
+                else if (Model.Order.CanExport)
+                {
+                    <form asp-area="Warehouse" asp-controller="Orders" asp-action="Export" asp-route-id="@Model.Order.OrderId" method="post" onsubmit="return confirm('Xác nhận xuất toàn bộ sản phẩm của đơn này? Tồn thực tế và reservation sẽ được giảm cùng lúc.');">
+                        @Html.AntiForgeryToken()
+                        <button class="btn btn-primary btn-lg w-100" type="submit">Xác nhận xuất kho</button>
+                    </form>
+                }
+                else
+                {
+                    <div class="alert alert-warning mb-0" role="alert">@Model.Order.ExportBlockedReason</div>
+                }
+                <p class="small text-secondary mt-3 mb-0">Sau khi xuất thành công, đơn chuyển sang Đã xuất kho. Việc vận chuyển do Sales theo dõi ở bước tiếp theo.</p>
+            </div>
+        </section>
+        <section class="card border-0 shadow-sm mt-4">
+            <div class="card-body">
+                <h2 class="h6">Tóm tắt</h2>
+                <dl class="mb-0"><dt>Ngày đặt</dt><dd>@Model.Order.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd><dt>Trạng thái yêu cầu hủy</dt><dd>@CancellationRequestPresentation.Label(Model.Order.CancellationRequestStatus)</dd><dt>Tổng đơn (tham khảo)</dt><dd class="mb-0">@Model.Order.TotalAmount.ToString("N0") ₫</dd></dl>
+            </div>
+        </section>
+    </div>
+</div>

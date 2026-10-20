@@ -1,0 +1,62 @@
+@model WarehouseInventoryHistoryViewModel
+@{
+    ViewData["Title"] = "Lịch sử giao dịch kho";
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
+    <div>
+        <div class="text-primary small fw-semibold text-uppercase">Warehouse · Ledger</div>
+        <h1 class="h2 fw-bold mb-1">Lịch sử giao dịch kho</h1>
+        <p class="text-secondary mb-0">Sổ giao dịch chỉ đọc; giao dịch cũ không bị sửa hoặc xóa.</p>
+    </div>
+    <a class="btn btn-outline-secondary" asp-action="Index">Quay lại tồn kho</a>
+</div>
+<div asp-validation-summary="All" class="text-danger mb-3"></div>
+<section class="card border-0 shadow-sm mb-4"><div class="card-body">
+    <form method="get" asp-action="History" class="row g-3 align-items-end">
+        <div class="col-12 col-md-6 col-xl-3">
+            <label class="form-label" for="productId">Sản phẩm</label>
+            <select class="form-select" id="productId" name="productId"><option value="">Tất cả sản phẩm</option>@foreach (var product in Model.Products){<option value="@product.ProductId" selected="@(Model.ProductId == product.ProductId)">@product.Sku · @product.ProductName</option>}</select>
+        </div>
+        <div class="col-12 col-md-6 col-xl-2">
+            <label class="form-label" for="transactionType">Loại giao dịch</label>
+            <select class="form-select" id="transactionType" name="transactionType">
+                <option value="">Tất cả</option>
+                @foreach (var type in new[] { "IN", "OUT", "ADJUST", "RESERVE", "RELEASE" }) { <option value="@type" selected="@(Model.TransactionType == type)">@type</option> }
+            </select>
+        </div>
+        <div class="col-6 col-xl-2"><label class="form-label" for="from">Từ ngày</label><input class="form-control" type="date" id="from" name="from" value="@Model.From?.ToString("yyyy-MM-dd")" /></div>
+        <div class="col-6 col-xl-2"><label class="form-label" for="to">Đến ngày</label><input class="form-control" type="date" id="to" name="to" value="@Model.To?.ToString("yyyy-MM-dd")" /></div>
+        <div class="col-12 col-xl-3 d-grid"><button class="btn btn-primary" type="submit">Lọc lịch sử</button></div>
+    </form>
+</div></section>
+
+<div class="d-flex justify-content-between align-items-center mb-2"><h2 class="h5 mb-0">Giao dịch</h2><span class="text-secondary small">@Model.Results.TotalCount bản ghi</span></div>
+@if (Model.Results.Items.Count == 0)
+{
+    <div class="alert alert-light border py-5 text-center"><h3 class="h5">Chưa có giao dịch phù hợp</h3><p class="text-secondary mb-0">Thử thay đổi điều kiện lọc.</p></div>
+}
+else
+{
+    <div class="card border-0 shadow-sm"><div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead class="table-light"><tr><th>Thời gian</th><th>Sản phẩm</th><th>Loại</th><th>Hướng</th><th class="text-end">Số lượng</th><th>Nhân viên</th><th>Đơn hàng</th><th>Ghi chú</th></tr></thead>
+            <tbody>@foreach (var row in Model.Results.Items)
+            {
+                var badge = row.TransactionType switch { "IN" => "text-bg-success", "OUT" => "text-bg-primary", "ADJUST" => "text-bg-warning", "RESERVE" => "text-bg-info", _ => "text-bg-secondary" };
+                <tr>
+                    <td class="text-nowrap">@row.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                    <td><div class="fw-semibold">@row.ProductName</div><div class="small text-secondary">@row.Sku</div></td>
+                    <td><span class="badge @badge">@row.TransactionType</span></td>
+                    <td>@row.Direction</td><td class="text-end fw-semibold">@row.Quantity.ToString("N0")</td><td>@row.ActorName</td>
+                    <td>@(row.OrderId is int orderId ? $"#{orderId}" : "—")</td>
+                    <td class="text-break small">@(string.IsNullOrWhiteSpace(row.Note) ? "—" : row.Note)</td>
+                </tr>
+            }</tbody>
+        </table>
+    </div></div>
+    @if (Model.Results.PageCount > 1)
+    {
+        <nav class="mt-3" aria-label="Phân trang lịch sử"><ul class="pagination justify-content-end flex-wrap">@for (var pageNumber = 1; pageNumber <= Model.Results.PageCount; pageNumber++){<li class="page-item @(pageNumber == Model.Results.Page ? "active" : "")"><a class="page-link" asp-action="History" asp-route-productId="@Model.ProductId" asp-route-transactionType="@Model.TransactionType" asp-route-from="@Model.From?.ToString("yyyy-MM-dd")" asp-route-to="@Model.To?.ToString("yyyy-MM-dd")" asp-route-page="@pageNumber">@pageNumber</a></li>}</ul></nav>
+    }
+}

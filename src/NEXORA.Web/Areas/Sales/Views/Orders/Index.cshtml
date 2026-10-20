@@ -1,0 +1,30 @@
+@model StaffOrderIndexViewModel
+@{
+    ViewData["Title"] = "Quản lý đơn hàng";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+    <div><p class="text-uppercase small fw-semibold text-primary mb-1">Không gian Sales</p><h1 class="h2 mb-1">Quản lý đơn hàng</h1><p class="text-secondary small mb-0">@Model.Results.TotalCount đơn hàng · Xử lý theo đúng trạng thái</p></div>
+</div>
+
+<form method="get" asp-area="Sales" asp-controller="Orders" asp-action="Index" class="card card-body border-0 shadow-sm mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-5"><label class="form-label" for="search">Mã đơn, tên khách hoặc số điện thoại</label><input class="form-control" id="search" name="search" value="@Model.Search" maxlength="100" /></div>
+        <div class="col-md-3"><label class="form-label" for="status">Trạng thái đơn</label><select class="form-select" id="status" name="status"><option value="">Tất cả trạng thái</option>@foreach (var status in new[] { "PENDING", "CONFIRMED", "PREPARING", "EXPORTED", "SHIPPING", "COMPLETED", "CANCELLED" }) { <option value="@status" selected="@(Model.Status == status ? "selected" : null)">@OrderStatusPresentation.Label(status)</option> }</select></div>
+        <div class="col-md-2"><label class="form-label" for="cancelRequestStatus">Yêu cầu hủy</label><select class="form-select" id="cancelRequestStatus" name="cancelRequestStatus"><option value="">Tất cả</option><option value="PENDING" selected="@(Model.CancelRequestStatus == "PENDING" ? "selected" : null)">Chờ duyệt</option><option value="APPROVED" selected="@(Model.CancelRequestStatus == "APPROVED" ? "selected" : null)">Đã duyệt</option><option value="REJECTED" selected="@(Model.CancelRequestStatus == "REJECTED" ? "selected" : null)">Đã từ chối</option></select></div>
+        <div class="col-md-2 d-flex gap-2"><button class="btn btn-primary flex-fill" type="submit">Lọc</button><a class="btn btn-outline-secondary" asp-area="Sales" asp-controller="Orders" asp-action="Index">Xóa</a></div>
+    </div>
+</form>
+
+<section class="card border-0 shadow-sm"><div class="table-responsive">
+    <table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Mã đơn</th><th>Khách hàng</th><th>Ngày đặt</th><th>Trạng thái</th><th>Yêu cầu hủy</th><th class="text-end">Số SP</th><th class="text-end">Tổng tiền</th><th></th></tr></thead>
+        <tbody>
+        @if (Model.Results.Items.Count == 0) { <tr><td colspan="8" class="text-center text-secondary py-5">Không tìm thấy đơn hàng.</td></tr> }
+        @foreach (var order in Model.Results.Items)
+        {
+            <tr><td class="fw-semibold">#@order.Id</td><td><div class="fw-semibold">@order.CustomerName</div><small class="text-secondary">@order.Phone</small></td><td class="text-nowrap">@order.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td><td><span class="badge @OrderStatusPresentation.BadgeClass(order.Status)">@OrderStatusPresentation.Label(order.Status)</span></td><td>@if (order.CancelRequestStatus is not null) { <span class="badge @CancellationRequestPresentation.BadgeClass(order.CancelRequestStatus)">@CancellationRequestPresentation.Label(order.CancelRequestStatus)</span><small class="d-block text-secondary">@order.CancelRequestedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small> } else { <span class="text-secondary">—</span> }</td><td class="text-end">@order.ItemCount</td><td class="text-end text-nowrap fw-semibold">@order.TotalAmount.ToString("N0") ₫</td><td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-area="Sales" asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id">Chi tiết</a></td></tr>
+        }
+        </tbody>
+    </table>
+</div>
+<div class="d-flex justify-content-between align-items-center gap-3 p-3 border-top"><span class="small text-secondary">Trang @Model.Results.Page / @Model.Results.PageCount</span><nav aria-label="Phân trang đơn hàng"><ul class="pagination pagination-sm mb-0"><li class="page-item @(Model.Results.Page <= 1 ? "disabled" : "")"><a class="page-link" asp-area="Sales" asp-controller="Orders" asp-action="Index" asp-route-search="@Model.Search" asp-route-status="@Model.Status" asp-route-cancelRequestStatus="@Model.CancelRequestStatus" asp-route-page="@(Model.Results.Page - 1)">Trước</a></li><li class="page-item @(Model.Results.Page >= Model.Results.PageCount ? "disabled" : "")"><a class="page-link" asp-area="Sales" asp-controller="Orders" asp-action="Index" asp-route-search="@Model.Search" asp-route-status="@Model.Status" asp-route-cancelRequestStatus="@Model.CancelRequestStatus" asp-route-page="@(Model.Results.Page + 1)">Sau</a></li></ul></nav></div></section>

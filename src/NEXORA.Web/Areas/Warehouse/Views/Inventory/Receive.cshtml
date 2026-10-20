@@ -1,0 +1,17 @@
+@model WarehouseStockReceiptViewModel
+@{
+    ViewData["Title"] = "Nhập kho";
+}
+<div class="row justify-content-center"><div class="col-12 col-xl-8">
+    <div class="mb-4"><div class="text-primary small fw-semibold text-uppercase">Warehouse · Stock In</div><h1 class="h2 fw-bold">Nhập kho</h1><p class="text-secondary mb-0">Tăng tồn vật lý và ghi ledger IN trong cùng transaction. Số lượng đang giữ không thay đổi.</p></div>
+    <form asp-action="Receive" method="post" class="card border-0 shadow-sm"><div class="card-body p-4">
+        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+        <input asp-for="RequestId" type="hidden" />
+        <div class="mb-3"><label asp-for="ProductId" class="form-label">Sản phẩm</label><select asp-for="ProductId" class="form-select"><option value="">Chọn sản phẩm</option>@foreach (var product in Model.Products){<option value="@product.ProductId">@product.Sku · @product.ProductName</option>}</select><span asp-validation-for="ProductId" class="text-danger"></span></div>
+        <div class="mb-3"><label asp-for="Quantity" class="form-label">Số lượng nhập</label><input asp-for="Quantity" class="form-control" type="number" min="1" step="1" inputmode="numeric" /><span asp-validation-for="Quantity" class="text-danger"></span></div>
+        <div class="mb-3"><label asp-for="Reference" class="form-label">Mã tham chiếu hoặc lý do nhập</label><input asp-for="Reference" class="form-control" maxlength="250" /><span asp-validation-for="Reference" class="text-danger"></span></div>
+        <div class="mb-4"><label asp-for="Note" class="form-label">Ghi chú (không bắt buộc)</label><textarea asp-for="Note" class="form-control" rows="3" maxlength="350"></textarea><span asp-validation-for="Note" class="text-danger"></span></div>
+        <div class="d-flex flex-wrap gap-2"><button type="submit" class="btn btn-primary">Xác nhận nhập kho</button><a asp-action="Index" class="btn btn-outline-secondary">Hủy</a></div>
+    </div></form>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -48,6 +48,10 @@ public static class DependencyInjection
         services.AddScoped<IOrderPricingService, OrderPricingService>();
         services.AddScoped<ICheckoutService, CheckoutService>();
         services.AddScoped<ICustomerOrderService, CustomerOrderService>();
+        services.AddScoped<ISalesOrderManagementService, SalesOrderManagementService>();
+        services.AddScoped<IOrderCancellationReviewService, OrderCancellationReviewService>();
+        services.AddScoped<IWarehouseFulfillmentService, WarehouseFulfillmentService>();
+        services.AddScoped<IWarehouseInventoryManagementService, WarehouseInventoryManagementService>();
         services.AddScoped<IDevelopmentInventorySeeder, DevelopmentInventorySeeder>();
         services.AddScoped<IAdminPromotionManagementService, AdminPromotionManagementService>();
 

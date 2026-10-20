@@ -7,6 +7,7 @@ namespace NEXORA.Web.Identity;
 public sealed record ProvisioningCommandArguments(
     bool IsRequested,
     bool IsDevelopmentInventorySeedRequested,
+    bool IsQaStaffProvisioningRequested,
     string[] HostArguments)
 {
     public static ProvisioningCommandArguments Parse(string[] args)
@@ -14,13 +15,14 @@ public sealed record ProvisioningCommandArguments(
         var commandIndexes = args
             .Select((value, index) => (value, index))
             .Where(item => string.Equals(item.value, "--provision-admin", StringComparison.Ordinal) ||
-                           string.Equals(item.value, "--seed-development-inventory", StringComparison.Ordinal))
+                           string.Equals(item.value, "--seed-development-inventory", StringComparison.Ordinal) ||
+                           string.Equals(item.value, "--provision-qa-staff", StringComparison.Ordinal))
             .Select(item => item.index)
             .ToArray();
 
         if (commandIndexes.Length == 0)
         {
-            return new ProvisioningCommandArguments(false, false, args);
+            return new ProvisioningCommandArguments(false, false, false, args);
         }
 
         if (commandIndexes.Length != 1 || args.Length != 1)
@@ -31,6 +33,7 @@ public sealed record ProvisioningCommandArguments(
         return new ProvisioningCommandArguments(
             true,
             string.Equals(args[0], "--seed-development-inventory", StringComparison.Ordinal),
+            string.Equals(args[0], "--provision-qa-staff", StringComparison.Ordinal),
             []);
     }
 }

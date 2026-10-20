@@ -11,6 +11,7 @@ public sealed class AdminProvisioningCommandTests
 
         Assert.False(parsed.IsRequested);
         Assert.Equal(["--urls", "http://127.0.0.1:5000"], parsed.HostArguments);
+        Assert.False(parsed.IsQaStaffProvisioningRequested);
     }
 
     [Fact]
@@ -20,6 +21,7 @@ public sealed class AdminProvisioningCommandTests
 
         Assert.True(parsed.IsRequested);
         Assert.False(parsed.IsDevelopmentInventorySeedRequested);
+        Assert.False(parsed.IsQaStaffProvisioningRequested);
         Assert.Empty(parsed.HostArguments);
     }
 
@@ -30,6 +32,18 @@ public sealed class AdminProvisioningCommandTests
 
         Assert.True(parsed.IsRequested);
         Assert.True(parsed.IsDevelopmentInventorySeedRequested);
+        Assert.False(parsed.IsQaStaffProvisioningRequested);
+        Assert.Empty(parsed.HostArguments);
+    }
+
+    [Fact]
+    public void Parse_QaStaffProvisioningCommandConsumesOnlyTheStandaloneCommand()
+    {
+        var parsed = ProvisioningCommandArguments.Parse(["--provision-qa-staff"]);
+
+        Assert.True(parsed.IsRequested);
+        Assert.False(parsed.IsDevelopmentInventorySeedRequested);
+        Assert.True(parsed.IsQaStaffProvisioningRequested);
         Assert.Empty(parsed.HostArguments);
     }
 
@@ -50,5 +64,34 @@ public sealed class AdminProvisioningCommandTests
     {
         Assert.Throws<ArgumentException>(() =>
             ProvisioningCommandArguments.Parse(["--provision-admin", "admin@example.test"]));
+    }
+
+    [Fact]
+    public void QaStaffProvisioning_OnlyAcceptsTheDedicatedIntegratedSecurityDatabase()
+    {
+        Assert.True(QaStaffProvisioningCommand.IsApprovedQaConnectionString(
+            "Server=PC01\\SQLEXPRESS;Database=NEXORA_IntegrationTests;Integrated Security=True;TrustServerCertificate=True"));
+        Assert.False(QaStaffProvisioningCommand.IsApprovedQaConnectionString(
+            "Server=PC01\\SQLEXPRESS;Database=NEXORA;Integrated Security=True;TrustServerCertificate=True"));
+        Assert.False(QaStaffProvisioningCommand.IsApprovedQaConnectionString(
+            "Server=OTHER\\SQLEXPRESS;Database=NEXORA_IntegrationTests;Integrated Security=True"));
+        Assert.False(QaStaffProvisioningCommand.IsApprovedQaConnectionString(
+            "Server=.\\SQLEXPRESS;Database=NEXORA_IntegrationTests;Integrated Security=True"));
+        Assert.False(QaStaffProvisioningCommand.IsApprovedQaConnectionString(
+            "Server=PC01\\SQLEXPRESS;Database=NEXORA_IntegrationTests;Integrated Security=False;User ID=qa"));
+        Assert.False(QaStaffProvisioningCommand.IsApprovedQaConnectionString("not a connection string"));
+    }
+
+    [Theory]
+    [InlineData("qa.sales@nexora.test", true)]
+    [InlineData("qa.warehouse@nexora.test", true)]
+    [InlineData("user@gmail.com", false)]
+    [InlineData("qa.user@example.com", false)]
+    [InlineData("sales@nexora.test", false)]
+    [InlineData("qa.user@nexora.com", false)]
+    [InlineData("not-an-email", false)]
+    public void QaStaffProvisioning_OnlyAcceptsNonRoutableQaEmailAddresses(string email, bool expected)
+    {
+        Assert.Equal(expected, QaStaffProvisioningCommand.IsQaEmailAddress(email));
     }
 }

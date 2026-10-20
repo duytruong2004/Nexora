@@ -499,10 +499,41 @@ namespace NEXORA.Infrastructure.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("CancelDecisionNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnName("cancel_decision_note");
+
                     b.Property<string>("CancelReason")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)")
                         .HasColumnName("cancel_reason");
+
+                    b.Property<Guid?>("CancelRequestId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("cancel_request_id");
+
+                    b.Property<string>("CancelRequestReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnName("cancel_request_reason");
+
+                    b.Property<string>("CancelRequestStatus")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("cancel_request_status");
+
+                    b.Property<DateTime?>("CancelRequestedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("cancel_requested_at");
+
+                    b.Property<DateTime?>("CancelReviewedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("cancel_reviewed_at");
+
+                    b.Property<int?>("CancelReviewedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("cancel_reviewed_by");
 
                     b.Property<DateTime?>("CancelledAt")
                         .HasColumnType("datetime2")
@@ -573,12 +604,23 @@ namespace NEXORA.Infrastructure.Persistence.Migrations
                     b.HasAlternateKey("Id", "UserId")
                         .HasName("ak_orders_id_user_id");
 
+                    b.HasIndex("CancelRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_orders_cancel_request_id")
+                        .HasFilter("[cancel_request_id] IS NOT NULL");
+
+                    b.HasIndex("CancelReviewedBy");
+
                     b.HasIndex("CheckoutRequestId")
                         .IsUnique()
                         .HasDatabaseName("ux_orders_checkout_request_id")
                         .HasFilter("[checkout_request_id] IS NOT NULL");
 
                     b.HasIndex("ConfirmedBy");
+
+                    b.HasIndex("CancelRequestedAt", "Id")
+                        .HasDatabaseName("ix_orders_cancel_pending_review")
+                        .HasFilter("[cancel_request_status] = 'PENDING'");
 
                     b.HasIndex("Status", "OrderDate")
                         .HasDatabaseName("ix_orders_status_order_date");
@@ -588,6 +630,8 @@ namespace NEXORA.Infrastructure.Persistence.Migrations
 
                     b.ToTable("orders", null, t =>
                         {
+                            t.HasCheckConstraint("ck_orders_cancel_request_consistent", "([cancel_request_status] IS NULL AND [cancel_request_reason] IS NULL AND [cancel_request_id] IS NULL AND [cancel_requested_at] IS NULL AND [cancel_reviewed_by] IS NULL AND [cancel_reviewed_at] IS NULL AND [cancel_decision_note] IS NULL)\nOR\n([cancel_request_status] = 'PENDING' AND [cancel_request_reason] IS NOT NULL AND LEN(LTRIM(RTRIM([cancel_request_reason]))) > 0 AND [cancel_request_id] IS NOT NULL AND [cancel_requested_at] IS NOT NULL AND [cancel_reviewed_by] IS NULL AND [cancel_reviewed_at] IS NULL AND [cancel_decision_note] IS NULL)\nOR\n([cancel_request_status] = 'APPROVED' AND [cancel_request_reason] IS NOT NULL AND LEN(LTRIM(RTRIM([cancel_request_reason]))) > 0 AND [cancel_request_id] IS NOT NULL AND [cancel_requested_at] IS NOT NULL AND [cancel_reviewed_by] IS NOT NULL AND [cancel_reviewed_at] IS NOT NULL AND [status] = 'CANCELLED')\nOR\n([cancel_request_status] = 'REJECTED' AND [cancel_request_reason] IS NOT NULL AND LEN(LTRIM(RTRIM([cancel_request_reason]))) > 0 AND [cancel_request_id] IS NOT NULL AND [cancel_requested_at] IS NOT NULL AND [cancel_reviewed_by] IS NOT NULL AND [cancel_reviewed_at] IS NOT NULL AND [cancel_decision_note] IS NOT NULL AND LEN(LTRIM(RTRIM([cancel_decision_note]))) > 0)");
+
                             t.HasCheckConstraint("ck_orders_status_valid", "[status] IN ('PENDING','CONFIRMED','PREPARING','EXPORTED','SHIPPING','COMPLETED','CANCELLED')");
 
                             t.HasCheckConstraint("ck_orders_total_amount_nonnegative", "[total_amount] >= 0");
@@ -1473,6 +1517,11 @@ namespace NEXORA.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("NEXORA.Domain.Entities.Order", b =>
                 {
+                    b.HasOne("NEXORA.Infrastructure.Identity.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("CancelReviewedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("NEXORA.Infrastructure.Identity.AppUser", null)
                         .WithMany()
                         .HasForeignKey("ConfirmedBy")

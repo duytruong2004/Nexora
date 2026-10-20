@@ -5,6 +5,19 @@ namespace NEXORA.Tests;
 public sealed class BusinessPolicyTests
 {
     [Theory]
+    [InlineData(OrderStatuses.Preparing, null, true)]
+    [InlineData(OrderStatuses.Preparing, OrderCancellationRequestStatuses.Rejected, true)]
+    [InlineData(OrderStatuses.Preparing, OrderCancellationRequestStatuses.Pending, false)]
+    [InlineData(OrderStatuses.Preparing, OrderCancellationRequestStatuses.Approved, false)]
+    [InlineData(OrderStatuses.Preparing, "UNKNOWN", false)]
+    [InlineData(OrderStatuses.Exported, null, false)]
+    public void OrderCancellationRules_ExportRequiresPreparingAndNoUnresolvedCancellation(
+        string orderStatus,
+        string? requestStatus,
+        bool expected) =>
+        Assert.Equal(expected, OrderCancellationRules.CanExport(orderStatus, requestStatus));
+
+    [Theory]
     [InlineData("NUMBER", "GTE", "16", true)]
     [InlineData("NUMBER", "CONTAINS", "16", false)]
     [InlineData("NUMBER", "LTE", "16,5", false)]

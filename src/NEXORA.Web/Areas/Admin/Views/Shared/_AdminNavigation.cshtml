@@ -20,6 +20,7 @@
     <a class="admin-menu-link @(controller == "RoleLanding" ? "active" : string.Empty)" aria-current="@(controller == "RoleLanding" ? "page" : null)" asp-area="" asp-controller="RoleLanding" asp-action="Admin">
         <span class="admin-menu-icon" aria-hidden="true">⌂</span><span>Tổng quan</span>
     </a>
+    <a class="admin-menu-link @Active("Orders")" aria-current="@(IsActive("Orders") ? "page" : null)" asp-area="Admin" asp-controller="Orders" asp-action="Index"><span class="admin-menu-icon" aria-hidden="true">▤</span><span>Đơn hàng</span></a>
 
     <span class="admin-menu-label">Danh mục sản phẩm</span>
     <a class="admin-menu-link @Active("Categories")" aria-current="@(IsActive("Categories") ? "page" : null)" asp-area="Admin" asp-controller="Categories" asp-action="Index"><span class="admin-menu-icon" aria-hidden="true">▦</span><span>Danh mục</span></a>

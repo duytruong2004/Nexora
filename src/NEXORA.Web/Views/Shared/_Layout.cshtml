@@ -32,14 +32,16 @@
                         }
                         @if (User.IsInRole("Sales"))
                         {
-                            <li class="nav-item"><a class="nav-link" asp-controller="RoleLanding" asp-action="Sales">Bán hàng</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-area="Sales" asp-controller="Orders" asp-action="Index">Quản lý đơn</a></li>
                         }
                         @if (User.IsInRole("Warehouse"))
                         {
-                            <li class="nav-item"><a class="nav-link" asp-controller="RoleLanding" asp-action="Warehouse">Kho hàng</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-area="Warehouse" asp-controller="Orders" asp-action="Index">Đơn cần xuất</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-area="Warehouse" asp-controller="Inventory" asp-action="Index">Tồn kho</a></li>
                         }
                         @if (User.IsInRole("Admin"))
                         {
+                            <li class="nav-item"><a class="nav-link" asp-area="Warehouse" asp-controller="Inventory" asp-action="Index">Giám sát tồn kho</a></li>
                             <li class="nav-item"><a class="nav-link" asp-controller="RoleLanding" asp-action="Admin">Quản trị</a></li>
                         }
                     </ul>
@@ -87,6 +89,8 @@
         @RenderBody()
     </main>
 
+    <div id="catalog-cart-feedback" class="alert position-fixed bottom-0 end-0 m-3 shadow d-none catalog-cart-feedback" role="status" aria-live="polite" aria-atomic="true"></div>
+
     <footer class="nexora-footer py-4 mt-auto">
         <div class="container d-flex flex-column flex-sm-row justify-content-between gap-2 small">
             <span>© @DateTime.UtcNow.Year NEXORA</span>
@@ -98,6 +102,7 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
     <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+    <script src="~/js/catalog-cart.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

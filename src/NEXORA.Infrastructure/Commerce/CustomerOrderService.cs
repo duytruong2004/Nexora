@@ -22,7 +22,10 @@ public sealed class CustomerOrderService(AppDbContext db, ILogger<CustomerOrderS
                 order.OrderDate,
                 order.Status,
                 order.TotalAmount,
-                order.Details.Sum(line => line.Quantity)))
+                order.Details.Sum(line => line.Quantity))
+            {
+                CancelRequestStatus = order.CancelRequestStatus
+            })
             .ToListAsync(cancellationToken);
     }
 
@@ -53,6 +56,11 @@ public sealed class CustomerOrderService(AppDbContext db, ILogger<CustomerOrderS
             order.Note,
             order.CancelReason,
             order.CancelledAt,
+            order.CancelRequestStatus,
+            order.CancelRequestReason,
+            order.CancelRequestedAt,
+            order.CancelReviewedAt,
+            order.CancelDecisionNote,
             order.TotalAmount,
             order.Details.OrderBy(line => line.Id)
                 .Select(line => new OrderDetailLine(
@@ -121,12 +129,12 @@ public sealed class CustomerOrderService(AppDbContext db, ILogger<CustomerOrderS
                     }
 
                     var lines = order.Details.Select(line => new { line.ProductId, line.Quantity }).ToArray();
-                    var productIds = lines.Select(line => line.ProductId).Distinct().ToArray();
-                    var inventories = await db.Inventories
-                        .Where(inventory => productIds.Contains(inventory.ProductId))
-                        .OrderBy(inventory => inventory.ProductId)
-                        .ToListAsync(cancellationToken);
-                    var inventoryByProduct = inventories.ToDictionary(item => item.ProductId);
+                    var inventoryByProduct = new Dictionary<int, Inventory>();
+                    foreach (var productId in lines.Select(line => line.ProductId).Distinct().Order())
+                    {
+                        var inventory = await InventoryRowLocking.LoadForUpdateAsync(db, productId, cancellationToken);
+                        if (inventory is not null) inventoryByProduct.Add(productId, inventory);
+                    }
                     foreach (var line in lines)
                     {
                         if (!inventoryByProduct.TryGetValue(line.ProductId, out var inventory))
@@ -164,6 +172,155 @@ public sealed class CustomerOrderService(AppDbContext db, ILogger<CustomerOrderS
         }
 
         return new CancelOrderResult(CancelOrderFailure.ConcurrencyConflict);
+    }
+
+    public async Task<CustomerCancellationResult> RequestCancellationAsync(
+        int userId,
+        int orderId,
+        Guid requestId,
+        string? reason,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureValidUserId(userId);
+        if (orderId <= 0 || requestId == Guid.Empty || string.IsNullOrWhiteSpace(reason) || reason.Trim().Length > 1000)
+        {
+            return new CustomerCancellationResult(CustomerCancellationFailure.InvalidRequest);
+        }
+
+        var normalizedReason = reason.Trim();
+        for (var attempt = 1; attempt <= 3; attempt++)
+        {
+            try
+            {
+                var strategy = db.Database.CreateExecutionStrategy();
+                var result = await strategy.ExecuteAsync(async () =>
+                {
+                    var current = await db.Orders.AsNoTracking()
+                        .Where(order => order.Id == orderId && order.UserId == userId)
+                        .Select(order => new
+                        {
+                            order.Status,
+                            order.CancelRequestStatus,
+                            order.CancelRequestId
+                        })
+                        .SingleOrDefaultAsync(cancellationToken);
+                    if (current is null)
+                    {
+                        return new CustomerCancellationResult(CustomerCancellationFailure.NotFound);
+                    }
+
+                    if (current.CancelRequestId == requestId)
+                    {
+                        return new CustomerCancellationResult(
+                            CustomerCancellationFailure.AlreadyApplied,
+                            current.CancelRequestStatus,
+                            current.Status);
+                    }
+
+                    if (current.CancelRequestId is not null || current.CancelRequestStatus is not null)
+                    {
+                        return new CustomerCancellationResult(
+                            CustomerCancellationFailure.AlreadyRequested,
+                            current.CancelRequestStatus,
+                            current.Status);
+                    }
+
+                    if (!OrderCancellationRules.CanRequest(current.Status))
+                    {
+                        return new CustomerCancellationResult(
+                            CustomerCancellationFailure.InvalidState,
+                            current.CancelRequestStatus,
+                            current.Status);
+                    }
+
+                    var now = DateTime.UtcNow;
+                    var changed = await db.Orders
+                        .Where(order => order.Id == orderId && order.UserId == userId &&
+                            (order.Status == OrderStatuses.Confirmed || order.Status == OrderStatuses.Preparing) &&
+                            order.CancelRequestId == null && order.CancelRequestStatus == null)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(order => order.CancelRequestStatus, OrderCancellationRequestStatuses.Pending)
+                            .SetProperty(order => order.CancelRequestReason, normalizedReason)
+                            .SetProperty(order => order.CancelRequestId, requestId)
+                            .SetProperty(order => order.CancelRequestedAt, now), cancellationToken);
+                    if (changed == 1)
+                    {
+                        logger.LogInformation(
+                            "Order {OrderId} cancellation request recorded for customer {CustomerUserId} at {RequestedAtUtc}.",
+                            orderId,
+                            userId,
+                            now);
+                        return new CustomerCancellationResult(
+                            CustomerCancellationFailure.None,
+                            OrderCancellationRequestStatuses.Pending,
+                            current.Status);
+                    }
+
+                    var latest = await db.Orders.AsNoTracking()
+                        .Where(order => order.Id == orderId && order.UserId == userId)
+                        .Select(order => new
+                        {
+                            order.Status,
+                            order.CancelRequestStatus,
+                            order.CancelRequestId
+                        })
+                        .SingleOrDefaultAsync(cancellationToken);
+                    if (latest is null)
+                    {
+                        return new CustomerCancellationResult(CustomerCancellationFailure.NotFound);
+                    }
+
+                    if (latest.CancelRequestId == requestId)
+                    {
+                        return new CustomerCancellationResult(
+                            CustomerCancellationFailure.AlreadyApplied,
+                            latest.CancelRequestStatus,
+                            latest.Status);
+                    }
+
+                    if (latest.CancelRequestId is not null || latest.CancelRequestStatus is not null)
+                    {
+                        return new CustomerCancellationResult(
+                            CustomerCancellationFailure.AlreadyRequested,
+                            latest.CancelRequestStatus,
+                            latest.Status);
+                    }
+
+                    return new CustomerCancellationResult(
+                        CustomerCancellationFailure.InvalidState,
+                        latest.CancelRequestStatus,
+                        latest.Status);
+                });
+
+                if (result.Failure == CustomerCancellationFailure.InvalidState && attempt < 3)
+                {
+                    var latestStatus = result.OrderStatus;
+                    if (latestStatus is OrderStatuses.Confirmed or OrderStatuses.Preparing)
+                    {
+                        continue;
+                    }
+                }
+
+                return result;
+            }
+            catch (Microsoft.Data.SqlClient.SqlException exception) when (exception.Number is 2601 or 2627)
+            {
+                logger.LogWarning(
+                    "Order cancellation request id conflicted with an existing request (order {OrderId}).",
+                    orderId);
+                return new CustomerCancellationResult(CustomerCancellationFailure.DuplicateRequestId);
+            }
+            catch (Exception exception) when (exception is DbUpdateException or Microsoft.Data.SqlClient.SqlException)
+            {
+                logger.LogWarning(
+                    "Order cancellation request persistence failed for order {OrderId} ({ExceptionType}).",
+                    orderId,
+                    exception.GetType().Name);
+                return new CustomerCancellationResult(CustomerCancellationFailure.PersistenceFailure);
+            }
+        }
+
+        return new CustomerCancellationResult(CustomerCancellationFailure.InvalidState);
     }
 
     private static void EnsureValidUserId(int userId)

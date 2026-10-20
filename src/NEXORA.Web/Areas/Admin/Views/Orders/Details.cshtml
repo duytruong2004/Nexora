@@ -1,0 +1,70 @@
+@model StaffOrderDetailsViewModel
+@{
+    ViewData["Title"] = $"Đơn hàng #{Model.Order.Id}";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div><p class="text-uppercase small fw-semibold text-primary mb-1">Chi tiết bán hàng</p><h1 class="h2 mb-0">Đơn hàng #@Model.Order.Id</h1></div>
+    <a class="btn btn-outline-secondary" asp-area="Admin" asp-controller="Orders" asp-action="Index">Quay lại danh sách</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center"><h2 class="h5 mb-0">Sản phẩm trong đơn</h2><span class="badge @OrderStatusPresentation.BadgeClass(Model.Order.Status)">@OrderStatusPresentation.Label(Model.Order.Status)</span></div>
+            <div class="table-responsive"><table class="table align-middle mb-0">
+                <thead class="table-light"><tr><th>Sản phẩm</th><th class="text-end">SL</th><th class="text-end">Đơn giá</th><th class="text-end">Giảm giá</th><th class="text-end">Thành tiền</th></tr></thead>
+                <tbody>
+                @foreach (var line in Model.Order.Lines)
+                {
+                    <tr><td>@line.ProductName <small class="d-block text-secondary">Mã SP: @line.ProductId</small></td><td class="text-end">@line.Quantity</td><td class="text-end text-nowrap">@line.UnitPrice.ToString("N0") ₫</td><td class="text-end text-nowrap">@line.DiscountAmount.ToString("N0") ₫</td><td class="text-end text-nowrap fw-semibold">@line.TotalPrice.ToString("N0") ₫</td></tr>
+                }
+                </tbody>
+                <tfoot><tr><th colspan="4" class="text-end">Tổng đơn</th><th class="text-end text-nowrap">@Model.Order.TotalAmount.ToString("N0") ₫</th></tr></tfoot>
+            </table></div>
+        </section>
+        <section class="card border-0 shadow-sm">
+            <div class="card-body"><h2 class="h5">Thông tin giao hàng</h2><dl class="row mb-0"><dt class="col-sm-3">Người nhận</dt><dd class="col-sm-9">@Model.Order.CustomerName</dd><dt class="col-sm-3">Điện thoại</dt><dd class="col-sm-9">@Model.Order.Phone</dd><dt class="col-sm-3">Địa chỉ</dt><dd class="col-sm-9">@Model.Order.ShippingAddress</dd><dt class="col-sm-3">Ghi chú đơn</dt><dd class="col-sm-9">@(string.IsNullOrWhiteSpace(Model.Order.Note) ? "—" : Model.Order.Note)</dd></dl></div>
+        </section>
+    </div>
+    <div class="col-lg-4">
+        <section class="card border-0 shadow-sm mb-4"><div class="card-body">
+            <h2 class="h5">Tiến trình hiện có</h2>
+            <p class="small text-secondary">Trạng thái hiện tại được lưu trên đơn. Schema chưa lưu lịch sử đầy đủ từng bước.</p>
+            <dl class="mb-0"><dt>Ngày đặt</dt><dd>@Model.Order.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd><dt>Xác nhận</dt><dd>@(Model.Order.ConfirmedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Chưa xác nhận")</dd><dt>Hoàn tất</dt><dd>@(Model.Order.CompletedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Chưa hoàn tất")</dd>@if (Model.Order.CancelledAt is not null) { <dt>Đã hủy</dt><dd>@Model.Order.CancelledAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm") · @Model.Order.CancelReason</dd> }</dl>
+        </div></section>
+        @if (Model.CanConfirm)
+        {
+            <section class="card border-0 shadow-sm"><div class="card-body"><h2 class="h5">Thao tác được phép</h2><p class="small text-secondary">Xác nhận không thay đổi tồn kho; hàng đã được giữ khi khách đặt đơn.</p><form asp-area="Admin" asp-controller="Orders" asp-action="Confirm" asp-route-id="@Model.Order.Id" method="post"><button class="btn btn-primary w-100" type="submit">Xác nhận đơn</button></form></div></section>
+        }
+        @if (Model.Order.CancelRequestStatus is not null)
+        {
+            <section class="card border-0 shadow-sm mt-4"><div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-2"><h2 class="h5">Yêu cầu hủy</h2><span class="badge @CancellationRequestPresentation.BadgeClass(Model.Order.CancelRequestStatus)">@CancellationRequestPresentation.Label(Model.Order.CancelRequestStatus)</span></div>
+                <dl class="mb-3"><dt class="small text-secondary">Thời gian gửi</dt><dd>@Model.Order.CancelRequestedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd><dt class="small text-secondary">Lý do khách hàng</dt><dd class="text-break">@Model.Order.CancelRequestReason</dd>
+                @if (!string.IsNullOrWhiteSpace(Model.Order.CancelDecisionNote)) { <dt class="small text-secondary">Ghi chú quyết định</dt><dd>@Model.Order.CancelDecisionNote</dd> }</dl>
+                @if (Model.CanReviewCancellation)
+                {
+                    <form asp-area="Admin" asp-controller="Orders" asp-action="ReviewCancellation" asp-route-id="@Model.Order.Id" method="post" class="mb-3" onsubmit="return confirm('Chấp thuận hủy đơn và giải phóng lượng hàng đã giữ?');">
+                        @Html.AntiForgeryToken()<input type="hidden" name="decision" value="approve" />
+                        <label for="approve-note" class="form-label">Ghi chú (không bắt buộc)</label><textarea class="form-control mb-2" id="approve-note" name="decisionNote" maxlength="1000" rows="2"></textarea>
+                        <button class="btn btn-danger w-100" type="submit">Phê duyệt hủy</button>
+                    </form>
+                    <form asp-area="Admin" asp-controller="Orders" asp-action="ReviewCancellation" asp-route-id="@Model.Order.Id" method="post" onsubmit="return confirm('Từ chối yêu cầu hủy? Đơn hàng và reservation sẽ được giữ nguyên.');">
+                        @Html.AntiForgeryToken()<input type="hidden" name="decision" value="reject" />
+                        <label for="reject-note" class="form-label">Lý do từ chối</label><textarea class="form-control mb-2" id="reject-note" name="decisionNote" maxlength="1000" rows="2" required></textarea>
+                        <button class="btn btn-outline-secondary w-100" type="submit">Từ chối yêu cầu</button>
+                    </form>
+                }
+                else if (Model.Order.CancelRequestStatus == "PENDING")
+                {
+                    <p class="small text-warning mb-0">Yêu cầu đang chờ nhưng đơn không còn ở trạng thái đủ điều kiện. Không thể xử lý trong trạng thái hiện tại.</p>
+                }
+                else
+                {
+                    <p class="small text-secondary mb-0">Yêu cầu đã được quyết định lúc @Model.Order.CancelReviewedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm").</p>
+                }
+            </div></section>
+        }
+    </div>
+</div>

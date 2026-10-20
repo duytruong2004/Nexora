@@ -171,6 +171,15 @@ internal sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         {
             table.HasCheckConstraint("ck_orders_total_amount_nonnegative", "[total_amount] >= 0");
             table.HasCheckConstraint("ck_orders_status_valid", "[status] IN ('PENDING','CONFIRMED','PREPARING','EXPORTED','SHIPPING','COMPLETED','CANCELLED')");
+            table.HasCheckConstraint("ck_orders_cancel_request_consistent", """
+                ([cancel_request_status] IS NULL AND [cancel_request_reason] IS NULL AND [cancel_request_id] IS NULL AND [cancel_requested_at] IS NULL AND [cancel_reviewed_by] IS NULL AND [cancel_reviewed_at] IS NULL AND [cancel_decision_note] IS NULL)
+                OR
+                ([cancel_request_status] = 'PENDING' AND [cancel_request_reason] IS NOT NULL AND LEN(LTRIM(RTRIM([cancel_request_reason]))) > 0 AND [cancel_request_id] IS NOT NULL AND [cancel_requested_at] IS NOT NULL AND [cancel_reviewed_by] IS NULL AND [cancel_reviewed_at] IS NULL AND [cancel_decision_note] IS NULL)
+                OR
+                ([cancel_request_status] = 'APPROVED' AND [cancel_request_reason] IS NOT NULL AND LEN(LTRIM(RTRIM([cancel_request_reason]))) > 0 AND [cancel_request_id] IS NOT NULL AND [cancel_requested_at] IS NOT NULL AND [cancel_reviewed_by] IS NOT NULL AND [cancel_reviewed_at] IS NOT NULL AND [status] = 'CANCELLED')
+                OR
+                ([cancel_request_status] = 'REJECTED' AND [cancel_request_reason] IS NOT NULL AND LEN(LTRIM(RTRIM([cancel_request_reason]))) > 0 AND [cancel_request_id] IS NOT NULL AND [cancel_requested_at] IS NOT NULL AND [cancel_reviewed_by] IS NOT NULL AND [cancel_reviewed_at] IS NOT NULL AND [cancel_decision_note] IS NOT NULL AND LEN(LTRIM(RTRIM([cancel_decision_note]))) > 0)
+                """);
         });
         entity.HasKey(x => x.Id);
         entity.HasAlternateKey(x => new { x.Id, x.UserId })
@@ -182,6 +191,9 @@ internal sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         entity.Property(x => x.Status).HasMaxLength(20).IsRequired();
         entity.Property(x => x.Note).HasMaxLength(2000);
         entity.Property(x => x.CancelReason).HasMaxLength(1000);
+        entity.Property(x => x.CancelRequestStatus).HasMaxLength(20);
+        entity.Property(x => x.CancelRequestReason).HasMaxLength(1000);
+        entity.Property(x => x.CancelDecisionNote).HasMaxLength(1000);
         entity.Property(x => x.OrderDate).HasDefaultValueSql("SYSUTCDATETIME()");
         entity.HasIndex(x => new { x.UserId, x.Status, x.OrderDate })
             .HasDatabaseName("ix_orders_user_status_order_date");
@@ -191,10 +203,19 @@ internal sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
             .IsUnique()
             .HasFilter("[checkout_request_id] IS NOT NULL")
             .HasDatabaseName("ux_orders_checkout_request_id");
+        entity.HasIndex(x => x.CancelRequestId)
+            .IsUnique()
+            .HasFilter("[cancel_request_id] IS NOT NULL")
+            .HasDatabaseName("ux_orders_cancel_request_id");
+        entity.HasIndex(x => new { x.CancelRequestedAt, x.Id })
+            .HasFilter("[cancel_request_status] = 'PENDING'")
+            .HasDatabaseName("ix_orders_cancel_pending_review");
         entity.HasOne<NEXORA.Infrastructure.Identity.AppUser>().WithMany()
             .HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
         entity.HasOne<NEXORA.Infrastructure.Identity.AppUser>().WithMany()
             .HasForeignKey(x => x.ConfirmedBy).OnDelete(DeleteBehavior.Restrict);
+        entity.HasOne<NEXORA.Infrastructure.Identity.AppUser>().WithMany()
+            .HasForeignKey(x => x.CancelReviewedBy).OnDelete(DeleteBehavior.Restrict);
     }
 }
 

@@ -98,41 +98,53 @@ app.MapControllerRoute(
         pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
-// Role initialization requires a database with migrations already applied. This does not apply migrations.
-await using (var scope = app.Services.CreateAsyncScope())
+// The QA staff provisioning command first verifies the existing QA role set read-only and never seeds roles.
+// Normal startup and the pre-existing Development commands retain the idempotent role initializer.
+if (!commandArguments.IsQaStaffProvisioningRequested)
 {
+    await using var scope = app.Services.CreateAsyncScope();
     var roleSeeder = scope.ServiceProvider.GetRequiredService<RoleSeeder>();
     await roleSeeder.EnsureRolesAsync();
 }
 
 if (app.Environment.IsDevelopment() && !commandArguments.IsRequested)
 {
-    await using var scope = app.Services.CreateAsyncScope();
-    var demoSeeder = scope.ServiceProvider.GetRequiredService<ICatalogDemoSeeder>();
-    await demoSeeder.SeedAsync(app.Lifetime.ApplicationStopping);
-    var consultationSeeder = scope.ServiceProvider.GetRequiredService<IConsultationDemoSeeder>();
-    await consultationSeeder.SeedAsync(app.Lifetime.ApplicationStopping);
     if (DevelopmentInventoryProvisioningCommand.TargetsDevelopmentDatabase(connectionString))
     {
+        await using var scope = app.Services.CreateAsyncScope();
+        var demoSeeder = scope.ServiceProvider.GetRequiredService<ICatalogDemoSeeder>();
+        await demoSeeder.SeedAsync(app.Lifetime.ApplicationStopping);
+        var consultationSeeder = scope.ServiceProvider.GetRequiredService<IConsultationDemoSeeder>();
+        await consultationSeeder.SeedAsync(app.Lifetime.ApplicationStopping);
         var inventorySeeder = scope.ServiceProvider.GetRequiredService<IDevelopmentInventorySeeder>();
         await inventorySeeder.SeedMissingAsync(app.Lifetime.ApplicationStopping);
     }
     else
     {
-        app.Logger.LogWarning("Development inventory seed skipped because the configured target is not PC01\\SQLEXPRESS / NEXORA.");
+        app.Logger.LogWarning("Development demo seeders skipped because the configured target is not PC01\\SQLEXPRESS / NEXORA. This prevents QA databases from receiving unintended demo changes.");
     }
 }
 
 if (commandArguments.IsRequested)
 {
-    if (!app.Environment.IsDevelopment())
+    var environmentAllowed = commandArguments.IsQaStaffProvisioningRequested
+        ? app.Environment.IsDevelopment() || app.Environment.IsEnvironment("QA")
+        : app.Environment.IsDevelopment();
+    if (!environmentAllowed)
     {
-        app.Logger.LogCritical("Development provisioning commands are available only in the Development environment.");
+        app.Logger.LogCritical("This provisioning command is not available in the current environment.");
         Environment.ExitCode = 1;
         return;
     }
 
-    Environment.ExitCode = commandArguments.IsDevelopmentInventorySeedRequested
+    Environment.ExitCode = commandArguments.IsQaStaffProvisioningRequested
+        ? await QaStaffProvisioningCommand.ExecuteAsync(
+            app.Services,
+            connectionString,
+            app.Environment,
+            app.Logger,
+            app.Lifetime.ApplicationStopping)
+        : commandArguments.IsDevelopmentInventorySeedRequested
         ? await DevelopmentInventoryProvisioningCommand.ExecuteAsync(
             app.Services,
             connectionString,

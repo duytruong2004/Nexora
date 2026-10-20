@@ -113,6 +113,16 @@ public sealed class AccountProfileHttpIntegrationTests
 
     private static string FindWebProjectRoot()
     {
+        var configuredRepositoryRoot = Environment.GetEnvironmentVariable("NEXORA_REPOSITORY_ROOT");
+        if (!string.IsNullOrWhiteSpace(configuredRepositoryRoot))
+        {
+            var configuredProjectRoot = Path.Combine(configuredRepositoryRoot, "src", "NEXORA.Web");
+            if (File.Exists(Path.Combine(configuredProjectRoot, "NEXORA.Web.csproj")))
+            {
+                return configuredProjectRoot;
+            }
+        }
+
         foreach (var start in new[] { AppContext.BaseDirectory, Directory.GetCurrentDirectory() })
         {
             var current = new DirectoryInfo(start);

@@ -12,10 +12,10 @@ public sealed class RoleLandingController(IAdminDashboardQueryService dashboard)
     public IActionResult Customer() => RedirectToAction("Profile", "Account");
 
     [Authorize(Roles = RoleNames.Sales)]
-    public IActionResult Sales() => Show("Khu vực nhân viên bán hàng");
+    public IActionResult Sales() => RedirectToAction("Index", "Orders", new { area = "Sales" });
 
     [Authorize(Roles = RoleNames.Warehouse)]
-    public IActionResult Warehouse() => Show("Khu vực nhân viên kho");
+    public IActionResult Warehouse() => RedirectToAction("Index", "Orders", new { area = "Warehouse" });
 
     [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Admin(CancellationToken cancellationToken)

@@ -32,6 +32,61 @@ public static class OrderStatuses
     public const string Cancelled = "CANCELLED";
 }
 
+public static class OrderCancellationRequestStatuses
+{
+    public const string Pending = "PENDING";
+    public const string Approved = "APPROVED";
+    public const string Rejected = "REJECTED";
+
+    public static bool IsKnown(string? status) => status is Pending or Approved or Rejected;
+
+    public static bool BlocksWarehouseExport(string? status) => status == Pending;
+}
+
+public static class OrderCancellationRules
+{
+    public static bool CanRequest(string orderStatus) =>
+        orderStatus is OrderStatuses.Confirmed or OrderStatuses.Preparing;
+
+    public static bool CanReview(string orderStatus, string? requestStatus) =>
+        requestStatus == OrderCancellationRequestStatuses.Pending &&
+        orderStatus is OrderStatuses.Confirmed or OrderStatuses.Preparing;
+
+    public static bool CanExport(string orderStatus, string? requestStatus) =>
+        orderStatus == OrderStatuses.Preparing &&
+        requestStatus is null or OrderCancellationRequestStatuses.Rejected;
+}
+
+public enum OrderWorkflowAction
+{
+    Confirm,
+    HandoffToWarehouse,
+    MarkShipping,
+    Complete
+}
+
+public readonly record struct OrderWorkflowTransition(string FromStatus, string ToStatus);
+
+public static class OrderWorkflowRules
+{
+    public static bool TryGetTransition(OrderWorkflowAction action, out OrderWorkflowTransition transition)
+    {
+        transition = action switch
+        {
+            OrderWorkflowAction.Confirm => new(OrderStatuses.Pending, OrderStatuses.Confirmed),
+            OrderWorkflowAction.HandoffToWarehouse => new(OrderStatuses.Confirmed, OrderStatuses.Preparing),
+            OrderWorkflowAction.MarkShipping => new(OrderStatuses.Exported, OrderStatuses.Shipping),
+            OrderWorkflowAction.Complete => new(OrderStatuses.Shipping, OrderStatuses.Completed),
+            _ => default
+        };
+
+        return action is OrderWorkflowAction.Confirm or
+            OrderWorkflowAction.HandoffToWarehouse or
+            OrderWorkflowAction.MarkShipping or
+            OrderWorkflowAction.Complete;
+    }
+}
+
 public sealed class Order
 {
     public int Id { get; set; }
@@ -49,6 +104,13 @@ public sealed class Order
     public DateTime? CancelledAt { get; set; }
     public string? CancelReason { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public string? CancelRequestStatus { get; set; }
+    public string? CancelRequestReason { get; set; }
+    public Guid? CancelRequestId { get; set; }
+    public DateTime? CancelRequestedAt { get; set; }
+    public int? CancelReviewedBy { get; set; }
+    public DateTime? CancelReviewedAt { get; set; }
+    public string? CancelDecisionNote { get; set; }
     public ICollection<OrderDetail> Details { get; set; } = new List<OrderDetail>();
     public ICollection<InventoryTransaction> InventoryTransactions { get; set; } = new List<InventoryTransaction>();
     public ICollection<Review> Reviews { get; set; } = new List<Review>();

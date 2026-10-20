@@ -224,3 +224,73 @@ Không có bảng nghiệp vụ mới. `NEXORA` và `NEXORA_IntegrationTests` đ
 - FR06 được UC-C06 bao phủ cho danh sách/danh mục/chi tiết; FR15 được UC-C13 bao phủ cho lịch sử/chi tiết/trạng thái; FR08–FR10 được UC-C08 bao phủ theo giải thích trong mục 2.3.
 - Không suy ra số lượng Use Case phải bằng số lượng FR.
 
+
+## 12. Truy vết triển khai Phase 5.2 – yêu cầu hủy sau xác nhận
+
+| Yêu cầu | Module / Use Case | Bằng chứng tự động | Trạng thái và giới hạn |
+|---|---|---|---|
+| FR16 / UC-C14 / BR01 | Customer Orders, CustomerOrderService, cancellation request fields on orders | SQL Server integration: chỉ chủ đơn; CONFIRMED/PREPARING eligibility; idempotent replay; một request tối đa; đơn/tồn/snapshot không đổi khi gửi request | Đạt trên NEXORA_IntegrationTests; pending request tách khỏi Order.status. PENDING direct-cancel flow của Phase 4 được giữ nguyên |
+| FR24 / UC-S06 | Sales/Admin Orders, OrderCancellationReviewService | HTTP role/antiforgery tests; SQL race của reviewer; approval release đúng một lần; rejection không đổi tồn; rollback khi ghi ledger lỗi | Đạt qua automated tests. Không có browser UAT hoặc tài khoản Sales thật |
+| NFR03 | Identity Authorization | HTTP test host xác nhận Customer/Warehouse bị từ chối review, Admin/Sales được phép qua endpoint theo role | Đạt qua HTTP integration; chưa manual browser test |
+| NFR04 | Order / Inventory transaction | SQL Server tests xác minh request/handoff, reviewer, approval/release transaction, export/OUT, double-export, shared inventory, deadlock retry và rollback | Phase 5.2 + 5.3 automated SQL QA đạt trên NEXORA_IntegrationTests; chưa browser UAT |
+| FR32 / UC-W06 / BR05 / NFR04 | Warehouse Fulfillment – `WarehouseFulfillmentService`, `Warehouse/Orders` | HTTP role/antiforgery test; SQL export success/replay, request-vs-export, approval-vs-export, same-order export race, shared-product multi-order race và ledger failure rollback | Automated QA đạt; chưa manual browser UAT bằng tài khoản Warehouse thật |
+| FR30–FR31 / UC-W04–UC-W05 / BR04 | Warehouse queue and order preparation view | SQL queue filters PREPARING; HTTP test validates queue/detail and non-existent order 404; detail shows SKU, quantities, inventory/reservation and cancellation warning | Đạt trong automated HTTP/SQL; schema không lưu actor/time riêng cho tiếp nhận/chuẩn bị; không tạo trạng thái Order mới |
+| NFR03 | Warehouse Authorization | HTTP host xác nhận Warehouse được phép GET/POST, Customer/Sales/Admin bị 403 và anonymous bị challenge; export POST yêu cầu antiforgery token | Automated HTTP test đạt; chưa browser UAT |
+
+### Phase 5.3 – Warehouse fulfillment/export
+
+| Yêu cầu | Module / Use Case | Bằng chứng tự động | Trạng thái và giới hạn |
+|---|---|---|---|
+| FR30 / UC-W04 / BR04 | Hàng đợi `PREPARING`, tìm theo Order/SKU/tên, phân trang | HTTP render với test principal; SQL service đọc dữ liệu QA | Automated test đạt; không có browser UAT |
+| FR31 / UC-W05 | Chi tiết đơn và kiểm tra tồn/reservation phục vụ soạn hàng | SQL kiểm tra chi tiết, reservation ledger và điều kiện đủ hàng; view không hiển thị phone/email | Automated test đạt; schema không lưu người/thời điểm nhận hoặc chuẩn bị |
+| FR32 / UC-W06 / BR05 | Export toàn đơn, `PREPARING → EXPORTED`, Inventory giảm tồn + reservation, ledger `OUT` | SQL Server transaction tests; forced ledger failure rollback; replay không ghi/trừ lần hai | Automated test đạt; không tuyên bố exactly-once ngoài CAS/transaction và xác minh status/ledger |
+| BR01 / NFR04 | Request/approval cancellation tranh chấp export | Hai test race khởi động đồng thời qua barrier trên SQL Server thật; final state/status/inventory/ledger assertions | Automated race tests đạt trên QA; không dùng SQLite/InMemory |
+| BR03 / NFR04 | Nhiều đơn dùng chung Inventory, không âm tồn, concurrency token | SQL race với hai Order cùng Product; rowversion + locked update + bounded deadlock retry | Automated test đạt; operation 1205 được retry tối đa 3 lần, sau verify; exhaustion báo conflict |
+
+Phase 5.3 không tạo migration và không thay đổi schema. SQL QA hậu kiểm có 27 bảng vật lý và ba migration trước đó; không còn fixture mang marker Phase 5.3. Full solution: 187 passed, 0 failed, 0 skipped; phân loại kiểm thử và giới hạn browser được ghi tại [PHASE5_3_ACCEPTANCE.md](./PHASE5_3_ACCEPTANCE.md).
+
+Migration 20261019174632_AddOrderCancellationRequestFields đã áp dụng chỉ trên PC01\SQLEXPRESS / NEXORA_IntegrationTests. Không thêm bảng nghiệp vụ; QA database có 27 bảng vật lý. Tổng test solution: 172 passed, 0 failed, 0 skipped; HTTP test host và SQL integration được phân biệt trong [PHASE5_2_ACCEPTANCE.md](./PHASE5_2_ACCEPTANCE.md). Browser/manual UAT chưa thực hiện.
+
+### Phase 5.4 – Warehouse Inventory Management
+
+| Yêu cầu | Module / Use Case | Bằng chứng tự động | Trạng thái và giới hạn |
+|---|---|---|---|
+| FR27 / UC-W01 / BR03 | `Warehouse/Inventory` list; physical, reserved, available; out-of-stock status | SQL Server query test với Inventory hiện hữu và Product thiếu Inventory; `Available = QuantityInStock - ReservedQuantity` | Đạt qua SQL/HTTP; record thiếu hiển thị rõ, không tự tạo |
+| FR28 / UC-W02 | Tìm kiếm tên/SKU, lọc hết hàng, phân trang | Query projection/filter SQL Server; giới hạn page size server-side | Đạt qua SQL-backed service; browser UAT chưa thực hiện |
+| FR29 / UC-W03 / BR03 | Nhập `IN`, điều chỉnh `ADJUST` tăng/giảm, có reference/reason | SQL transaction tests xác nhận Domain `Receive`/`AdjustStock`, tồn và ledger atomically; số lượng dương; giảm dưới reserved bị từ chối | Đạt qua SQL integration; adjustment direction mới lưu note canonical; schema giữ nguyên |
+| FR33 / UC-W07 | Inventory transaction history | SQL query test loại giao dịch, sản phẩm, actor, note; legacy ADJUST không có hướng hiển thị “Không xác định” | Đạt qua service test; browser UAT chưa thực hiện |
+| BR05 / NFR04 | Inventory update + IN/ADJUST ledger trong transaction | Forced ledger-insert SQL error; stock và ledger được xác minh rollback; IN/ADJUST và row lock dùng cùng SQL transaction | Đạt trên SQL QA; không kiểm thử ghi trên database Development chính |
+| NFR03 | Warehouse writes; Admin read-only; Customer/Sales/anonymous denied | HTTP integration: Admin GET danh sách/history nhưng mutation GET/POST bị 403; Customer/Sales bị chặn; Warehouse forms render; antiforgery thiếu bị 400; POST hợp lệ lấy actor từ claim | Đạt qua HTTP test host; không phải browser/manual test |
+| Idempotency / retry | Stable operation request ID trong ledger note, `sp_getapplock` theo transaction và marker lookup trước mutation | SQL Server race cùng token: một lần apply; same token payload khác bị từ chối; hai receipt/adjustment cùng SKU và adjustment-vs-checkout/export races | Đạt trong các đường application sử dụng applock; không exactly-once tuyệt đối vì không có unique constraint/schema operation ID; database unavailable sau ambiguous commit vẫn có thể trả CommitOutcomeUnknown |
+
+Tại thời điểm kết thúc Phase 5.4 (2026-10-20), chưa thực hiện browser/manual UAT; đây là trạng thái lịch sử trước Phase 5.5. Final acceptance và bằng chứng UAT mới hơn được ghi ở mục Phase 5.5 bên dưới.
+
+### Phase 5.5 – UAT evidence and QA access controls
+
+| Requirement / use case | Route / module | Evidence in this turn | Status and limits |
+|---|---|---|---|
+| FR15–FR16 / UC-C13–UC-C14 | Customer Orders `/Orders` | SQL/HTTP ownership and cancellation tests; owner manual UAT C01 confirms post-confirmation request | Automated QA PASS; manual summary PASS (owner-confirmed) |
+| FR21–FR24 / UC-S03–UC-S06 | Sales Orders `/Sales/Orders` | SQL workflow/CAS/concurrency tests; owner manual UAT S01/S02/S03 | Automated QA PASS; manual summary PASS (owner-confirmed) |
+| FR27–FR33 / UC-W01–UC-W07 | Warehouse Orders/Inventory `/Warehouse/Orders`, `/Warehouse/Inventory`, `/Warehouse/Inventory/History` | SQL transaction/race tests and HTTP role/antiforgery tests; owner manual UAT W01/W02/W03 | Automated QA PASS; manual summary PASS (owner-confirmed) |
+| FR24 / UC-A12 and NFR03 | Admin Orders/Inventory read-only access | Admin role is enforced server-side; automated HTTP tests reject inventory writes; owner manual UAT A01 | Automated QA PASS; manual summary PASS (owner-confirmed) |
+| NFR03 / server authorization | Customer, Sales, Warehouse, Admin | Controller `[Authorize]` boundaries, HTTP test-host role checks, and owner manual UAT R01 | Automated QA PASS; cross-role summary PASS (owner-confirmed) |
+| NFR04 / inventory/order consistency | Checkout, cancellation, review, export, receipt, adjustment | Final full solution: 209 passed, 0 failed, 0 skipped; SQL Server target verified as `PC01\SQLEXPRESS / NEXORA_IntegrationTests`; postflight retained role counts and had no marked Phase 5 fixtures | PASS on QA; main `NEXORA` database not accessed/updated |
+| NFR05 / responsive experience | Customer/staff Areas | Owner manual UAT R01 confirms responsive summary check | PASS at summary level only; no Codex browser automation or viewport-specific evidence claimed |
+
+### Phase 5.5 owner-confirmed manual UAT summary (2026-10-21)
+
+| Result | Case | Requirement / use-case coverage | Summary confirmed by project owner |
+|---|---|---|---|
+| PASS | S01 | Sales authentication and order list; FR21 / UC-S03 | Sales signs in and views orders |
+| PASS | S02 | Order confirmation/handoff; FR22–FR23 / UC-S04, UC-S07 | Sales confirms and hands off an order |
+| PASS | C01 | Customer cancellation request; FR16 / UC-C14 / BR01 | Customer requests cancellation after confirmation |
+| PASS | S03 | Cancellation review; FR24 / UC-S06 | Sales/Admin reviews the request |
+| PASS | W01 | Warehouse queue/export; FR30–FR32 / UC-W04–UC-W06 / BR05 | Warehouse views queue and exports an order |
+| PASS | W02 | Inventory receipt/adjustment; FR27–FR29 / UC-W01–UC-W03 | Warehouse receives and adjusts stock |
+| PASS | W03 | Inventory ledger; FR33 / UC-W07 | Warehouse views transaction history |
+| PASS | A01 | Admin read-only inventory permissions; NFR03 | Admin views stock but cannot edit it |
+| PASS | R01 | Cross-role authorization/responsive UI; NFR03/NFR05 | Cross-role access and responsive UI checked |
+
+Evidence source: the project owner's explicit confirmation in this conversation. No screenshot was attached or created. These are manual/browser checks reported by the owner, not Codex browser automation. Only the nine summary items are recorded as PASS; detailed scenarios and viewport-by-viewport assertions in `PHASE5_5_UAT_PLAN.md` remain unconfirmed unless separately evidenced.
+
+Final regression and QA postflight are documented in [`PHASE5_5_ACCEPTANCE.md`](./PHASE5_5_ACCEPTANCE.md). Phase 5 is **COMPLETED for Development/QA acceptance and READY FOR FINAL OWNER SIGN-OFF**. Applying migration `20261019174632_AddOrderCancellationRequestFields` to the main `NEXORA` database is outside this acceptance and still requires separate approval. Known limits remain: application-layer `IN`/`ADJUST` replay protection is not absolute exactly-once for direct SQL/bypass; warehouse preparation has no persisted actor/time audit fields; returns/refunds after export and automatic pending-order expiry are out of scope.

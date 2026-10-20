@@ -8,8 +8,6 @@
 }
 <div class="mb-4"><p class="text-uppercase small fw-semibold text-primary mb-1">Danh mục sản phẩm</p><h1 class="h2 mb-1">@ViewData["Title"]</h1>@if (!string.IsNullOrWhiteSpace(Model.Filter.Search)) { <p class="text-secondary mb-0">Kết quả cho “@Model.Filter.Search”</p> }</div>
 
-<div id="catalog-cart-feedback" class="alert position-fixed bottom-0 end-0 m-3 shadow d-none catalog-cart-feedback" role="status" aria-live="polite" aria-atomic="true"></div>
-
 <div class="d-flex justify-content-end d-lg-none mb-3">
     <button class="btn btn-outline-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#catalogFilters" aria-controls="catalogFilters">Lọc sản phẩm</button>
 </div>
@@ -91,6 +89,5 @@
 </div>
 @functions { private static string PageFormId(int page) => $"catalog-page-{page}"; }
 @section Scripts {
-    <script src="~/js/catalog-cart.js" asp-append-version="true"></script>
     <script src="~/js/catalog-compare-selection.js" asp-append-version="true"></script>
 }

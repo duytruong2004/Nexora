@@ -19,12 +19,32 @@ public sealed class CommerceAuthorizationTests
         Assert.Equal(RoleNames.Customer, authorize.Roles);
     }
 
+    [Fact]
+    public void CancellationReviewEndpoints_RequireStaffRoleAndAntiforgery()
+    {
+        var sales = typeof(NEXORA.Web.Areas.Sales.Controllers.OrdersController);
+        var admin = typeof(NEXORA.Web.Areas.Admin.Controllers.OrdersController);
+        Assert.Equal(RoleNames.Sales, sales.GetCustomAttributes(typeof(AuthorizeAttribute), true)
+            .Cast<AuthorizeAttribute>().Single().Roles);
+        Assert.Equal(RoleNames.Admin, admin.GetCustomAttributes(typeof(AuthorizeAttribute), true)
+            .Cast<AuthorizeAttribute>().Single().Roles);
+
+        foreach (var controller in new[] { sales, admin })
+        {
+            var action = controller.GetMethod("ReviewCancellation");
+            Assert.NotNull(action);
+            Assert.NotNull(action!.GetCustomAttributes(typeof(HttpPostAttribute), true).SingleOrDefault());
+            Assert.NotNull(action.GetCustomAttributes(typeof(ValidateAntiForgeryTokenAttribute), true).SingleOrDefault());
+        }
+    }
+
     [Theory]
     [InlineData(typeof(CartController), nameof(CartController.Add))]
     [InlineData(typeof(CartController), nameof(CartController.Update))]
     [InlineData(typeof(CartController), nameof(CartController.Remove))]
     [InlineData(typeof(CheckoutController), nameof(CheckoutController.Place))]
     [InlineData(typeof(OrdersController), nameof(OrdersController.Cancel))]
+    [InlineData(typeof(OrdersController), nameof(OrdersController.RequestCancellation))]
     public void CommerceMutationActions_RequireAntiforgery(Type controllerType, string actionName)
     {
         var action = controllerType.GetMethod(actionName);
