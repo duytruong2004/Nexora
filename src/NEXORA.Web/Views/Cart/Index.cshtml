@@ -3,10 +3,19 @@
     ViewData["Title"] = "Giỏ hàng";
 }
 
-<section class="page-heading mb-4">
-    <p class="text-uppercase small fw-semibold text-primary mb-2">NEXORA · Mua sắm</p>
-    <h1 class="display-6 fw-bold mb-2">Giỏ hàng</h1>
-    <p class="text-secondary mb-0">Kiểm tra sản phẩm và số lượng trước khi tiếp tục.</p>
+<section class="cart-page-heading" aria-labelledby="cart-page-title">
+    <div>
+        <p class="cart-eyebrow">NEXORA · MUA SẮM</p>
+        <h1 id="cart-page-title">Giỏ hàng của bạn</h1>
+        <p class="cart-page-count">
+            <span data-cart-distinct-count>@Model.Items.Count</span> sản phẩm khác nhau
+            <span aria-hidden="true">·</span>
+            <span data-cart-total-count>@Model.ItemCount</span> sản phẩm tổng cộng
+        </p>
+    </div>
+    <div class="cart-heading-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 8h12l1.1 12H4.9L6 8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 9V6a3 3 0 0 1 6 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </div>
 </section>
 
 @if (TempData["Success"] is string success)
@@ -23,93 +32,98 @@
 <div id="cart-page-content">
 @if (Model.IsEmpty)
 {
-    <section id="cart-empty-state" class="catalog-empty rounded-4 p-5 text-center">
-        <div class="display-5 mb-3" aria-hidden="true">🛍️</div>
-        <h2 class="h4">Giỏ hàng đang trống</h2>
-        <p class="text-secondary">Khám phá danh mục và thêm sản phẩm bạn quan tâm.</p>
-        <a class="btn btn-primary" data-cart-empty-focus asp-controller="Catalog" asp-action="Index">Khám phá sản phẩm</a>
+    <section id="cart-empty-state" class="cart-empty-panel" aria-labelledby="cart-empty-title">
+        <div class="cart-empty-icon" aria-hidden="true">🛍️</div>
+        <h2 id="cart-empty-title">Giỏ hàng đang trống</h2>
+        <p>Khám phá sản phẩm và thêm những món bạn quan tâm.</p>
+        <a class="cart-continue-button cart-continue-button-primary" data-cart-empty-focus asp-controller="Catalog" asp-action="Index">
+            <span aria-hidden="true">←</span> Khám phá sản phẩm
+        </a>
     </section>
 }
 else
 {
-    <div class="row g-4 align-items-start">
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm overflow-hidden">
-                <div class="table-responsive">
-                    <table class="table align-middle mb-0 cart-table">
-                        <thead class="table-light">
-                            <tr><th scope="col">Sản phẩm</th><th scope="col">Đơn giá</th><th scope="col">Số lượng</th><th scope="col">Thành tiền</th><th scope="col"><span class="visually-hidden">Thao tác</span></th></tr>
-                        </thead>
-                        <tbody>
-                        @foreach (var item in Model.Items)
+    <div class="cart-layout">
+        <div class="cart-main-column">
+            <section class="cart-items-panel" aria-label="Sản phẩm trong giỏ hàng">
+                <div class="cart-items-list">
+                @foreach (var item in Model.Items)
+                {
+                    <article class="cart-item-row" data-cart-item-id="@item.CartItemId" data-cart-product-available="@item.IsAvailable.ToString().ToLowerInvariant()">
+                        @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
                         {
-                            <tr data-cart-item-id="@item.CartItemId" data-cart-product-available="@item.IsAvailable.ToString().ToLowerInvariant()">
-                                <td>
-                                    <div class="d-flex align-items-center gap-3 cart-product">
-                                        @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
-                                        {
-                                            <img class="cart-product-image" src="@item.ImageUrl" alt="" loading="lazy" />
-                                        }
-                                        else
-                                        {
-                                            <div class="cart-product-image cart-product-placeholder" aria-hidden="true">N</div>
-                                        }
-                                        <div>
-                                            <a class="fw-semibold text-decoration-none" asp-controller="Catalog" asp-action="Details" asp-route-id="@item.ProductId">@item.ProductName</a>
-                                            <div class="small text-secondary">Mã: @item.Sku</div>
-                                            <div data-cart-promotion class="small text-success @(item.DiscountAmount > 0 ? string.Empty : "d-none")">
-                                                <span data-cart-promotion-name>@item.PromotionName</span> · giảm <span data-cart-discount>@item.DiscountAmount.ToString("N0")</span> ₫
-                                            </div>
-                                            <div data-cart-stock-message class="small text-danger mt-1 @(!item.IsAvailable || item.Quantity > item.AvailableQuantity ? string.Empty : "d-none")">
-                                                Tồn kho thay đổi. Còn có thể bán: <span data-cart-available>@item.AvailableQuantity</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td data-cart-unit-price>@item.UnitPrice.ToString("N0") ₫</td>
-                                <td>
-                                    <form asp-action="Update" method="post" class="cart-quantity-form" data-cart-ajax="update">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="cartItemId" value="@item.CartItemId" />
-                                        <label class="visually-hidden" for="quantity-@item.CartItemId">Số lượng @item.ProductName</label>
-                                        <div class="cart-quantity-control" role="group" aria-label="Điều chỉnh số lượng @item.ProductName">
-                                            <button class="btn btn-outline-secondary cart-quantity-step" type="button" data-cart-quantity-decrease aria-label="Giảm số lượng @item.ProductName" disabled="@(!item.IsAvailable)">−</button>
-                                            <input data-cart-quantity id="quantity-@item.CartItemId" class="form-control text-center cart-quantity-input" type="number" name="quantity" value="@item.Quantity" min="1" step="1" inputmode="numeric" autocomplete="off" aria-describedby="quantity-status-@item.CartItemId" disabled="@(!item.IsAvailable)" />
-                                            <button class="btn btn-outline-secondary cart-quantity-step" type="button" data-cart-quantity-increase aria-label="Tăng số lượng @item.ProductName" disabled="@(!item.IsAvailable)">+</button>
-                                        </div>
-                                        <span id="quantity-status-@item.CartItemId" class="small text-secondary cart-quantity-status" data-cart-quantity-status aria-live="polite"></span>
-                                    </form>
-                                </td>
-                                <td data-cart-line-total class="fw-semibold text-nowrap">@item.LineTotal.ToString("N0") ₫</td>
-                                <td>
-                                    <form asp-action="Remove" method="post" data-cart-ajax="remove">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="cartItemId" value="@item.CartItemId" />
-                                        <button class="btn btn-outline-danger btn-sm" type="submit" data-cart-remove-button aria-label="Xóa @item.ProductName">
-                                            <span data-cart-button-text>Xóa</span>
-                                            <span class="spinner-border spinner-border-sm d-none" data-cart-spinner aria-hidden="true"></span>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
+                            <img class="cart-product-image" src="@item.ImageUrl" alt="Ảnh @item.ProductName" loading="lazy" />
                         }
-                        </tbody>
-                    </table>
+                        else
+                        {
+                            <div class="cart-product-image cart-product-placeholder" aria-hidden="true">N</div>
+                        }
+
+                        <div class="cart-item-details">
+                            <a class="cart-item-name" asp-controller="Catalog" asp-action="Details" asp-route-id="@item.ProductId">@item.ProductName</a>
+                            <div class="cart-item-sku">SKU: @item.Sku</div>
+                            <div class="cart-item-prices">
+                                <strong data-cart-unit-price>@item.UnitPrice.ToString("N0") ₫</strong>
+                                <span class="cart-item-line-total">Thành tiền: <strong data-cart-line-total>@item.LineTotal.ToString("N0") ₫</strong></span>
+                            </div>
+                            <div data-cart-promotion class="cart-item-promotion @(item.DiscountAmount > 0 ? string.Empty : "d-none")">
+                                <span data-cart-promotion-name>@item.PromotionName</span> · giảm <span data-cart-discount>@item.DiscountAmount.ToString("N0")</span> ₫
+                            </div>
+                            <div data-cart-stock-message class="cart-item-stock @(!item.IsAvailable || item.Quantity > item.AvailableQuantity ? string.Empty : "d-none")">
+                                Tồn kho thay đổi. Còn có thể bán: <span data-cart-available>@item.AvailableQuantity</span>
+                            </div>
+
+                            <div class="cart-item-actions">
+                                <form asp-action="Update" method="post" class="cart-quantity-form" data-cart-ajax="update">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="cartItemId" value="@item.CartItemId" />
+                                    <label class="visually-hidden" for="quantity-@item.CartItemId">Số lượng @item.ProductName</label>
+                                    <div class="cart-quantity-control" role="group" aria-label="Điều chỉnh số lượng @item.ProductName">
+                                        <button class="cart-quantity-step" type="button" data-cart-quantity-decrease aria-label="Giảm số lượng @item.ProductName" disabled="@(!item.IsAvailable)">−</button>
+                                        <input data-cart-quantity id="quantity-@item.CartItemId" class="form-control text-center cart-quantity-input" type="number" name="quantity" value="@item.Quantity" min="1" step="1" inputmode="numeric" autocomplete="off" aria-describedby="quantity-status-@item.CartItemId" disabled="@(!item.IsAvailable)" />
+                                        <button class="cart-quantity-step" type="button" data-cart-quantity-increase aria-label="Tăng số lượng @item.ProductName" disabled="@(!item.IsAvailable)">+</button>
+                                    </div>
+                                    <span id="quantity-status-@item.CartItemId" class="cart-quantity-status" data-cart-quantity-status aria-live="polite"></span>
+                                </form>
+                            </div>
+                        </div>
+                        <form asp-action="Remove" method="post" class="cart-remove-form" data-cart-ajax="remove">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="cartItemId" value="@item.CartItemId" />
+                            <button class="cart-remove-button" type="submit" data-cart-remove-button aria-label="Xóa @item.ProductName">
+                                <span data-cart-button-text class="visually-hidden">Xóa</span>
+                                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M10 11v7m4-7v7M6 7l1 13h10l1-13M9 7V4h6v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                <span class="spinner-border spinner-border-sm d-none" data-cart-spinner aria-hidden="true"></span>
+                            </button>
+                        </form>
+                    </article>
+                }
                 </div>
-            </div>
-            <a class="btn btn-link px-0 mt-3" asp-controller="Catalog" asp-action="Index">← Tiếp tục mua sắm</a>
+            </section>
+
+            <a class="cart-continue-button" asp-controller="Catalog" asp-action="Index">
+                <span class="cart-continue-arrow" aria-hidden="true">←</span>
+                <span>Tiếp tục mua sắm</span>
+                <span class="cart-continue-hint">Khám phá thêm sản phẩm</span>
+            </a>
         </div>
-        <div class="col-lg-4">
-            <section class="card border-0 shadow-sm p-4 cart-summary" aria-labelledby="cart-summary-title">
-                <h2 id="cart-summary-title" class="h5 mb-4">Tóm tắt đơn hàng</h2>
-                <div class="d-flex justify-content-between mb-2"><span class="text-secondary">Tạm tính (<span data-cart-item-count>@Model.ItemCount</span> sản phẩm)</span><strong data-cart-subtotal>@Model.Subtotal.ToString("N0") ₫</strong></div>
-                <div class="d-flex justify-content-between mb-3"><span class="text-secondary">Khuyến mại</span><span class="text-success">−<span data-cart-promotion-discount>@Model.PromotionDiscount.ToString("N0")</span> ₫</span></div>
-                <hr />
-                <div class="d-flex justify-content-between align-items-baseline mb-4"><span class="fw-semibold">Tổng dự kiến</span><strong data-cart-total class="h4 text-primary mb-0">@Model.Total.ToString("N0") ₫</strong></div>
-                <div data-cart-checkout-warning class="alert alert-warning small @(!Model.CanCheckout ? string.Empty : "d-none")">Hãy xử lý sản phẩm hết hàng hoặc số lượng vượt tồn trước khi thanh toán.</div>
-                <a data-cart-checkout-link class="btn btn-primary btn-lg w-100 @(Model.CanCheckout ? string.Empty : "d-none")" asp-controller="Checkout" asp-action="Index">Tiến hành thanh toán</a>
-                <button data-cart-checkout-disabled class="btn btn-primary btn-lg w-100 @(Model.CanCheckout ? "d-none" : string.Empty)" type="button" disabled>Tiến hành thanh toán</button>
-                <p class="small text-secondary mt-3 mb-0">Khuyến mại tốt nhất hợp lệ được áp dụng một lần, không cộng dồn. Tổng tiền được xác nhận lại trước khi tạo đơn.</p>
+
+        <div class="cart-side-column">
+            <section class="cart-summary" aria-labelledby="cart-summary-title">
+                <h2 id="cart-summary-title">Tóm tắt đơn hàng</h2>
+                <div class="cart-summary-row"><span>Tạm tính (<span data-cart-item-count>@Model.ItemCount</span> sản phẩm)</span><strong data-cart-subtotal>@Model.Subtotal.ToString("N0") ₫</strong></div>
+                <div class="cart-summary-row"><span>Giảm giá</span><span class="cart-discount-value">−<span data-cart-promotion-discount>@Model.PromotionDiscount.ToString("N0")</span> ₫</span></div>
+                <div class="cart-summary-total"><span>Tổng dự kiến</span><strong data-cart-total>@Model.Total.ToString("N0") ₫</strong></div>
+                <div data-cart-checkout-warning class="cart-checkout-warning @(!Model.CanCheckout ? string.Empty : "d-none")">Hãy xử lý sản phẩm hết hàng hoặc số lượng vượt tồn trước khi thanh toán.</div>
+                <a data-cart-checkout-link class="cart-checkout-button @(Model.CanCheckout ? string.Empty : "d-none")" asp-controller="Checkout" asp-action="Index">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 1 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                    Tiến hành thanh toán
+                </a>
+                <button data-cart-checkout-disabled class="cart-checkout-button cart-checkout-button-disabled @(Model.CanCheckout ? "d-none" : string.Empty)" type="button" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 1 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                    Tiến hành thanh toán
+                </button>
+                <p class="cart-summary-note"><span aria-hidden="true">✓</span> Kiểm tra đơn hàng trước khi xác nhận. Khuyến mại hợp lệ được áp dụng một lần và tổng tiền sẽ được xác nhận lại trước khi tạo đơn.</p>
             </section>
         </div>
     </div>
@@ -117,11 +131,13 @@ else
 </div>
 
 <template id="cart-empty-template">
-    <section id="cart-empty-state" class="catalog-empty rounded-4 p-5 text-center">
-        <div class="display-5 mb-3" aria-hidden="true">🛍️</div>
-        <h2 class="h4">Giỏ hàng đang trống</h2>
-        <p class="text-secondary">Khám phá danh mục và thêm sản phẩm bạn quan tâm.</p>
-        <a class="btn btn-primary" data-cart-empty-focus asp-controller="Catalog" asp-action="Index">Khám phá sản phẩm</a>
+    <section id="cart-empty-state" class="cart-empty-panel" aria-labelledby="cart-empty-title">
+        <div class="cart-empty-icon" aria-hidden="true">🛍️</div>
+        <h2 id="cart-empty-title">Giỏ hàng đang trống</h2>
+        <p>Khám phá sản phẩm và thêm những món bạn quan tâm.</p>
+        <a class="cart-continue-button cart-continue-button-primary" data-cart-empty-focus asp-controller="Catalog" asp-action="Index">
+            <span aria-hidden="true">←</span> Khám phá sản phẩm
+        </a>
     </section>
 </template>
 

@@ -1,0 +1,20 @@
+@model NEXORA.Web.Areas.Admin.Models.CreateStaffViewModel
+@{
+    ViewData["Title"] = "Tạo nhân viên";
+}
+
+<div class="mb-4"><p class="text-uppercase small fw-semibold text-primary mb-2">Identity & Access</p><h1 class="h3 fw-bold mb-1">Tạo nhân viên</h1><p class="text-secondary mb-0">Tài khoản bắt đầu ở trạng thái chưa kích hoạt; nhân viên tự thiết lập mật khẩu qua lời mời.</p></div>
+<div class="card border-0 shadow-sm"><div class="card-body p-4">
+    <form asp-action="CreateStaff" method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+        <div class="row g-3">
+            <div class="col-12 col-lg-6"><label asp-for="FullName" class="form-label"></label><input asp-for="FullName" class="form-control" autocomplete="name" /><span asp-validation-for="FullName" class="text-danger"></span></div>
+            <div class="col-12 col-lg-6"><label asp-for="Email" class="form-label"></label><input asp-for="Email" class="form-control" autocomplete="email" /><span asp-validation-for="Email" class="text-danger"></span></div>
+            <div class="col-12 col-lg-6"><label asp-for="Role" class="form-label"></label><select asp-for="Role" class="form-select"><option value="">Chọn vai trò</option><option value="Sales">Sales</option><option value="Warehouse">Warehouse</option></select><span asp-validation-for="Role" class="text-danger"></span></div>
+        </div>
+        <div class="alert alert-info mt-4 mb-0">Admin không thể tạo hoặc cấp role Admin từ giao diện này. Không cần và không được nhập mật khẩu của nhân viên.</div>
+        <div class="d-flex flex-wrap gap-2 mt-4"><button class="btn btn-primary" type="submit">Tạo và gửi lời mời</button><a class="btn btn-outline-secondary" asp-action="Index">Hủy</a></div>
+    </form>
+</div></div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

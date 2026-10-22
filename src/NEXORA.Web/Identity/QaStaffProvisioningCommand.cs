@@ -16,8 +16,8 @@ namespace NEXORA.Web.Identity;
 /// </summary>
 public static class QaStaffProvisioningCommand
 {
-    private const string ExpectedServer = @"PC01\SQLEXPRESS";
-    private const string ExpectedDatabase = "NEXORA_IntegrationTests";
+    private const string ExpectedServer = DatabaseConnectionPolicy.QaServer;
+    private const string ExpectedDatabase = DatabaseConnectionPolicy.QaDatabase;
     private static readonly string[] ExpectedMigrations =
     [
         "20261015173046_InitialFoundation",
@@ -35,19 +35,7 @@ public static class QaStaffProvisioningCommand
 
     public static bool IsApprovedQaConnectionString(string? connectionString)
     {
-        if (string.IsNullOrWhiteSpace(connectionString)) return false;
-
-        try
-        {
-            var builder = new SqlConnectionStringBuilder(connectionString);
-            return string.Equals(builder.DataSource.Trim(), ExpectedServer, StringComparison.OrdinalIgnoreCase) &&
-                   string.Equals(builder.InitialCatalog, ExpectedDatabase, StringComparison.OrdinalIgnoreCase) &&
-                   builder.IntegratedSecurity;
-        }
-        catch (ArgumentException)
-        {
-            return false;
-        }
+        return DatabaseConnectionPolicy.IsApprovedQaConnectionString(connectionString);
     }
 
     public static bool IsQaEmailAddress(string? email)

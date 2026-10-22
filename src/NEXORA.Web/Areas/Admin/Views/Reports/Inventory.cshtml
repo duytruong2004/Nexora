@@ -1,0 +1,23 @@
+@model NEXORA.Web.Areas.Admin.Models.AdminInventoryReportViewModel
+@using NEXORA.Application.Admin
+@{
+    ViewData["Title"] = "Báo cáo tồn kho";
+    string StatusLabel(InventoryReportStatus status) => status switch { InventoryReportStatus.Normal => "Bình thường", InventoryReportStatus.Low => "Sắp hết", InventoryReportStatus.OutOfStock => "Hết hàng khả dụng", InventoryReportStatus.Missing => "Chưa có dữ liệu tồn kho", _ => "Bất thường" };
+    string StatusBadge(InventoryReportStatus status) => status switch { InventoryReportStatus.Normal => "text-bg-success", InventoryReportStatus.Low => "text-bg-warning", InventoryReportStatus.OutOfStock => "text-bg-danger", InventoryReportStatus.Missing => "text-bg-secondary", _ => "text-bg-dark" };
+}
+<div class="mb-4"><p class="text-uppercase small fw-semibold text-primary mb-1">Theo dõi tồn kho · chỉ đọc</p><h1 class="h2 mb-1">Báo cáo tồn kho</h1><p class="text-secondary mb-0">Có thể bán = tồn vật lý − đang giữ. Báo cáo không thay đổi giao dịch kho.</p></div>
+<partial name="_Navigation" />
+<form method="get" asp-area="Admin" asp-controller="Reports" asp-action="Inventory" class="card card-body border-0 shadow-sm mb-4"><div class="row g-3 align-items-end"><div class="col-12 col-sm-8 col-lg-4"><label class="form-label" for="threshold">Ngưỡng sắp hết (số nguyên không âm)</label><input class="form-control" id="threshold" name="threshold" type="number" min="0" step="1" value="@Model.Threshold" /></div><div class="col-12 col-sm-4 col-lg-2"><button class="btn btn-primary w-100" type="submit">Lọc tồn kho</button></div><div class="col-12 col-lg-6 small text-secondary">Sắp hết khi tồn khả dụng lớn hơn 0 và nhỏ hơn hoặc bằng ngưỡng.</div></div></form>
+@if (Model.Error is not null) { <div class="alert alert-danger" role="alert">@Model.Error</div> }
+@if (Model.Report is { } report)
+{
+    <section class="row g-3 mb-4" aria-label="Tổng hợp trạng thái tồn kho">
+        <div class="col-6 col-xl"><article class="admin-stat-card"><span>Bình thường</span><strong>@report.Counts.Normal</strong></article></div><div class="col-6 col-xl"><article class="admin-stat-card"><span>Sắp hết</span><strong>@report.Counts.Low</strong></article></div><div class="col-6 col-xl"><article class="admin-stat-card"><span>Hết khả dụng</span><strong>@report.Counts.OutOfStock</strong></article></div><div class="col-6 col-xl"><article class="admin-stat-card"><span>Thiếu tồn kho</span><strong>@report.Counts.Missing</strong></article></div><div class="col-6 col-xl"><article class="admin-stat-card"><span>Bất thường</span><strong>@report.Counts.Anomaly</strong></article></div>
+    </section>
+    <section class="card border-0 shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Sản phẩm</th><th>Mã</th><th class="text-end">Tồn vật lý</th><th class="text-end">Đang giữ</th><th class="text-end">Có thể bán</th><th>Phân loại</th></tr></thead><tbody>
+    @if (report.Items.Count == 0) { <tr><td colspan="6" class="text-center text-secondary py-5">Chưa có sản phẩm trong dữ liệu.</td></tr> }
+    @foreach (var row in report.Items) { <tr><td>@row.ProductName</td><td>@row.Sku</td><td class="text-end">@(row.QuantityInStock?.ToString("N0") ?? "—")</td><td class="text-end">@(row.ReservedQuantity?.ToString("N0") ?? "—")</td><td class="text-end fw-semibold">@(row.AvailableQuantity?.ToString("N0") ?? "—")</td><td><span class="badge @StatusBadge(row.Status)">@StatusLabel(row.Status)</span></td></tr> }
+    </tbody></table></div>
+    @if (report.PageCount > 1) { <div class="d-flex justify-content-between align-items-center p-3 border-top"><span class="small text-secondary">Trang @report.Page / @report.PageCount</span><div class="d-flex gap-2"><a class="btn btn-sm btn-outline-primary @(report.Page <= 1 ? "disabled" : "")" asp-area="Admin" asp-controller="Reports" asp-action="Inventory" asp-route-threshold="@report.Threshold" asp-route-page="@(report.Page - 1)">Trước</a><a class="btn btn-sm btn-outline-primary @(report.Page >= report.PageCount ? "disabled" : "")" asp-area="Admin" asp-controller="Reports" asp-action="Inventory" asp-route-threshold="@report.Threshold" asp-route-page="@(report.Page + 1)">Sau</a></div></div> }
+    </section>
+}

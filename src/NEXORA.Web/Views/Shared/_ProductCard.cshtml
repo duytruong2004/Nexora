@@ -1,27 +1,42 @@
 @model NEXORA.Application.Catalog.CatalogProductCard
-<article class="card h-100 product-card border-0 shadow-sm">
-    <a asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id" class="product-card-image text-decoration-none">
-        @await Html.PartialAsync("_ProductImage", new NEXORA.Web.Models.ProductImageDisplayViewModel(Model.PrimaryImageUrl, Model.Name, "card"))
-    </a>
-    <div class="card-body d-flex flex-column">
-        <div class="product-card-meta small mb-2"><span>@Model.CategoryName</span><span aria-hidden="true">·</span><span>@Model.BrandName</span></div>
+<article class="card h-100 product-card border-0">
+    <div class="product-card-media">
+        <a asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id" class="product-card-image text-decoration-none">
+            @await Html.PartialAsync("_ProductImage", new NEXORA.Web.Models.ProductImageDisplayViewModel(Model.PrimaryImageUrl, Model.Name, "card"))
+        </a>
         @if (Model.AvailableQuantity is > 0)
         {
-            <span class="badge rounded-pill product-stock-badge product-stock-badge--available align-self-start mb-2">Còn hàng</span>
+            <span class="badge rounded-pill product-stock-badge product-stock-badge--available">Còn hàng</span>
         }
         else if (Model.AvailableQuantity == 0)
         {
-            <span class="badge rounded-pill product-stock-badge product-stock-badge--unavailable align-self-start mb-2">Hết hàng</span>
+            <span class="badge rounded-pill product-stock-badge product-stock-badge--unavailable">Hết hàng</span>
         }
         else
         {
-            <span class="badge rounded-pill product-stock-badge product-stock-badge--unknown align-self-start mb-2">Chưa có hàng</span>
+            <span class="badge rounded-pill product-stock-badge product-stock-badge--unknown">Chưa có hàng</span>
         }
-        <h3 class="h6 fw-semibold product-card-heading"><a asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id" class="product-card-title text-decoration-none">@Model.Name</a></h3>
+        @if (User.IsInRole("Customer"))
+        {
+            <form asp-controller="Favorites" asp-action="Add" method="post" class="product-card-favorite" data-catalog-favorite-add>
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="productId" value="@Model.Id" />
+                <input type="hidden" name="returnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
+                <button class="product-favorite-button" type="submit" data-catalog-favorite-button data-product-name="@Model.Name" aria-label="Thêm @Model.Name vào yêu thích" title="Thêm vào yêu thích">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.8 4.8a5.4 5.4 0 0 0-7.6 0L12 6l-1.2-1.2a5.4 5.4 0 0 0-7.6 7.6l1.2 1.2L12 21l7.6-7.4 1.2-1.2a5.4 5.4 0 0 0 0-7.6Z" /></svg>
+                    <span class="visually-hidden" data-catalog-favorite-label>♡ Thêm yêu thích</span>
+                    <span class="spinner-border spinner-border-sm d-none" data-catalog-favorite-spinner aria-hidden="true"></span>
+                </button>
+            </form>
+        }
+    </div>
+    <div class="card-body d-flex flex-column">
+        <div class="product-card-meta small"><span>@Model.CategoryName</span><span aria-hidden="true">·</span><span>@Model.BrandName</span></div>
+        <h3 class="product-card-heading"><a asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id" class="product-card-title text-decoration-none">@Model.Name</a></h3>
         <p class="small text-secondary product-card-sku">Mã: @Model.Sku</p>
         @if (Model.KeySpecifications.Count > 0)
         {
-            <ul class="product-card-specs small" aria-label="Thông số chính">
+            <ul class="product-card-specs" aria-label="Thông số chính">
                 @foreach (var specification in Model.KeySpecifications)
                 {
                     var value = specification.DisplayValue ?? (specification.DataType == "NUMBER" && !string.IsNullOrWhiteSpace(specification.Unit) ? $"{specification.Value} {specification.Unit}" : specification.Value);
@@ -29,22 +44,27 @@
                 }
             </ul>
         }
-        <div class="mt-auto pt-2">
-            <div class="d-flex flex-wrap align-items-baseline gap-2"><strong class="product-card-price">@((Model.DiscountPrice ?? Model.Price).ToString("N0")) ₫</strong>@if (Model.DiscountPrice.HasValue) { <del class="small text-secondary">@Model.Price.ToString("N0") ₫</del> }</div>
-            <a class="btn btn-outline-primary btn-sm w-100 mt-3" asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id">Xem chi tiết</a>
-            @if (User.IsInRole("Customer"))
-            {
-                <form asp-controller="Cart" asp-action="Add" method="post" class="d-grid w-100 mt-2" data-catalog-cart-add>
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="productId" value="@Model.Id" />
-                    <input type="hidden" name="quantity" value="1" />
-                    <input type="hidden" name="returnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
-                    <button class="btn btn-primary btn-sm w-100" type="submit" data-catalog-cart-add-button disabled="@(Model.AvailableQuantity is > 0 ? null : "disabled")" aria-disabled="@(Model.AvailableQuantity is > 0 ? "false" : "true")" title="@(Model.AvailableQuantity is not > 0 ? "Sản phẩm hiện chưa có hàng để bán" : null)">
-                        <span data-catalog-cart-add-label>Thêm vào giỏ hàng</span>
-                        <span class="spinner-border spinner-border-sm d-none" data-catalog-cart-add-spinner aria-hidden="true"></span>
-                    </button>
-                </form>
-            }
+        <div class="product-card-footer mt-auto">
+            <div class="product-card-price-row"><strong class="product-card-price">@((Model.DiscountPrice ?? Model.Price).ToString("N0")) ₫</strong>@if (Model.DiscountPrice.HasValue) { <del class="small text-secondary">@Model.Price.ToString("N0") ₫</del> }</div>
+            <div class="product-card-actions">
+                @if (User.IsInRole("Customer"))
+                {
+                    <form asp-controller="Cart" asp-action="Add" method="post" class="product-card-cart-form" data-catalog-cart-add>
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="productId" value="@Model.Id" />
+                        <input type="hidden" name="quantity" value="1" />
+                        <input type="hidden" name="returnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
+                        <button class="btn btn-primary product-card-cart-button" type="submit" data-catalog-cart-add-button disabled="@(Model.AvailableQuantity is > 0 ? null : "disabled")" aria-disabled="@(Model.AvailableQuantity is > 0 ? "false" : "true")" title="@(Model.AvailableQuantity is not > 0 ? "Sản phẩm hiện chưa có hàng để bán" : null)">
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M2 3h2l2.4 11.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6L22 7H5"/></svg>
+                            <span data-catalog-cart-add-label>Thêm vào giỏ</span>
+                            <span class="spinner-border spinner-border-sm d-none" data-catalog-cart-add-spinner aria-hidden="true"></span>
+                        </button>
+                    </form>
+                }
+                <a class="product-card-details" asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id" aria-label="Xem chi tiết @Model.Name" title="Xem chi tiết">
+                    <span aria-hidden="true">↗</span>
+                </a>
+            </div>
         </div>
     </div>
 </article>

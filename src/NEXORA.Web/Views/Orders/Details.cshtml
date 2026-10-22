@@ -1,111 +1,285 @@
 @model CustomerOrderDetailsViewModel
 @{
     var order = Model.Order;
+    var progress = WorkflowProgress(order.Status);
+    var itemCount = order.Lines.Sum(line => line.Quantity);
     ViewData["Title"] = $"Đơn hàng #{order.Id}";
 }
 
-<section class="page-heading mb-4">
-    <p class="text-uppercase small fw-semibold text-primary mb-2">NEXORA · Đơn hàng của tôi</p>
-    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
-        <div><h1 class="display-6 fw-bold mb-2">Đơn hàng #@order.Id</h1><p class="text-secondary mb-0">Đặt lúc @order.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p></div>
-        <span class="badge rounded-pill fs-6 @(order.Status == "PENDING" ? "text-bg-warning" : order.Status == "CANCELLED" ? "text-bg-secondary" : order.Status == "COMPLETED" ? "text-bg-success" : "text-bg-primary")">@OrderStatusPresentation.Label(order.Status)</span>
-    </div>
-</section>
+<div class="nexora-order-details">
+    <nav class="nexora-orders-breadcrumb" aria-label="Đường dẫn">
+        <ol>
+            <li><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+            <li><a asp-action="Index">Đơn hàng của tôi</a></li>
+            <li aria-current="page">Đơn hàng #@order.Id</li>
+        </ol>
+    </nav>
 
-@if (TempData["Success"] is string successMessage)
-{
-    <div class="alert alert-success" role="status">@successMessage</div>
-}
-@if (TempData["Error"] is string errorMessage)
-{
-    <div class="alert alert-danger" role="alert">@errorMessage</div>
-}
-
-<div class="row g-4 align-items-start">
-    <div class="col-lg-8">
-        <div class="card border-0 shadow-sm overflow-hidden">
-            <div class="table-responsive">
-                <table class="table align-middle mb-0">
-                    <thead class="table-light"><tr><th>Sản phẩm</th><th class="text-center">SL</th><th class="text-end">Đơn giá</th><th class="text-end">Giảm</th><th class="text-end">Thành tiền</th></tr></thead>
-                    <tbody>
-                    @foreach (var line in order.Lines)
-                    {
-                        <tr><td>@line.ProductName</td><td class="text-center">@line.Quantity</td><td class="text-end text-nowrap">@line.UnitPrice.ToString("N0") ₫</td><td class="text-end text-nowrap">@line.DiscountAmount.ToString("N0") ₫</td><td class="text-end fw-semibold text-nowrap">@line.TotalPrice.ToString("N0") ₫</td></tr>
-                    }
-                    </tbody>
-                    <tfoot><tr><th colspan="4" class="text-end">Tổng đơn hàng</th><th class="text-end text-primary text-nowrap">@order.TotalAmount.ToString("N0") ₫</th></tr></tfoot>
-                </table>
+    <header class="nexora-order-details-header">
+        <div class="nexora-order-details-heading">
+            <a asp-action="Index" class="nexora-order-details-back">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Đơn hàng của tôi
+            </a>
+            <p class="nexora-orders-eyebrow">NEXORA · THEO DÕI ĐƠN HÀNG</p>
+            <div class="nexora-order-details-title-row">
+                <h1>Đơn hàng #@order.Id</h1>
+                <span class="nexora-orders-status @StatusClass(order.Status)">@OrderStatusPresentation.Label(order.Status)</span>
             </div>
+            <p class="nexora-orders-description">Đặt lúc @order.OrderDate.ToLocalTime().ToString("dd/MM/yyyy '·' HH:mm")</p>
+        </div>
+        <div class="nexora-order-details-id" aria-label="Mã đơn hàng">
+            <span>MÃ ĐƠN HÀNG</span>
+            <strong>#@order.Id</strong>
+        </div>
+    </header>
+
+    @if (TempData["Success"] is string successMessage)
+    {
+        <div class="alert alert-success" role="status">@successMessage</div>
+    }
+    @if (TempData["Error"] is string errorMessage)
+    {
+        <div class="alert alert-danger" role="alert">@errorMessage</div>
+    }
+
+    <section class="nexora-order-progress-card" aria-labelledby="order-progress-title">
+        <div class="nexora-order-section-heading">
+            <div>
+                <p class="nexora-order-section-kicker">CẬP NHẬT ĐƠN HÀNG</p>
+                <h2 id="order-progress-title">Tiến trình đơn hàng</h2>
+            </div>
+            <span class="nexora-order-progress-current">@OrderStatusPresentation.Label(order.Status)</span>
         </div>
 
-        @if (order.CanCancel)
+        @if (order.Status == "CANCELLED")
         {
-            <form asp-action="Cancel" method="post" class="card border-0 shadow-sm p-4 mt-4" onsubmit="return confirm('Bạn có chắc muốn hủy đơn hàng này?');">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="id" value="@order.Id" />
-                <label for="reason" class="form-label">Lý do hủy đơn PENDING (không bắt buộc)</label>
-                <textarea id="reason" name="reason" class="form-control mb-3" maxlength="1000" rows="2"></textarea>
-                <button class="btn btn-outline-danger align-self-start" type="submit">Hủy đơn hàng</button>
-            </form>
+            <div class="nexora-order-cancelled-banner" role="status">
+                <span class="nexora-order-cancelled-icon" aria-hidden="true">×</span>
+                <span>Đơn hàng đã được hủy. Các bước giao hàng không còn áp dụng.</span>
+            </div>
         }
-
-        @if (order.CancelRequestStatus is not null)
+        else if (progress >= 0)
         {
-            <section class="card border-0 shadow-sm p-4 mt-4" aria-labelledby="cancel-request-heading">
-                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                    <h2 id="cancel-request-heading" class="h5 mb-0">Yêu cầu hủy sau xác nhận</h2>
-                    <span class="badge rounded-pill @CancellationRequestPresentation.BadgeClass(order.CancelRequestStatus)">@CancellationRequestPresentation.Label(order.CancelRequestStatus)</span>
+            <ol class="nexora-order-details-timeline" aria-label="Tiến trình: @OrderStatusPresentation.Label(order.Status)">
+                @for (var step = 0; step < WorkflowSteps.Length; step++)
+                {
+                    var isComplete = order.Status == "COMPLETED" || step < progress;
+                    var isCurrent = order.Status != "COMPLETED" && step == progress;
+                    <li class="@(isComplete ? "is-complete" : string.Empty) @(isCurrent ? "is-current" : string.Empty)">
+                        <span class="nexora-order-details-timeline-dot" aria-hidden="true">
+                            @if (isComplete)
+                            {
+                                <svg viewBox="0 0 16 16" fill="none"><path d="m3.5 8.2 3 3 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            }
+                        </span>
+                        <span class="nexora-order-details-timeline-label">@WorkflowSteps[step]</span>
+                    </li>
+                }
+            </ol>
+        }
+        else
+        {
+            <p class="nexora-order-details-unknown-status">Chưa có thông tin tiến trình cho trạng thái này.</p>
+        }
+    </section>
+
+    <div class="nexora-order-details-layout">
+        <div class="nexora-order-details-main">
+            <section class="nexora-order-panel" aria-labelledby="order-items-title">
+                <div class="nexora-order-panel-heading">
+                    <div>
+                        <p class="nexora-order-section-kicker">ĐƠN HÀNG #@order.Id</p>
+                        <h2 id="order-items-title">Sản phẩm trong đơn</h2>
+                    </div>
+                    <span class="nexora-order-item-count">@itemCount sản phẩm</span>
                 </div>
-                <dl class="mb-0">
-                    <dt class="small text-secondary">Lý do bạn đã gửi</dt><dd>@order.CancelRequestReason</dd>
-                    <dt class="small text-secondary">Thời gian gửi</dt><dd>@order.CancelRequestedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd>
-                    @if (order.CancelReviewedAt is not null)
+
+                <div class="nexora-order-lines">
+                    @foreach (var line in order.Lines)
                     {
-                        <dt class="small text-secondary">Thời gian xử lý</dt><dd>@order.CancelReviewedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd>
+                        <article class="nexora-order-line">
+                            <span class="nexora-order-line-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 21h8m-6-4v4m4-4v4M8 8h8m-8 3h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                            </span>
+                            <div class="nexora-order-line-info">
+                                <h3>@line.ProductName</h3>
+                                <span>Số lượng: @line.Quantity</span>
+                            </div>
+                            <dl class="nexora-order-line-prices">
+                                <div><dt>Đơn giá</dt><dd>@line.UnitPrice.ToString("N0") ₫</dd></div>
+                                <div><dt>Giảm giá</dt><dd>@line.DiscountAmount.ToString("N0") ₫</dd></div>
+                                <div class="nexora-order-line-total"><dt>Thành tiền</dt><dd>@line.TotalPrice.ToString("N0") ₫</dd></div>
+                            </dl>
+                        </article>
                     }
-                    @if (!string.IsNullOrWhiteSpace(order.CancelDecisionNote))
+                </div>
+
+                <div class="nexora-order-total-row">
+                    <span>Tổng thanh toán</span>
+                    <strong>@order.TotalAmount.ToString("N0") ₫</strong>
+                </div>
+            </section>
+
+            @if (order.CancelRequestStatus is not null)
+            {
+                <section class="nexora-order-panel nexora-order-cancellation-panel" aria-labelledby="cancel-request-heading">
+                    <div class="nexora-order-panel-heading">
+                        <div>
+                            <p class="nexora-order-section-kicker">HỖ TRỢ ĐƠN HÀNG</p>
+                            <h2 id="cancel-request-heading">Yêu cầu hủy đơn</h2>
+                        </div>
+                        <span class="nexora-order-request-status @CancellationClass(order.CancelRequestStatus)">@CancellationRequestPresentation.Label(order.CancelRequestStatus)</span>
+                    </div>
+
+                    <dl class="nexora-order-cancellation-details">
+                        <div><dt>Lý do bạn đã gửi</dt><dd>@(string.IsNullOrWhiteSpace(order.CancelRequestReason) ? "Không có nội dung" : order.CancelRequestReason)</dd></div>
+                        <div><dt>Thời gian gửi</dt><dd>@order.CancelRequestedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd></div>
+                        @if (order.CancelReviewedAt is not null)
+                        {
+                            <div><dt>Thời gian xử lý</dt><dd>@order.CancelReviewedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd></div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(order.CancelDecisionNote))
+                        {
+                            <div><dt>Ghi chú quyết định</dt><dd>@order.CancelDecisionNote</dd></div>
+                        }
+                    </dl>
+
+                    @if (order.CancelRequestStatus == "PENDING")
                     {
-                        <dt class="small text-secondary">Ghi chú quyết định</dt><dd>@order.CancelDecisionNote</dd>
+                        <p class="nexora-order-request-note is-pending">Đơn hàng và lượng hàng đang giữ chưa thay đổi. Sales hoặc Admin sẽ xét duyệt yêu cầu.</p>
+                    }
+                    else if (order.CancelRequestStatus == "APPROVED")
+                    {
+                        <p class="nexora-order-request-note is-approved">Yêu cầu đã được chấp thuận; đơn hàng đã hủy và lượng hàng giữ đã được giải phóng.</p>
+                    }
+                    else if (order.CancelRequestStatus == "REJECTED")
+                    {
+                        <p class="nexora-order-request-note is-rejected">Yêu cầu đã bị từ chối. Theo quy tắc hiện tại, đơn hàng không thể gửi yêu cầu hủy lần thứ hai.</p>
+                    }
+                </section>
+            }
+            else if (order.CanRequestCancellation)
+            {
+                <form asp-action="RequestCancellation" asp-route-id="@order.Id" method="post" class="nexora-order-action-panel" onsubmit="return confirm('Gửi yêu cầu hủy đơn để Sales hoặc Admin xét duyệt? Đơn chưa bị hủy ngay.');">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="RequestId" value="@Model.RequestId" />
+                    <span class="nexora-order-action-icon is-danger" aria-hidden="true">!</span>
+                    <div class="nexora-order-action-content">
+                        <p class="nexora-order-section-kicker">CẦN HỖ TRỢ?</p>
+                        <h2>Yêu cầu hủy đơn đã xác nhận</h2>
+                        <p>Đơn chỉ được hủy sau khi Sales hoặc Admin chấp thuận. Nếu yêu cầu bị từ chối, bạn không thể gửi lại.</p>
+                        <label for="cancellation-reason" class="form-label">Lý do yêu cầu hủy</label>
+                        <textarea id="cancellation-reason" name="Reason" class="form-control" maxlength="1000" rows="3" required>@(ViewData.ModelState["Reason"]?.AttemptedValue)</textarea>
+                        @if (ViewData.ModelState.TryGetValue("Reason", out var reasonState) && reasonState.Errors.Count > 0)
+                        {
+                            <span class="text-danger small">@reasonState.Errors[0].ErrorMessage</span>
+                        }
+                        <button class="nexora-order-danger-button" type="submit">Gửi yêu cầu hủy</button>
+                    </div>
+                </form>
+            }
+            else if (order.CanCancel)
+            {
+                <form asp-action="Cancel" method="post" class="nexora-order-action-panel" onsubmit="return confirm('Bạn có chắc muốn hủy đơn hàng này?');">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@order.Id" />
+                    <span class="nexora-order-action-icon is-danger" aria-hidden="true">!</span>
+                    <div class="nexora-order-action-content">
+                        <p class="nexora-order-section-kicker">ĐƠN ĐANG CHỜ XÁC NHẬN</p>
+                        <h2>Muốn hủy đơn hàng?</h2>
+                        <p>Bạn có thể hủy trực tiếp khi đơn còn ở trạng thái chờ xác nhận.</p>
+                        <label for="reason" class="form-label">Lý do hủy đơn <span>(không bắt buộc)</span></label>
+                        <textarea id="reason" name="reason" class="form-control" maxlength="1000" rows="2"></textarea>
+                        <button class="nexora-order-danger-button" type="submit">Hủy đơn hàng</button>
+                    </div>
+                </form>
+            }
+        </div>
+
+        <aside class="nexora-order-details-sidebar">
+            <section class="nexora-order-panel nexora-order-shipping-panel" aria-labelledby="delivery-title">
+                <div class="nexora-order-panel-heading">
+                    <div>
+                        <p class="nexora-order-section-kicker">ĐỊA CHỈ ĐƠN HÀNG</p>
+                        <h2 id="delivery-title">Thông tin nhận hàng</h2>
+                    </div>
+                    <span class="nexora-order-shipping-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none"><path d="M3 6.5 12 2l9 4.5v11L12 22l-9-4.5v-11Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m3.5 6.8 8.5 4.4 8.5-4.4M12 11.5V22" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <dl class="nexora-order-shipping-details">
+                    <div><dt>Người nhận</dt><dd>@order.CustomerName</dd></div>
+                    <div><dt>Số điện thoại</dt><dd><a href="tel:@order.Phone">@order.Phone</a></dd></div>
+                    <div><dt>Địa chỉ giao hàng</dt><dd>@order.ShippingAddress</dd></div>
+                    @if (!string.IsNullOrWhiteSpace(order.Note))
+                    {
+                        <div><dt>Ghi chú</dt><dd>@order.Note</dd></div>
                     }
                 </dl>
-                @if (order.CancelRequestStatus == "PENDING")
-                {
-                    <p class="small text-secondary mb-0">Đơn hàng và lượng hàng đang giữ chưa thay đổi. Sales hoặc Admin sẽ xét duyệt yêu cầu.</p>
-                }
-                else if (order.CancelRequestStatus == "APPROVED")
-                {
-                    <p class="small text-success mb-0">Yêu cầu đã được chấp thuận; đơn hàng đã hủy và lượng hàng giữ đã được giải phóng.</p>
-                }
-                else if (order.CancelRequestStatus == "REJECTED")
-                {
-                    <p class="small text-secondary mb-0">Yêu cầu đã bị từ chối. Theo quy tắc hiện tại, đơn hàng không thể gửi yêu cầu hủy lần thứ hai.</p>
-                }
             </section>
-        }
-        else if (order.CanRequestCancellation)
-        {
-            <form asp-action="RequestCancellation" asp-route-id="@order.Id" method="post" class="card border-0 shadow-sm p-4 mt-4" onsubmit="return confirm('Gửi yêu cầu hủy đơn để Sales hoặc Admin xét duyệt? Đơn chưa bị hủy ngay.');">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="RequestId" value="@Model.RequestId" />
-                <h2 class="h5">Yêu cầu hủy đơn đã xác nhận</h2>
-                <p class="small text-secondary">Đơn chỉ được hủy sau khi Sales hoặc Admin chấp thuận. Nếu yêu cầu bị từ chối, bạn không thể gửi lại.</p>
-                <label for="cancellation-reason" class="form-label">Lý do yêu cầu hủy</label>
-                <textarea id="cancellation-reason" name="Reason" class="form-control mb-2" maxlength="1000" rows="3" required>@(ViewData.ModelState["Reason"]?.AttemptedValue)</textarea>
-                @if (ViewData.ModelState.TryGetValue("Reason", out var reasonState) && reasonState.Errors.Count > 0)
-                {
-                    <span class="text-danger small mb-2">@reasonState.Errors[0].ErrorMessage</span>
-                }
-                <button class="btn btn-outline-danger align-self-start" type="submit">Gửi yêu cầu hủy</button>
-            </form>
-        }
-    </div>
-    <div class="col-lg-4">
-        <section class="card border-0 shadow-sm p-4" aria-labelledby="delivery-title">
-            <h2 id="delivery-title" class="h5 mb-3">Thông tin nhận hàng</h2>
-            <dl class="mb-0"><dt class="small text-secondary">Người nhận</dt><dd>@order.CustomerName</dd><dt class="small text-secondary">Số điện thoại</dt><dd>@order.Phone</dd><dt class="small text-secondary">Địa chỉ</dt><dd>@order.ShippingAddress</dd>
-            @if (!string.IsNullOrWhiteSpace(order.Note)) { <dt class="small text-secondary">Ghi chú</dt><dd>@order.Note</dd> }
-            @if (order.CancelledAt is not null) { <dt class="small text-secondary">Đã hủy lúc</dt><dd>@order.CancelledAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd> }
-            @if (!string.IsNullOrWhiteSpace(order.CancelReason)) { <dt class="small text-secondary">Lý do hủy</dt><dd>@order.CancelReason</dd> }</dl>
-        </section>
+
+            <section class="nexora-order-panel nexora-order-summary-panel" aria-labelledby="summary-title">
+                <h2 id="summary-title">Tóm tắt đơn hàng</h2>
+                <div class="nexora-order-summary-row"><span>Số lượng sản phẩm</span><strong>@itemCount</strong></div>
+                <div class="nexora-order-summary-row"><span>Mã đơn hàng</span><strong>#@order.Id</strong></div>
+                <div class="nexora-order-summary-row"><span>Ngày đặt</span><strong>@order.OrderDate.ToLocalTime().ToString("dd/MM/yyyy")</strong></div>
+                <div class="nexora-order-summary-total"><span>Tổng thanh toán</span><strong>@order.TotalAmount.ToString("N0") ₫</strong></div>
+                <a asp-action="Index" class="nexora-order-back-to-list">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Quay lại đơn hàng của tôi
+                </a>
+            </section>
+
+            @if (order.CancelledAt is not null || !string.IsNullOrWhiteSpace(order.CancelReason))
+            {
+                <section class="nexora-order-panel nexora-order-cancel-info" aria-labelledby="cancel-info-title">
+                    <h2 id="cancel-info-title">Thông tin hủy đơn</h2>
+                    @if (order.CancelledAt is not null)
+                    {
+                        <div><span>Thời gian hủy</span><strong>@order.CancelledAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</strong></div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(order.CancelReason))
+                    {
+                        <div><span>Lý do hủy</span><strong>@order.CancelReason</strong></div>
+                    }
+                </section>
+            }
+        </aside>
     </div>
 </div>
+
+@functions {
+    private static readonly string[] WorkflowSteps = ["Đặt hàng", "Xác nhận", "Chuẩn bị", "Xuất kho", "Đang giao", "Hoàn thành"];
+
+    private static int WorkflowProgress(string status) => status switch
+    {
+        "PENDING" => 0,
+        "CONFIRMED" => 1,
+        "PREPARING" => 2,
+        "EXPORTED" => 3,
+        "SHIPPING" => 4,
+        "COMPLETED" => 5,
+        _ => -1
+    };
+
+    private static string StatusClass(string status) => status switch
+    {
+        "PENDING" => "is-pending",
+        "CONFIRMED" => "is-confirmed",
+        "PREPARING" => "is-preparing",
+        "EXPORTED" => "is-exported",
+        "SHIPPING" => "is-shipping",
+        "COMPLETED" => "is-completed",
+        "CANCELLED" => "is-cancelled",
+        _ => "is-unknown"
+    };
+
+    private static string CancellationClass(string status) => status switch
+    {
+        "PENDING" => "is-pending",
+        "APPROVED" => "is-approved",
+        "REJECTED" => "is-rejected",
+        _ => "is-unknown"
+    };
+}

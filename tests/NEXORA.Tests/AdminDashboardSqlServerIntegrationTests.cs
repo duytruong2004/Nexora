@@ -23,7 +23,14 @@ public sealed class AdminDashboardSqlServerIntegrationTests
             await db.Products.CountAsync(product => product.Status == ProductStatuses.Active),
             await db.Categories.CountAsync(),
             await db.UsageNeeds.CountAsync(),
-            await db.RecommendationRules.CountAsync());
+            await db.RecommendationRules.CountAsync())
+        {
+            TotalOrders = await db.Orders.CountAsync(),
+            PendingOrders = await db.Orders.CountAsync(order => order.Status == OrderStatuses.Pending),
+            CompletedOrders = await db.Orders.CountAsync(order => order.Status == OrderStatuses.Completed),
+            ProductsWithoutInventory = await db.Products.CountAsync(product =>
+                !db.Inventories.Any(inventory => inventory.ProductId == product.Id))
+        };
 
         Assert.Equal(expected, metrics);
     }

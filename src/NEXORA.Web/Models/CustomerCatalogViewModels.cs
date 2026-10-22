@@ -16,6 +16,8 @@ public sealed class CustomerCatalogViewModel
 public sealed class CustomerProductDetailsViewModel
 {
     public CatalogProductDetails Product { get; init; } = null!;
+    public IReadOnlyList<NEXORA.Application.Engagement.PublicProductReview> ApprovedReviews { get; init; } = [];
+    public IReadOnlyList<CatalogProductCard> RelatedProducts { get; init; } = [];
 }
 
 public sealed class CatalogComparisonViewModel

@@ -1,0 +1,62 @@
+@model NEXORA.Web.Models.ReviewModerationViewModel
+@using NEXORA.Domain.Entities
+@{
+    ViewData["Title"] = "Kiểm duyệt đánh giá";
+}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+    <div><p class="text-uppercase small fw-semibold text-primary mb-1">Quản trị nội dung</p><h1 class="h2 mb-1">Kiểm duyệt đánh giá</h1><p class="text-secondary small mb-0">@Model.Page.TotalCount đánh giá · Chỉ trạng thái APPROVED hiển thị trên trang sản phẩm.</p></div>
+</div>
+@if (Model.Page.UnknownStatusCount > 0)
+{
+    <div class="alert alert-warning" role="alert">Có @Model.Page.UnknownStatusCount đánh giá mang trạng thái chưa xác định. Chúng không được công khai và không thể chuyển trạng thái tự động. Hãy kiểm tra dữ liệu trước khi xử lý.</div>
+}
+<form method="get" asp-area="Admin" asp-controller="Reviews" asp-action="Index" class="card card-body border-0 shadow-sm mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-12 col-md-5"><label class="form-label" for="search">Sản phẩm, khách hàng hoặc nội dung</label><input class="form-control" id="search" name="search" value="@Model.Filter.Search" maxlength="100" /></div>
+        <div class="col-12 col-md-4"><label class="form-label" for="status">Trạng thái</label><select class="form-select" id="status" name="status"><option value="">Tất cả</option><option value="PENDING" selected="@(Model.Filter.Status == "PENDING" ? "selected" : null)">Chờ kiểm duyệt</option><option value="APPROVED" selected="@(Model.Filter.Status == "APPROVED" ? "selected" : null)">Đã duyệt</option><option value="HIDDEN" selected="@(Model.Filter.Status == "HIDDEN" ? "selected" : null)">Đang ẩn</option><option value="UNKNOWN" selected="@(Model.Filter.Status == "UNKNOWN" ? "selected" : null)">Trạng thái không xác định</option></select></div>
+        <div class="col-12 col-md-3 d-flex gap-2"><button class="btn btn-primary flex-fill" type="submit">Lọc</button><a class="btn btn-outline-secondary" asp-area="Admin" asp-controller="Reviews" asp-action="Index">Xóa lọc</a></div>
+    </div>
+</form>
+<section class="card border-0 shadow-sm">
+    @if (Model.Page.Items.Count == 0)
+    {
+        <div class="card-body text-center text-secondary py-5">Không có đánh giá phù hợp.</div>
+    }
+    else
+    {
+        <div class="table-responsive"><table class="table table-hover align-middle mb-0">
+            <thead class="table-light"><tr><th>Sản phẩm</th><th>Khách hàng</th><th>Đánh giá</th><th>Nội dung</th><th>Trạng thái</th><th>Ngày gửi</th><th class="text-end">Thao tác</th></tr></thead>
+            <tbody>
+            @foreach (var item in Model.Page.Items)
+            {
+                var known = ReviewStatuses.IsKnown(item.Status);
+                var badge = item.Status switch { ReviewStatuses.Pending => "text-bg-warning", ReviewStatuses.Approved => "text-bg-success", ReviewStatuses.Hidden => "text-bg-secondary", _ => "text-bg-dark" };
+                <tr>
+                    <td><strong>@item.ProductName</strong><small class="d-block text-secondary">Ảnh chụp đơn: @item.ProductSnapshotName · #@item.ProductId</small></td>
+                    <td>@item.CustomerName</td><td class="text-nowrap">@item.Rating / 5</td>
+                    <td class="text-break" style="min-width:220px;max-width:360px">@(string.IsNullOrWhiteSpace(item.Comment) ? "—" : item.Comment)</td>
+                    <td><span class="badge @badge">@(known ? item.Status : $"Không xác định: {item.Status}")</span></td>
+                    <td class="text-nowrap">@item.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                    <td class="text-end">
+                    @if (known)
+                    {
+                        <div class="d-inline-flex flex-wrap justify-content-end gap-1">
+                            @if (item.Status != ReviewStatuses.Approved)
+                            {
+                                <form asp-area="Admin" asp-controller="Reviews" asp-action="Transition" method="post" class="m-0">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@item.ReviewId" /><input type="hidden" name="action" value="Approve" /><input type="hidden" name="status" value="@Model.Filter.Status" /><input type="hidden" name="search" value="@Model.Filter.Search" /><input type="hidden" name="page" value="@Model.Page.Page" /><button class="btn btn-sm btn-outline-success" type="submit">Duyệt / Khôi phục</button></form>
+                            }
+                            @if (item.Status != ReviewStatuses.Hidden)
+                            {
+                                <form asp-area="Admin" asp-controller="Reviews" asp-action="Transition" method="post" class="m-0">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@item.ReviewId" /><input type="hidden" name="action" value="Hide" /><input type="hidden" name="status" value="@Model.Filter.Status" /><input type="hidden" name="search" value="@Model.Filter.Search" /><input type="hidden" name="page" value="@Model.Page.Page" /><button class="btn btn-sm btn-outline-danger" type="submit">Ẩn</button></form>
+                            }
+                        </div>
+                    }
+                    else { <span class="small text-secondary">Cần xử lý thủ công</span> }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table></div>
+    }
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 p-3 border-top"><span class="small text-secondary">Trang @Model.Page.Page / @Model.Page.PageCount</span><nav aria-label="Phân trang đánh giá"><ul class="pagination pagination-sm mb-0"><li class="page-item @(Model.Page.Page <= 1 ? "disabled" : "")"><a class="page-link" asp-area="Admin" asp-controller="Reviews" asp-action="Index" asp-route-status="@Model.Filter.Status" asp-route-search="@Model.Filter.Search" asp-route-page="@(Model.Page.Page - 1)">Trước</a></li><li class="page-item @(Model.Page.Page >= Model.Page.PageCount ? "disabled" : "")"><a class="page-link" asp-area="Admin" asp-controller="Reviews" asp-action="Index" asp-route-status="@Model.Filter.Status" asp-route-search="@Model.Filter.Search" asp-route-page="@(Model.Page.Page + 1)">Sau</a></li></ul></nav></div>
+</section>

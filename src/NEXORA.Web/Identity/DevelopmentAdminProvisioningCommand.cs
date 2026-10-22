@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using NEXORA.Domain.Security;
 using NEXORA.Infrastructure.Identity;
+using NEXORA.Infrastructure.Persistence;
 
 namespace NEXORA.Web.Identity;
 
@@ -108,10 +109,10 @@ public static class DevelopmentInventoryProvisioningCommand
         ILogger logger,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(connectionString) || !TargetsDevelopmentDatabase(connectionString))
+        if (!DatabaseConnectionPolicy.IsApprovedQaConnectionString(connectionString))
         {
-            logger.LogError("Development inventory provisioning refused because the configured SQL target is not the approved local NEXORA database.");
-            Console.WriteLine("Từ chối seed: cấu hình phải trỏ tới instance PC01\\SQLEXPRESS và database NEXORA.");
+            logger.LogError("Development inventory provisioning refused because the configured SQL target is not the approved QA database.");
+            Console.WriteLine("Từ chối seed: chỉ chấp nhận Windows Authentication tới PC01\\SQLEXPRESS / NEXORA_IntegrationTests.");
             return 2;
         }
 

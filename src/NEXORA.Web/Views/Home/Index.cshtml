@@ -1,46 +1,76 @@
 @model NEXORA.Web.Models.StorefrontHomeViewModel
 @{
     ViewData["Title"] = "Trang chủ";
+    var featured = Model.Data.Products.FirstOrDefault();
 }
 
-<section class="nexora-hero rounded-4 p-4 p-lg-5 mb-5" aria-labelledby="home-title">
-    <div class="row align-items-center g-4">
-        <div class="col-lg-8">
-            <p class="text-uppercase fw-semibold small text-primary mb-2">Khám phá công nghệ theo cách của bạn</p>
-            <h1 id="home-title" class="display-5 fw-bold mb-3">Chọn đúng thiết bị. Dùng đúng mục đích.</h1>
-            <p class="lead mb-4">Tìm kiếm theo danh mục, đối chiếu thông số và nhận gợi ý dựa trên nhu cầu thực tế của bạn.</p>
-            <div class="d-flex flex-wrap gap-2"><a class="btn btn-primary btn-lg" asp-controller="Catalog" asp-action="Index">Khám phá sản phẩm</a><a class="btn btn-outline-primary btn-lg" asp-controller="Consultation" asp-action="Index">Bắt đầu tư vấn <span aria-hidden="true">→</span></a></div>
-        </div>
-        <div class="col-lg-4"><div class="hero-mark" aria-hidden="true">N</div><p class="small text-secondary text-center mt-3 mb-0">Danh mục rõ ràng · Thông số minh bạch</p></div>
+<section class="storefront-hero mb-4 mb-lg-5" aria-labelledby="home-title">
+    <div class="storefront-hero-copy">
+        @if (featured is not null)
+        {
+            <p class="storefront-eyebrow">Gợi ý công nghệ · @featured.CategoryName</p>
+            <h1 id="home-title">@featured.Name</h1>
+            <p class="storefront-hero-description">@(!string.IsNullOrWhiteSpace(featured.Description) ? featured.Description : "Khám phá thông tin, thông số và lựa chọn thiết bị phù hợp tại NEXORA.")</p>
+            <div class="storefront-hero-price">
+                <strong>@((featured.DiscountPrice ?? featured.Price).ToString("N0")) ₫</strong>
+                @if (featured.DiscountPrice.HasValue)
+                {
+                    <del>@featured.Price.ToString("N0") ₫</del>
+                }
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-4">
+                <a class="btn btn-primary btn-lg" asp-controller="Catalog" asp-action="Details" asp-route-id="@featured.Id">Xem sản phẩm <span aria-hidden="true">↗</span></a>
+                <a class="btn btn-outline-primary btn-lg" asp-controller="Catalog" asp-action="Index">Khám phá tất cả</a>
+            </div>
+        }
+        else
+        {
+            <p class="storefront-eyebrow">NEXORA · MUA SẮM CÔNG NGHỆ</p>
+            <h1 id="home-title">Tìm thiết bị phù hợp với bạn.</h1>
+            <p class="storefront-hero-description">Khám phá sản phẩm theo danh mục, so sánh thông số và tìm lựa chọn phù hợp với nhu cầu của bạn.</p>
+            <div class="d-flex flex-wrap gap-2 mt-4">
+                <a class="btn btn-primary btn-lg" asp-controller="Catalog" asp-action="Index">Khám phá sản phẩm <span aria-hidden="true">↗</span></a>
+                <a class="btn btn-outline-primary btn-lg" asp-controller="Consultation" asp-action="Index">Bắt đầu tư vấn</a>
+            </div>
+        }
+        <div class="storefront-hero-assurance"><span aria-hidden="true">✓</span> Thông tin sản phẩm và thông số rõ ràng</div>
     </div>
-</section>
-
-<section class="mb-5" aria-labelledby="consultation-title">
-    <div class="consultation-banner rounded-4 p-4 p-lg-5 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-4">
-        <div><p class="text-uppercase small fw-semibold mb-2">Tư vấn thông minh NEXORA</p><h2 id="consultation-title" class="h3 fw-bold">Mô tả nhu cầu bằng tiếng Việt</h2><p class="mb-0 text-secondary">Nêu ngân sách, mục đích và điều bạn ưu tiên. Gợi ý được xếp hạng từ sản phẩm cùng thông số đang có trong hệ thống.</p></div>
-        <a class="btn btn-primary btn-lg flex-shrink-0" asp-controller="Consultation" asp-action="Index">Tư vấn ngay <span aria-hidden="true">→</span></a>
-    </div>
-</section>
-
-<section class="mb-5" aria-labelledby="categories-title">
-    <div class="d-flex justify-content-between align-items-end gap-3 mb-3"><div><p class="text-uppercase small fw-semibold text-primary mb-1">Danh mục</p><h2 id="categories-title" class="h3 fw-bold mb-0">Khám phá theo nhóm</h2></div><a asp-controller="Catalog" asp-action="Index" class="text-decoration-none">Tất cả sản phẩm</a></div>
-    @if (Model.Data.Categories.Count == 0)
+    @if (featured is not null)
     {
-        <div class="catalog-empty rounded-4 p-4 text-secondary">Danh mục đang được cập nhật.</div>
+        <a class="storefront-hero-product" asp-controller="Catalog" asp-action="Details" asp-route-id="@featured.Id" aria-label="Xem chi tiết @featured.Name">
+            <span class="storefront-hero-product-tag">@featured.BrandName</span>
+            @await Html.PartialAsync("_ProductImage", new NEXORA.Web.Models.ProductImageDisplayViewModel(featured.PrimaryImageUrl, featured.Name, "card"))
+            <span class="storefront-hero-product-caption">Mã sản phẩm <strong>@featured.Sku</strong></span>
+        </a>
     }
     else
     {
-        <div class="row g-3">
-            @foreach (var category in Model.Data.Categories)
-            {
-                <div class="col-6 col-md-4 col-xl-3"><a class="category-tile card h-100 p-3 p-lg-4 text-decoration-none" asp-controller="Catalog" asp-action="Category" asp-route-id="@category.Id"><span class="small text-secondary">Danh mục</span><span class="fw-semibold text-dark mt-1">@category.Name</span></a></div>
-            }
-        </div>
+        <div class="storefront-hero-art" aria-hidden="true"><span>N</span><i></i></div>
     }
 </section>
 
-<section aria-labelledby="featured-title">
-    <div class="d-flex justify-content-between align-items-end gap-3 mb-3"><div><p class="text-uppercase small fw-semibold text-primary mb-1">Từ danh mục hiện có</p><h2 id="featured-title" class="h3 fw-bold mb-0">Sản phẩm đang kinh doanh</h2></div><a asp-controller="Catalog" asp-action="Index" class="text-decoration-none">Xem tất cả <span aria-hidden="true">→</span></a></div>
+@if (Model.Data.Categories.Count > 0)
+{
+    <section class="storefront-category-section mb-5" aria-labelledby="categories-title">
+        <div class="storefront-section-heading">
+            <div><p class="storefront-eyebrow mb-1">Tìm nhanh theo nhu cầu</p><h2 id="categories-title">Danh mục sản phẩm</h2></div>
+            <a asp-controller="Catalog" asp-action="Index" class="storefront-section-link">Tất cả sản phẩm <span aria-hidden="true">→</span></a>
+        </div>
+        <nav class="storefront-category-strip" aria-label="Danh mục sản phẩm">
+            <a class="storefront-category-chip storefront-category-chip--all" asp-controller="Catalog" asp-action="Index">Tất cả</a>
+            @foreach (var category in Model.Data.Categories)
+            {
+                <a class="storefront-category-chip" asp-controller="Catalog" asp-action="Category" asp-route-id="@category.Id">@category.Name <span aria-hidden="true">↗</span></a>
+            }
+        </nav>
+    </section>
+}
+
+<section class="mb-5" aria-labelledby="featured-title">
+    <div class="storefront-section-heading">
+        <div><p class="storefront-eyebrow mb-1">Lựa chọn dành cho bạn</p><h2 id="featured-title">Sản phẩm đang kinh doanh</h2></div>
+        <a asp-controller="Catalog" asp-action="Index" class="storefront-section-link">Xem tất cả <span aria-hidden="true">→</span></a>
+    </div>
     @if (Model.Data.Products.Count == 0)
     {
         <div class="catalog-empty rounded-4 p-4 text-secondary">Chưa có sản phẩm đang kinh doanh. Quản trị viên có thể thêm sản phẩm từ khu vực Admin.</div>
@@ -54,4 +84,9 @@
             }
         </div>
     }
+</section>
+
+<section class="consultation-banner rounded-4 p-4 p-lg-5 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-4" aria-labelledby="consultation-title">
+    <div><p class="storefront-eyebrow mb-2">Tư vấn thông minh NEXORA</p><h2 id="consultation-title" class="h3 fw-bold">Mô tả nhu cầu bằng tiếng Việt</h2><p class="mb-0 text-secondary">Nêu ngân sách, mục đích và điều bạn ưu tiên. Gợi ý được xếp hạng từ sản phẩm cùng thông số đang có trong hệ thống.</p></div>
+    <a class="btn btn-primary btn-lg flex-shrink-0" asp-controller="Consultation" asp-action="Index">Tư vấn ngay <span aria-hidden="true">→</span></a>
 </section>

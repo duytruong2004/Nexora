@@ -1,4 +1,5 @@
 using NEXORA.Web.Identity;
+using NEXORA.Infrastructure.Persistence;
 
 namespace NEXORA.Tests;
 
@@ -48,14 +49,18 @@ public sealed class AdminProvisioningCommandTests
     }
 
     [Fact]
-    public void DevelopmentInventoryCommand_OnlyAcceptsTheConfiguredDevelopmentDatabase()
+    public void DevelopmentInventoryCommand_UsesApprovedQaPolicyAndRejectsMainDatabaseForDevelopment()
     {
-        Assert.True(DevelopmentInventoryProvisioningCommand.TargetsDevelopmentDatabase(
-            "Server=PC01\\SQLEXPRESS;Database=NEXORA;Integrated Security=True;TrustServerCertificate=True"));
-        Assert.False(DevelopmentInventoryProvisioningCommand.TargetsDevelopmentDatabase(
-            "Server=PC01\\SQLEXPRESS;Database=NEXORA_IntegrationTests;Integrated Security=True"));
-        Assert.False(DevelopmentInventoryProvisioningCommand.TargetsDevelopmentDatabase(
-            "Server=OTHER\\SQLEXPRESS;Database=NEXORA;Integrated Security=True"));
+        const string approvedQa = "Server=PC01\\SQLEXPRESS;Database=NEXORA_IntegrationTests;Integrated Security=True;TrustServerCertificate=True";
+        const string mainDatabase = "Server=PC01\\SQLEXPRESS;Database=NEXORA;Integrated Security=True;TrustServerCertificate=True";
+        const string unapprovedServer = "Server=OTHER\\SQLEXPRESS;Database=NEXORA_IntegrationTests;Integrated Security=True;TrustServerCertificate=True";
+
+        Assert.True(DatabaseConnectionPolicy.IsApprovedQaConnectionString(approvedQa));
+        Assert.False(DevelopmentInventoryProvisioningCommand.TargetsDevelopmentDatabase(approvedQa));
+        Assert.False(DatabaseConnectionPolicy.IsApprovedQaConnectionString(mainDatabase));
+        Assert.Throws<InvalidOperationException>(() => DatabaseConnectionPolicy.Resolve(mainDatabase, "Development"));
+        Assert.False(DatabaseConnectionPolicy.IsApprovedQaConnectionString(unapprovedServer));
+        Assert.Throws<InvalidOperationException>(() => DatabaseConnectionPolicy.Resolve(unapprovedServer, "Development"));
         Assert.False(DevelopmentInventoryProvisioningCommand.TargetsDevelopmentDatabase("not a connection string"));
     }
 
@@ -75,6 +80,8 @@ public sealed class AdminProvisioningCommandTests
             "Server=PC01\\SQLEXPRESS;Database=NEXORA;Integrated Security=True;TrustServerCertificate=True"));
         Assert.False(QaStaffProvisioningCommand.IsApprovedQaConnectionString(
             "Server=OTHER\\SQLEXPRESS;Database=NEXORA_IntegrationTests;Integrated Security=True"));
+        Assert.False(QaStaffProvisioningCommand.IsApprovedQaConnectionString(
+            "Server=OTHER-PC01\\SQLEXPRESS;Database=NEXORA_IntegrationTests;Integrated Security=True"));
         Assert.False(QaStaffProvisioningCommand.IsApprovedQaConnectionString(
             "Server=.\\SQLEXPRESS;Database=NEXORA_IntegrationTests;Integrated Security=True"));
         Assert.False(QaStaffProvisioningCommand.IsApprovedQaConnectionString(

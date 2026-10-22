@@ -8,66 +8,143 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
+    @{
+        var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+        var currentArea = ViewContext.RouteData.Values["area"]?.ToString();
+        var ordersArea = User.IsInRole("Admin") ? "Admin"
+            : User.IsInRole("Sales") ? "Sales"
+            : User.IsInRole("Warehouse") ? "Warehouse"
+            : string.Empty;
+        var canAccessOrders = User.IsInRole("Customer") || User.IsInRole("Sales") ||
+                              User.IsInRole("Warehouse") || User.IsInRole("Admin");
+        bool IsCurrent(string controller, string? action = null, string? area = null) =>
+            string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase) &&
+            (action is null || string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase)) &&
+            string.Equals(currentArea ?? string.Empty, area ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+        bool IsOrdersCurrent() => canAccessOrders &&
+            string.Equals(currentController, "Orders", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(currentArea ?? string.Empty, ordersArea, StringComparison.OrdinalIgnoreCase);
+    }
     <a class="skip-link" href="#main-content">Bỏ qua điều hướng</a>
-    <header class="storefront-header">
-        <nav class="navbar navbar-expand-xl navbar-dark nexora-navbar">
-            <div class="container">
-                <a class="navbar-brand nexora-wordmark" asp-controller="Home" asp-action="Index"><span class="nexora-brand-mark" aria-hidden="true">N</span><span>NEXORA</span></a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavigation"
-                        aria-controls="mainNavigation" aria-expanded="false" aria-label="Mở điều hướng">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="mainNavigation">
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                        <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Index">Trang chủ</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Catalog" asp-action="Index">Sản phẩm</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Consultation" asp-action="Index">Tư vấn</a></li>
-                        @if (User.Identity?.IsAuthenticated == true)
+    <header class="storefront-header nexora-header">
+        <nav class="navbar navbar-expand-xl navbar-dark nexora-navbar nexora-nav" aria-label="Điều hướng chính">
+            <div class="container nexora-nav-shell">
+                <a class="navbar-brand nexora-wordmark" asp-controller="Home" asp-action="Index" aria-label="NEXORA - Trang chủ">
+                    <span class="nexora-brand-mark" aria-hidden="true">N</span><span>NEXORA</span>
+                </a>
+
+                <div class="collapse navbar-collapse nexora-nav-collapse" id="mainNavigation">
+                    <ul class="navbar-nav nexora-primary-links">
+                        <li class="nav-item"><a class="nav-link @(IsCurrent("Home", "Index") ? "active" : string.Empty)" aria-current="@(IsCurrent("Home", "Index") ? "page" : null)" asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+                        <li class="nav-item"><a class="nav-link @(IsCurrent("Catalog") ? "active" : string.Empty)" aria-current="@(IsCurrent("Catalog") ? "page" : null)" asp-controller="Catalog" asp-action="Index">Sản phẩm</a></li>
+                        <li class="nav-item"><a class="nav-link @(IsCurrent("Consultation") ? "active" : string.Empty)" aria-current="@(IsCurrent("Consultation") ? "page" : null)" asp-controller="Consultation" asp-action="Index">Tư vấn</a></li>
+                        @if (canAccessOrders)
                         {
-                            <li class="nav-item"><a class="nav-link" asp-controller="Account" asp-action="Profile">Tài khoản</a></li>
-                        }
-                        @if (User.IsInRole("Customer"))
-                        {
-                            <li class="nav-item"><a class="nav-link" asp-controller="Orders" asp-action="Index">Đơn hàng của tôi</a></li>
-                        }
-                        @if (User.IsInRole("Sales"))
-                        {
-                            <li class="nav-item"><a class="nav-link" asp-area="Sales" asp-controller="Orders" asp-action="Index">Quản lý đơn</a></li>
-                        }
-                        @if (User.IsInRole("Warehouse"))
-                        {
-                            <li class="nav-item"><a class="nav-link" asp-area="Warehouse" asp-controller="Orders" asp-action="Index">Đơn cần xuất</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-area="Warehouse" asp-controller="Inventory" asp-action="Index">Tồn kho</a></li>
-                        }
-                        @if (User.IsInRole("Admin"))
-                        {
-                            <li class="nav-item"><a class="nav-link" asp-area="Warehouse" asp-controller="Inventory" asp-action="Index">Giám sát tồn kho</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="RoleLanding" asp-action="Admin">Quản trị</a></li>
+                            <li class="nav-item"><a class="nav-link @(IsOrdersCurrent() ? "active" : string.Empty)" aria-current="@(IsOrdersCurrent() ? "page" : null)" asp-area="@ordersArea" asp-controller="Orders" asp-action="Index">Đơn hàng</a></li>
                         }
                     </ul>
-                    <form class="d-flex me-lg-3 mb-3 mb-lg-0" asp-controller="Catalog" asp-action="Index" method="get" role="search">
-                        <label class="visually-hidden" for="headerSearch">Tìm sản phẩm</label>
-                        <input id="headerSearch" name="search" class="form-control form-control-sm" type="search" placeholder="Tìm sản phẩm" />
-                        <button class="btn btn-outline-light btn-sm ms-2" type="submit">Tìm</button>
-                    </form>
-                    <div class="d-flex align-items-center gap-2">
-                        @if (User.IsInRole("Customer"))
-                        {
-                            @await Component.InvokeAsync("CartSummary")
-                        }
+
+                    <div class="nexora-mobile-account d-md-none">
                         @if (User.Identity?.IsAuthenticated == true)
                         {
-                            <span class="navbar-text d-none d-md-inline">Đã đăng nhập</span>
-                            <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
-                                <button class="btn btn-outline-light btn-sm" type="submit">Đăng xuất</button>
+                            <a class="nexora-mobile-account-link" asp-controller="Account" asp-action="Profile">Thông tin tài khoản</a>
+                            @if (User.IsInRole("Customer"))
+                            {
+                                <a class="nexora-mobile-account-link" asp-controller="Favorites" asp-action="Index">Yêu thích</a>
+                                <a class="nexora-mobile-account-link" asp-controller="Reviews" asp-action="Index">Đánh giá của tôi</a>
+                            }
+                            @if (User.IsInRole("Warehouse") || User.IsInRole("Admin"))
+                            {
+                                <a class="nexora-mobile-account-link" asp-area="Warehouse" asp-controller="Inventory" asp-action="Index">@(User.IsInRole("Admin") ? "Giám sát tồn kho" : "Tồn kho")</a>
+                            }
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <a class="nexora-mobile-account-link" asp-controller="RoleLanding" asp-action="Admin">Quản trị</a>
+                            }
+                            <form asp-controller="Account" asp-action="Logout" method="post" class="nexora-mobile-logout">
+                                @Html.AntiForgeryToken()
+                                <button type="submit">Đăng xuất</button>
                             </form>
                         }
                         else
                         {
-                            <a class="btn btn-outline-light btn-sm" asp-controller="Account" asp-action="Login">Đăng nhập</a>
-                            <a class="btn btn-primary btn-sm" asp-controller="Account" asp-action="Register">Tạo tài khoản</a>
+                            <a class="nexora-mobile-account-link" asp-controller="Account" asp-action="Login">Đăng nhập</a>
+                            <a class="nexora-mobile-account-link" asp-controller="Account" asp-action="Register">Tạo tài khoản</a>
                         }
                     </div>
+                </div>
+
+                <form class="nexora-search nexora-search--desktop" asp-controller="Catalog" asp-action="Index" method="get" role="search">
+                    <label class="visually-hidden" for="headerSearch">Tìm sản phẩm</label>
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg>
+                    <input id="headerSearch" name="search" type="search" placeholder="Tìm sản phẩm..." />
+                    <button type="submit" aria-label="Tìm kiếm"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg></button>
+                </form>
+
+                <button class="nexora-search-toggle d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#mobileSearch" aria-controls="mobileSearch" aria-expanded="false" aria-label="Mở tìm kiếm">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg>
+                </button>
+
+                <div class="nexora-nav-actions">
+                    @if (User.IsInRole("Customer"))
+                    {
+                        <a class="nexora-icon-action nexora-favorite-action d-none d-xl-flex @(IsCurrent("Favorites") ? "active" : string.Empty)" aria-current="@(IsCurrent("Favorites") ? "page" : null)" asp-controller="Favorites" asp-action="Index" aria-label="Yêu thích">
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.8 4.9a5.5 5.5 0 0 0-7.8 0L12 6l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.2 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg>
+                            <span class="visually-hidden">Yêu thích</span>
+                        </a>
+                        @await Component.InvokeAsync("CartSummary")
+                    }
+
+                    <div class="dropdown nexora-account d-none d-md-flex">
+                        <button class="nexora-account-toggle dropdown-toggle" type="button" id="accountMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="nexora-account-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg></span>
+                            <span>Tài khoản</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end nexora-account-menu" aria-labelledby="accountMenuButton">
+                            @if (User.Identity?.IsAuthenticated == true)
+                            {
+                                <a class="dropdown-item @(IsCurrent("Account", "Profile") ? "active" : string.Empty)" asp-controller="Account" asp-action="Profile">Thông tin tài khoản</a>
+                                @if (User.IsInRole("Customer"))
+                                {
+                                    <a class="dropdown-item" asp-controller="Reviews" asp-action="Index">Đánh giá của tôi</a>
+                                    <a class="dropdown-item" asp-controller="Favorites" asp-action="Index">Danh sách yêu thích</a>
+                                }
+                                @if (User.IsInRole("Warehouse") || User.IsInRole("Admin"))
+                                {
+                                    <a class="dropdown-item" asp-area="Warehouse" asp-controller="Inventory" asp-action="Index">@(User.IsInRole("Admin") ? "Giám sát tồn kho" : "Quản lý tồn kho")</a>
+                                }
+                                @if (User.IsInRole("Admin"))
+                                {
+                                    <a class="dropdown-item" asp-controller="RoleLanding" asp-action="Admin">Khu vực quản trị</a>
+                                }
+                                <div class="dropdown-divider"></div>
+                                <form asp-controller="Account" asp-action="Logout" method="post" class="px-3 py-1">
+                                    @Html.AntiForgeryToken()
+                                    <button class="nexora-account-logout" type="submit">Đăng xuất</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <a class="dropdown-item" asp-controller="Account" asp-action="Login">Đăng nhập</a>
+                                <a class="dropdown-item" asp-controller="Account" asp-action="Register">Tạo tài khoản</a>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <button class="navbar-toggler nexora-menu-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavigation"
+                        aria-controls="mainNavigation" aria-expanded="false" aria-label="Mở menu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse nexora-mobile-search d-md-none" id="mobileSearch">
+                    <form class="nexora-search nexora-search--mobile" asp-controller="Catalog" asp-action="Index" method="get" role="search">
+                        <label class="visually-hidden" for="mobileHeaderSearch">Tìm sản phẩm</label>
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg>
+                        <input id="mobileHeaderSearch" name="search" type="search" placeholder="Tìm sản phẩm..." />
+                        <button type="submit">Tìm</button>
+                    </form>
                 </div>
             </div>
         </nav>
@@ -76,20 +153,20 @@
     <main class="container storefront-main py-4 py-lg-5" id="main-content">
         @if (TempData["StatusMessage"] is string statusMessage)
         {
-            <div class="alert alert-info" role="status">@statusMessage</div>
+            <div class="alert nx-flash nx-flash--info" role="status"><span class="nx-flash-icon" aria-hidden="true">i</span><span>@statusMessage</span></div>
         }
         @if (TempData["Success"] is string successMessage)
         {
-            <div class="alert alert-success" role="status">@successMessage</div>
+            <div class="alert nx-flash nx-flash--success" role="status"><span class="nx-flash-icon" aria-hidden="true">✓</span><span>@successMessage</span></div>
         }
         @if (TempData["Error"] is string errorMessage)
         {
-            <div class="alert alert-danger" role="alert">@errorMessage</div>
+            <div class="alert nx-flash nx-flash--error" role="alert"><span class="nx-flash-icon" aria-hidden="true">!</span><span>@errorMessage</span></div>
         }
         @RenderBody()
     </main>
 
-    <div id="catalog-cart-feedback" class="alert position-fixed bottom-0 end-0 m-3 shadow d-none catalog-cart-feedback" role="status" aria-live="polite" aria-atomic="true"></div>
+    <div id="nexora-toast-region" class="nexora-toast-region" aria-live="polite" aria-atomic="false"></div>
 
     <footer class="nexora-footer py-4 mt-auto">
         <div class="container d-flex flex-column flex-sm-row justify-content-between gap-2 small">

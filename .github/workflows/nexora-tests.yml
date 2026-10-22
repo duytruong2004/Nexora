@@ -1,0 +1,110 @@
+name: NEXORA safe unit and HTTP tests
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexora-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  safe-unit-http:
+    name: Build and run SQL-free tests
+    runs-on: windows-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore solution
+        run: dotnet restore .\NEXORA.sln
+
+      - name: Build solution
+        run: dotnet build .\NEXORA.sln --no-restore --configuration Release
+
+      # This explicit allowlist contains only pure policy/unit tests and isolated HTTP
+      # hosts with fake services/stores. SQL integration classes are intentionally absent.
+      - name: Run SQL-free unit and HTTP tests
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $safeClasses = @(
+            'AccountAuthenticationPolicyTests',
+            'AccountLoginPolicyHttpTests',
+            'AccountAuthenticationCookieHttpTests',
+            'StaffAccountStatePolicyTests',
+            'DatabaseConnectionPolicyTests',
+            'AdminProvisioningCommandTests',
+            'Phase6AuthorizationTests',
+            'Phase6EngagementPolicyTests',
+            'Phase6ReportingPolicyTests',
+            'AccountAdministrationHttpIntegrationTests',
+            'AccountProfileHttpIntegrationTests',
+            'AdminLayoutHttpIntegrationTests',
+            'Phase6EngagementHttpIntegrationTests',
+            'WarehouseAuthorizationHttpIntegrationTests',
+            'CartControllerAddResponseTests',
+            'CommerceAuthorizationTests',
+            'SalesOrderAuthorizationTests',
+            'CatalogAdminAuthorizationTests',
+            'ConsultationAdminAuthorizationTests',
+            'BusinessPolicyTests'
+          )
+          $filter = ($safeClasses | ForEach-Object { "FullyQualifiedName~$_" }) -join '|'
+          dotnet test .\tests\NEXORA.Tests\NEXORA.Tests.csproj `
+            --configuration Release `
+            --no-build `
+            --no-restore `
+            --filter $filter `
+            --logger 'trx;LogFileName=nexora-safe-unit-http.trx' `
+            --results-directory .\TestResults\ci
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Summarize PASS, FAIL, and SKIPPED
+        if: always()
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $trxFiles = @(Get-ChildItem -LiteralPath .\TestResults\ci -Filter '*.trx' -File -Recurse -ErrorAction SilentlyContinue)
+          if ($trxFiles.Count -eq 0) {
+            $summary = 'PASS=0; FAIL=0; SKIPPED=0; NOT RUN=all selected tests (no TRX was produced). SQL integration tests: NOT RUN.'
+            Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Value "### NEXORA test results`n`n$summary"
+            Write-Error $summary
+          }
+
+          $results = @()
+          foreach ($trxFile in $trxFiles) {
+            [xml]$trx = Get-Content -LiteralPath $trxFile.FullName -Raw
+            $results += @($trx.SelectNodes("//*[local-name()='UnitTestResult']"))
+          }
+
+          $passed = @($results | Where-Object { $_.GetAttribute('outcome') -eq 'Passed' }).Count
+          $failed = @($results | Where-Object { $_.GetAttribute('outcome') -eq 'Failed' }).Count
+          $skipped = @($results | Where-Object { $_.GetAttribute('outcome') -in @('NotExecuted', 'Skipped') }).Count
+          $other = @($results | Where-Object { $_.GetAttribute('outcome') -notin @('Passed', 'Failed', 'NotExecuted', 'Skipped') }).Count
+          $total = $results.Count
+          $summary = "PASS=$passed; FAIL=$failed; SKIPPED=$skipped; OTHER=$other; TOTAL=$total. SQL integration tests: NOT RUN (explicit SQL-free class allowlist)."
+          Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Value "### NEXORA test results`n`n$summary"
+          Write-Output $summary
+
+          if ($total -eq 0 -or $failed -gt 0 -or $skipped -gt 0 -or $other -gt 0) { exit 1 }
+
+      - name: Upload TRX test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexora-safe-test-results-${{ github.run_id }}
+          path: .\TestResults\ci\*.trx
+          if-no-files-found: warn
+          retention-days: 14

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using NEXORA.Application.Commerce;
+using NEXORA.Domain.Entities;
 using NEXORA.Domain.Security;
 using NEXORA.Infrastructure.Identity;
 using NEXORA.Web.Models;
@@ -12,8 +13,49 @@ namespace NEXORA.Web.Controllers;
 public sealed class OrdersController(ICustomerOrderService orders, UserManager<AppUser> users) : Controller
 {
     [HttpGet]
-    public async Task<IActionResult> Index(CancellationToken cancellationToken) =>
-        View(await orders.GetOrdersAsync(GetCurrentUserId(), cancellationToken));
+    public async Task<IActionResult> Index(string? status, string? search, CancellationToken cancellationToken)
+    {
+        var customerOrders = await orders.GetOrdersAsync(GetCurrentUserId(), cancellationToken);
+        var knownStatuses = new[]
+        {
+            OrderStatuses.Pending,
+            OrderStatuses.Confirmed,
+            OrderStatuses.Preparing,
+            OrderStatuses.Exported,
+            OrderStatuses.Shipping,
+            OrderStatuses.Completed,
+            OrderStatuses.Cancelled
+        };
+        var statusCounts = knownStatuses.ToDictionary(
+            value => value,
+            value => customerOrders.Count(order => order.Status == value),
+            StringComparer.Ordinal);
+        var selectedStatus = knownStatuses.FirstOrDefault(value =>
+            string.Equals(value, status, StringComparison.OrdinalIgnoreCase));
+        var normalizedSearch = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
+        if (normalizedSearch?.StartsWith('#') == true)
+        {
+            normalizedSearch = normalizedSearch[1..].Trim();
+        }
+        if (string.IsNullOrEmpty(normalizedSearch)) normalizedSearch = null;
+
+        var filteredOrders = customerOrders
+            .Where(order => selectedStatus is null || order.Status == selectedStatus)
+            .Where(order => normalizedSearch is null ||
+                order.Id.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    .Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        return View(new CustomerOrdersIndexViewModel
+        {
+            Orders = filteredOrders,
+            StatusCounts = statusCounts,
+            AvailableStatuses = knownStatuses.Where(value => statusCounts[value] > 0).ToArray(),
+            SelectedStatus = selectedStatus,
+            Search = string.IsNullOrWhiteSpace(search) ? string.Empty : search.Trim(),
+            TotalOrderCount = customerOrders.Count
+        });
+    }
 
     [HttpGet]
     public async Task<IActionResult> Details(int id, CancellationToken cancellationToken)

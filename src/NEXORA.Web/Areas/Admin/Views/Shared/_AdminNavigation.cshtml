@@ -21,6 +21,9 @@
         <span class="admin-menu-icon" aria-hidden="true">⌂</span><span>Tổng quan</span>
     </a>
     <a class="admin-menu-link @Active("Orders")" aria-current="@(IsActive("Orders") ? "page" : null)" asp-area="Admin" asp-controller="Orders" asp-action="Index"><span class="admin-menu-icon" aria-hidden="true">▤</span><span>Đơn hàng</span></a>
+    <a class="admin-menu-link @Active("Users")" aria-current="@(IsActive("Users") ? "page" : null)" asp-area="Admin" asp-controller="Users" asp-action="Index"><span class="admin-menu-icon" aria-hidden="true">♙</span><span>Tài khoản</span></a>
+    <a class="admin-menu-link @Active("Reviews")" aria-current="@(IsActive("Reviews") ? "page" : null)" asp-area="Admin" asp-controller="Reviews" asp-action="Index"><span class="admin-menu-icon" aria-hidden="true">☆</span><span>Đánh giá</span></a>
+    <a class="admin-menu-link @Active("Reports")" aria-current="@(IsActive("Reports") ? "page" : null)" asp-area="Admin" asp-controller="Reports" asp-action="Orders"><span class="admin-menu-icon" aria-hidden="true">▥</span><span>Báo cáo</span></a>
 
     <span class="admin-menu-label">Danh mục sản phẩm</span>
     <a class="admin-menu-link @Active("Categories")" aria-current="@(IsActive("Categories") ? "page" : null)" asp-area="Admin" asp-controller="Categories" asp-action="Index"><span class="admin-menu-icon" aria-hidden="true">▦</span><span>Danh mục</span></a>

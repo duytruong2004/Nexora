@@ -5,7 +5,13 @@ public sealed record AdminDashboardMetrics(
     int ActiveProducts,
     int TotalCategories,
     int TotalUsageNeeds,
-    int TotalRecommendationRules);
+    int TotalRecommendationRules)
+{
+    public int TotalOrders { get; init; }
+    public int PendingOrders { get; init; }
+    public int CompletedOrders { get; init; }
+    public int ProductsWithoutInventory { get; init; }
+}
 
 public interface IAdminDashboardQueryService
 {

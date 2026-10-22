@@ -1,0 +1,21 @@
+@model NEXORA.Web.Areas.Admin.Models.AdminProductSalesReportViewModel
+@{
+    ViewData["Title"] = "Sản phẩm bán ra";
+}
+<div class="mb-4"><p class="text-uppercase small fw-semibold text-primary mb-1">Giao dịch hoàn tất</p><h1 class="h2 mb-1">Sản phẩm bán ra</h1><p class="text-secondary mb-0">Tổng lượng chỉ từ đơn COMPLETED; tên được lấy từ snapshot dòng đơn. Báo cáo không dùng giá sản phẩm hiện tại.</p></div>
+<partial name="_Navigation" />
+<form method="get" asp-area="Admin" asp-controller="Reports" asp-action="Products" class="card card-body border-0 shadow-sm mb-4"><div class="row g-3 align-items-end">
+    <div class="col-12 col-sm-5"><label class="form-label" for="startDate">Từ ngày (giờ Việt Nam)</label><input class="form-control" id="startDate" name="startDate" type="date" value="@Model.StartDate.ToString("yyyy-MM-dd")" /></div>
+    <div class="col-12 col-sm-5"><label class="form-label" for="endDate">Đến hết ngày</label><input class="form-control" id="endDate" name="endDate" type="date" value="@Model.EndDate.ToString("yyyy-MM-dd")" /></div>
+    <div class="col-12 col-sm-2"><button class="btn btn-primary w-100" type="submit">Xem báo cáo</button></div>
+</div></form>
+@if (Model.Error is not null) { <div class="alert alert-danger" role="alert">@Model.Error</div> }
+@if (Model.Report is { } report)
+{
+    <section class="card border-0 shadow-sm"><div class="card-header bg-white d-flex justify-content-between"><h2 class="h5 mb-0">@report.TotalProducts sản phẩm có lượng bán</h2><span class="small text-secondary">@report.Range.StartDate.ToString("dd/MM/yyyy") – @report.Range.EndDate.ToString("dd/MM/yyyy")</span></div><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Sản phẩm theo snapshot đơn</th><th>Mã sản phẩm</th><th class="text-end">Số lượng hoàn tất</th></tr></thead><tbody>
+    @if (report.Items.Count == 0) { <tr><td colspan="3" class="text-center text-secondary py-5">Không có sản phẩm bán ra trong khoảng thời gian đã chọn.</td></tr> }
+    @foreach (var row in report.Items) { <tr><td>@row.ProductNameSnapshot</td><td>#@row.ProductId</td><td class="text-end fw-semibold">@row.QuantitySold.ToString("N0")</td></tr> }
+    </tbody></table></div>
+    @if (report.PageCount > 1) { <div class="d-flex justify-content-between align-items-center p-3 border-top"><span class="small text-secondary">Trang @report.Page / @report.PageCount</span><div class="d-flex gap-2"><a class="btn btn-sm btn-outline-primary @(report.Page <= 1 ? "disabled" : "")" asp-area="Admin" asp-controller="Reports" asp-action="Products" asp-route-startDate="@Model.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.EndDate.ToString("yyyy-MM-dd")" asp-route-page="@(report.Page - 1)">Trước</a><a class="btn btn-sm btn-outline-primary @(report.Page >= report.PageCount ? "disabled" : "")" asp-area="Admin" asp-controller="Reports" asp-action="Products" asp-route-startDate="@Model.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.EndDate.ToString("yyyy-MM-dd")" asp-route-page="@(report.Page + 1)">Sau</a></div></div> }
+    </section>
+}

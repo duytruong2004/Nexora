@@ -14,6 +14,7 @@ using NEXORA.Application.Admin;
 using NEXORA.Application.Catalog;
 using NEXORA.Application.Consultation;
 using NEXORA.Application.Commerce;
+using NEXORA.Application.Engagement;
 using NEXORA.Domain.Entities;
 using NEXORA.Web.Controllers;
 
@@ -42,6 +43,7 @@ public sealed class AdminLayoutHttpIntegrationTests
             .AddControllersWithViews()
             .AddApplicationPart(typeof(RoleLandingController).Assembly);
         builder.Services.AddSingleton<ICustomerCatalogQueryService, TestCustomerCatalogQueryService>();
+        builder.Services.AddSingleton<IReviewService, TestReviewService>();
         builder.Services.AddSingleton<IAdminDashboardQueryService, TestAdminDashboardQueryService>();
         builder.Services.AddSingleton<IConsultationManagementService, TestConsultationManagementService>();
         builder.Services.AddSingleton<IAdminPromotionManagementService, TestAdminPromotionManagementService>();
@@ -253,6 +255,30 @@ public sealed class AdminLayoutHttpIntegrationTests
             Assert.Equal(HttpStatusCode.OK, customerOrderDetailsResponse.StatusCode);
             Assert.Contains("Gửi yêu cầu hủy", customerOrderDetailsHtml, StringComparison.Ordinal);
             Assert.Contains("name=\"RequestId\"", customerOrderDetailsHtml, StringComparison.Ordinal);
+
+            using var customerOrdersResponse = await client.GetAsync("/Orders?testRole=Customer");
+            var customerOrdersHtml = await customerOrdersResponse.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.OK, customerOrdersResponse.StatusCode);
+            Assert.Contains("Đơn hàng của tôi", customerOrdersHtml, StringComparison.Ordinal);
+            Assert.Contains("nexora-orders-card", customerOrdersHtml, StringComparison.Ordinal);
+            Assert.Contains("Đặt hàng", customerOrdersHtml, StringComparison.Ordinal);
+            Assert.Contains("Tìm mã đơn hàng", customerOrdersHtml, StringComparison.Ordinal);
+            Assert.Contains("href=\"/Orders/Details/701\"", customerOrdersHtml, StringComparison.Ordinal);
+            Assert.Equal(12, app.Services.GetRequiredService<TestCustomerOrderService>().LastListUserId);
+
+            using var exportedOrdersResponse = await client.GetAsync("/Orders?status=EXPORTED&testRole=Customer");
+            var exportedOrdersHtml = await exportedOrdersResponse.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.OK, exportedOrdersResponse.StatusCode);
+            Assert.Contains("#702", exportedOrdersHtml, StringComparison.Ordinal);
+            Assert.DoesNotContain("#701", exportedOrdersHtml, StringComparison.Ordinal);
+            Assert.Contains("Đã xuất kho", exportedOrdersHtml, StringComparison.Ordinal);
+
+            using var searchedOrdersResponse = await client.GetAsync("/Orders?search=%23703&testRole=Customer");
+            var searchedOrdersHtml = await searchedOrdersResponse.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.OK, searchedOrdersResponse.StatusCode);
+            Assert.Contains("#703", searchedOrdersHtml, StringComparison.Ordinal);
+            Assert.DoesNotContain("#702", searchedOrdersHtml, StringComparison.Ordinal);
+
             var antiforgeryToken = System.Text.RegularExpressions.Regex.Match(
                 customerOrderDetailsHtml,
                 "name=\\\"__RequestVerificationToken\\\" type=\\\"hidden\\\" value=\\\"([^\\\"]+)\\\"");
@@ -441,11 +467,26 @@ public sealed class AdminLayoutHttpIntegrationTests
 
     private sealed class TestCustomerOrderService : ICustomerOrderService
     {
+        public int? LastListUserId { get; private set; }
         public int? LastRequestUserId { get; private set; }
         public string? LastRequestReason { get; private set; }
 
-        public Task<IReadOnlyList<OrderListItem>> GetOrdersAsync(int userId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<OrderListItem>>([]);
+        public Task<IReadOnlyList<OrderListItem>> GetOrdersAsync(int userId, CancellationToken cancellationToken = default)
+        {
+            LastListUserId = userId;
+            IReadOnlyList<OrderListItem> result = userId == 12
+                ? [
+                    new OrderListItem(701, new DateTime(2026, 10, 20, 10, 0, 0, DateTimeKind.Utc), OrderStatuses.Confirmed, 1_000m, 1),
+                    new OrderListItem(702, new DateTime(2026, 10, 20, 10, 5, 0, DateTimeKind.Utc), OrderStatuses.Exported, 48_960_000m, 4),
+                    new OrderListItem(703, new DateTime(2026, 10, 20, 10, 10, 0, DateTimeKind.Utc), OrderStatuses.Completed, 5_990_000m, 1),
+                    new OrderListItem(704, new DateTime(2026, 10, 20, 10, 15, 0, DateTimeKind.Utc), OrderStatuses.Cancelled, 2_000_000m, 2)
+                    {
+                        CancelRequestStatus = OrderCancellationRequestStatuses.Approved
+                    }
+                ]
+                : [];
+            return Task.FromResult(result);
+        }
 
         public Task<OrderDetailView?> GetOrderAsync(int userId, int orderId, CancellationToken cancellationToken = default) =>
             Task.FromResult<OrderDetailView?>(userId == 12 && orderId == 701
@@ -552,6 +593,21 @@ public sealed class AdminLayoutHttpIntegrationTests
     {
         public Task<AdminDashboardMetrics> GetMetricsAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(new AdminDashboardMetrics(123, 117, 45, 8, 86));
+    }
+
+    private sealed class TestReviewService : IReviewService
+    {
+        public Task<IReadOnlyList<EligibleReviewOrderLine>> GetEligibleOrderLinesAsync(int userId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<EligibleReviewOrderLine>>([]);
+
+        public Task<IReadOnlyList<CustomerReviewItem>> GetCustomerReviewsAsync(int userId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<CustomerReviewItem>>([]);
+
+        public Task<ReviewSubmissionResult> SubmitAsync(int userId, int orderDetailId, int rating, string? comment, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new ReviewSubmissionResult(ReviewSubmissionFailure.None));
+
+        public Task<IReadOnlyList<PublicProductReview>> GetApprovedForProductAsync(int productId, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<PublicProductReview>>([]);
     }
 
     private sealed class TestConsultationManagementService : IConsultationManagementService

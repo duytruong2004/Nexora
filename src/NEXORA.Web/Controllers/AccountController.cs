@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using NEXORA.Application.Email;
+using NEXORA.Application.Identity;
 using NEXORA.Domain.Security;
 using NEXORA.Infrastructure.Identity;
 using NEXORA.Web.Models;
@@ -104,11 +105,21 @@ public sealed class AccountController(
             return View(model);
         }
 
-        var result = await signInManager.PasswordSignInAsync(
-            user, model.Password, model.RememberMe, lockoutOnFailure: true);
+        var result = await signInManager.CheckPasswordSignInAsync(
+            user, model.Password, lockoutOnFailure: true);
 
         if (result.Succeeded)
         {
+            var roles = await userManager.GetRolesAsync(user);
+            if (!AccountAuthenticationPolicy.CanIssueCookie(user.IsActive, roles))
+            {
+                // Do not issue a cookie for inactive, role-less, multi-role, or unknown-role accounts.
+                // Keep the public response generic so internal role anomalies are not disclosed.
+                ModelState.AddModelError(string.Empty, "Email hoặc mật khẩu không đúng.");
+                return View(model);
+            }
+
+            await signInManager.SignInAsync(user, model.RememberMe);
             logger.LogInformation("A user signed in.");
             if (!string.IsNullOrWhiteSpace(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
             {

@@ -259,9 +259,37 @@ Giới hạn còn lại: migration Phase 5.2 chưa áp dụng vào database `NEX
 
 ### Phase 6 – Quản trị và báo cáo
 
-**Công việc:** quản lý user/nhân viên/role; danh mục, thương hiệu, sản phẩm, ảnh, thông số; quy tắc tư vấn; khuyến mại, đánh giá, giá; dashboard và thống kê đơn hàng/doanh thu/sản phẩm/tồn kho.
+**Phase 6.0 Audit:** **COMPLETED trong phạm vi phân tích/tài liệu.**
 
-**Tiêu chí kiểm thử đề xuất:** kiểm tra quyền Admin và validation dữ liệu; một khách không có favorite trùng; review chỉ gắn với đơn hoàn thành và giao dịch của người mua; cấu hình promotion tuân thời gian; cập nhật giá không đổi đơn cũ; doanh thu chỉ lấy đơn `COMPLETED`, theo `completed_at` và số tiền giao dịch đã chốt (BR13–BR14); hành động quan trọng có log theo NFR10.
+**Business policy decisions:** **9/9 OWNER APPROVED.**
+
+**Final design documentation:** **UPDATED FOR OWNER REVIEW.**
+
+**Phase 6 planning:** **DRAFT — NOT OVERALL COMPLETED.**
+
+**Phase 6.1 Account Administration:** **ACCEPTANCE BLOCKED.** Current-source security tests could not be executed under Windows Code Integrity; QA UserId 82 anomaly remains unchanged and requires separate owner approval before any data correction/deployment.
+
+**Phase 6.2 Favorites & Reviews:** **IMPLEMENTED – BUILD VERIFIED; TESTS NOT RUN; MANUAL UAT NOT RUN.**
+
+**Phase 6.3 Review Moderation:** **IMPLEMENTED – BUILD VERIFIED; TESTS NOT RUN; MANUAL UAT NOT RUN.**
+
+**Phase 6.4 Admin Dashboard & Reporting:** **IMPLEMENTED – BUILD VERIFIED; SQL/HTTP TESTS NOT RUN; MANUAL UAT NOT RUN.**
+
+**Phase 6.5 Final Hardening:** **PREPARED – REGRESSION/UAT BLOCKED; NOT ACCEPTED.**
+
+**Phase 6 production:** **NOT STARTED / NOT DEPLOYED.**
+
+Phase 6.2–6.4 code được bổ sung trên working tree và build bằng source mới nhất thành công qua output cô lập: 0 warning, 0 error. `dotnet restore` thành công. Test assemblies chỉ được biên dịch; tests không được chạy do Windows Code Integrity policy đã chặn unsigned test DLL (`0x800711C7`, Code Integrity event 3077) và chưa có CI/runner được phê duyệt. Không có test result/TRX mới, không được suy ra PASS từ baseline Phase 6.1. Manual/browser UAT chưa chạy. Không có truy cập database trong lượt triển khai này, không migration/schema change, không commit/push, không truy cập database `NEXORA` chính. Chi tiết acceptance/UAT ở các tài liệu [`PHASE6_2_ACCEPTANCE.md`](./PHASE6_2_ACCEPTANCE.md), [`PHASE6_3_ACCEPTANCE.md`](./PHASE6_3_ACCEPTANCE.md), [`PHASE6_4_ACCEPTANCE.md`](./PHASE6_4_ACCEPTANCE.md) và kế hoạch [`PHASE6_5_HARDENING_PLAN.md`](./PHASE6_5_HARDENING_PLAN.md).
+
+Audit, ma trận FR/UC/BR, khoảng trống và ranh giới hiện tại: [`PHASE6_AUDIT_REPORT.md`](./PHASE6_AUDIT_REPORT.md). Thiết kế dự thảo và các quyết định cần chủ dự án chốt: [`PHASE6_DESIGN_DRAFT.md`](./PHASE6_DESIGN_DRAFT.md). Kế hoạch triển khai/tiêu chí kiểm thử từng chặng: [`PHASE6_IMPLEMENTATION_PLAN.md`](./PHASE6_IMPLEMENTATION_PLAN.md).
+
+**Phạm vi đề xuất:** 6.1 tài khoản/nhân viên/role; 6.2 yêu thích và đánh giá của Customer; 6.3 kiểm duyệt đánh giá; 6.4 dashboard và thống kê đơn hàng/doanh thu/sản phẩm/tồn kho; 6.5 regression, bảo mật, UAT và bàn giao. Các màn hình quản trị danh mục, thương hiệu, sản phẩm, ảnh, thông số, quy tắc tư vấn và khuyến mại đã có trong các phase trước; Phase 6 chỉ rà soát và bổ sung thiếu hụt đã được duyệt, không mặc định viết lại.
+
+**Policy đã chốt:** Admin UI không cấp Admin; mỗi user một role; Customer không chuyển thành staff; staff invitation yêu cầu provider thật; account disable/session policy và review transitions theo [`PHASE6_DESIGN_DRAFT.md`](./PHASE6_DESIGN_DRAFT.md); moderation audit chỉ structured ILogger, không persistent history; FR49 chỉ COMPLETED; FR50 dùng available quantity và threshold nhập khi xem; reports dùng Asia/Ho_Chi_Minh/UTC half-open range.
+
+**Phase 6.1 historical regression 2026-10-22:** earlier source baseline reported restore/build PASS and 240 tests PASS, including SQL integration on `NEXORA_IntegrationTests`; this historical result does not verify the later fail-closed identity guard. Current-source tests remain blocked as described in [`PHASE6_1_MULTIROLE_REMEDIATION.md`](./PHASE6_1_MULTIROLE_REMEDIATION.md). Browser UAT and real email delivery were not performed.
+
+**Nguyên tắc:** giữ Modular Monolith, đúng bốn role hiện tại và 22 bảng nghiệp vụ; không thay state machine/logic Sales-Warehouse Phase 5; không thêm bảng lịch sử hoặc migration trong Phase 6.0. Mọi thay đổi schema tiềm năng phải trình bày và duyệt riêng. Không truy cập/cập nhật database `NEXORA` chính như một phần của audit này.
 
 ### Phase 7 – Tích hợp, nghiệm thu và bàn giao
 

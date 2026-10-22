@@ -2,44 +2,292 @@
 @{
     ViewData["Title"] = Model.Product.Name;
     var product = Model.Product;
-    var primary = product.Images.FirstOrDefault(image => image.IsPrimary) ?? product.Images.FirstOrDefault();
+    var galleryImages = product.Images
+        .Where(image => !string.IsNullOrWhiteSpace(image.ImageUrl))
+        .OrderByDescending(image => image.IsPrimary)
+        .ThenBy(image => image.SortOrder)
+        .ToArray();
+    var primary = galleryImages.FirstOrDefault();
+    var hasDiscount = product.DiscountPrice is > 0 && product.DiscountPrice.Value < product.Price;
+    var displayPrice = hasDiscount ? product.DiscountPrice!.Value : product.Price;
+    var canAddToCart = product.AvailableQuantity is > 0;
+    var visibleReviewCount = Model.ApprovedReviews.Count;
+    var visibleReviewAverage = visibleReviewCount == 0 ? 0 : Model.ApprovedReviews.Average(review => review.Rating);
 }
-<div class="mb-4"><a asp-controller="Catalog" asp-action="Index" asp-route-categoryId="@product.CategoryId" class="text-decoration-none">← @product.CategoryName</a></div>
-<div class="row g-4 g-lg-5">
-    <div class="col-lg-6"><div class="mb-3">@await Html.PartialAsync("_ProductImage", new NEXORA.Web.Models.ProductImageDisplayViewModel(primary?.ImageUrl, product.Name, "detail"))</div>@if (product.Images.Count > 1) { <div class="row g-2">@foreach (var image in product.Images.Where(image => image.Id != primary?.Id)) { <div class="col-3"><div class="product-gallery-thumb"><img src="@image.ImageUrl" alt="Ảnh chi tiết @product.Name" loading="lazy" decoding="async" /></div></div> }</div> }</div>
-    <div class="col-lg-6"><p class="text-uppercase small fw-semibold text-primary mb-2">@product.CategoryName · @product.BrandName</p><h1 class="display-6 fw-bold">@product.Name</h1><p class="text-secondary">Mã sản phẩm: @product.Sku</p><div class="d-flex align-items-baseline gap-2 mb-3"><strong class="h2 text-primary mb-0">@((product.DiscountPrice ?? product.Price).ToString("N0")) ₫</strong>@if (product.DiscountPrice.HasValue) { <del class="text-secondary">@product.Price.ToString("N0") ₫</del> }</div>
-        @if (product.AvailableQuantity is > 0)
-        {
-            <p><span class="badge rounded-pill product-stock-badge product-stock-badge--available">Còn hàng</span><span class="small text-secondary ms-2">Có thể bán: @product.AvailableQuantity</span></p>
-        }
-        else if (product.AvailableQuantity == 0)
-        {
-            <p><span class="badge rounded-pill product-stock-badge product-stock-badge--unavailable">Hết hàng</span></p>
-        }
-        else
-        {
-            <p><span class="badge rounded-pill product-stock-badge product-stock-badge--unknown">Chưa có hàng</span></p>
-        }
-        <p class="text-secondary">Bảo hành: @product.WarrantyMonths tháng</p><div class="border-top pt-3"><h2 class="h5">Mô tả</h2><p class="text-secondary">@(product.Description ?? "Thông tin mô tả đang được cập nhật.")</p></div>
-        @if (User.IsInRole("Customer"))
-        {
-            var canAddToCart = product.AvailableQuantity is > 0;
-            <form asp-controller="Cart" asp-action="Add" method="post" class="d-flex flex-wrap align-items-end gap-2 mt-4">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="productId" value="@product.Id" />
-                <input type="hidden" name="returnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
-                <div><label class="form-label small mb-1" for="cartQuantity">Số lượng</label><input class="form-control" id="cartQuantity" name="quantity" type="number" value="@(canAddToCart ? 1 : 0)" min="1" max="@(product.AvailableQuantity ?? 0)" inputmode="numeric" disabled="@(canAddToCart ? null : "disabled")" /></div>
-                <button class="btn btn-primary" type="submit" disabled="@(canAddToCart ? null : "disabled")" aria-disabled="@(canAddToCart ? "false" : "true")">Thêm vào giỏ hàng</button>
-            </form>
-            @if (!canAddToCart)
+
+<nav aria-label="Breadcrumb" class="product-detail-breadcrumb mb-3">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Catalog" asp-action="Index" asp-route-categoryId="@product.CategoryId">@product.CategoryName</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@product.Name</li>
+    </ol>
+</nav>
+
+<div class="product-detail-page">
+    <div class="product-detail-layout">
+        <section class="product-detail-gallery-column" aria-label="Hình ảnh sản phẩm">
+            <div class="product-gallery-main" data-product-gallery>
+                @if (primary is not null)
+                {
+                    <img class="product-gallery-main-image" src="@primary.ImageUrl" alt="@product.Name" data-product-gallery-main fetchpriority="high" decoding="async" />
+                    @if (galleryImages.Length > 1)
+                    {
+                        <button class="product-gallery-control product-gallery-control--previous" type="button" data-product-gallery-step="-1" aria-label="Ảnh trước">‹</button>
+                        <button class="product-gallery-control product-gallery-control--next" type="button" data-product-gallery-step="1" aria-label="Ảnh tiếp theo">›</button>
+                    }
+                    <button class="product-gallery-zoom" type="button" data-product-gallery-zoom aria-label="Phóng to ảnh sản phẩm" title="Phóng to ảnh"><span aria-hidden="true">⌕</span></button>
+                }
+                else
+                {
+                    @await Html.PartialAsync("_ProductImage", new NEXORA.Web.Models.ProductImageDisplayViewModel(null, product.Name, "detail"))
+                }
+            </div>
+
+            @if (galleryImages.Length > 1)
             {
-                <p class="small text-secondary mt-2 mb-0">Sản phẩm hiện đang hết hàng. Vui lòng quay lại sau.</p>
+                <div class="product-gallery-thumbnails" role="group" aria-label="Chọn ảnh sản phẩm">
+                    @for (var imageIndex = 0; imageIndex < galleryImages.Length; imageIndex++)
+                    {
+                        var image = galleryImages[imageIndex];
+                        var isSelected = image.Id == primary?.Id;
+                        <button class="product-gallery-thumbnail @(isSelected ? "is-selected" : string.Empty)" type="button"
+                                data-product-gallery-thumbnail data-image-src="@image.ImageUrl" data-image-alt="Ảnh @product.Name"
+                                aria-label="Chọn ảnh @(imageIndex + 1) của @product.Name" aria-pressed="@(isSelected ? "true" : "false")">
+                            <img src="@image.ImageUrl" alt="" loading="lazy" decoding="async" />
+                        </button>
+                    }
+                </div>
             }
-        }
-        <div class="d-flex flex-wrap gap-2 mt-3"><a asp-controller="Catalog" asp-action="Index" asp-route-categoryId="@product.CategoryId" class="btn btn-outline-primary">Xem thêm @product.CategoryName</a></div>
+        </section>
+
+        <section class="product-detail-information" aria-labelledby="product-title">
+            <p class="product-detail-eyebrow">@product.CategoryName <span aria-hidden="true">·</span> @product.BrandName</p>
+            <h1 id="product-title">@product.Name</h1>
+            <div class="product-detail-identifiers"><span>Mã sản phẩm: <strong>@product.Sku</strong></span><span class="product-detail-divider" aria-hidden="true">|</span><span>Thương hiệu: <strong>@product.BrandName</strong></span></div>
+
+            @if (visibleReviewCount > 0)
+            {
+                <div class="product-rating-summary" aria-label="Điểm trung bình trên các đánh giá đang hiển thị">
+                    <span class="product-rating-star" aria-hidden="true">★</span>
+                    <strong>@visibleReviewAverage.ToString("0.0")</strong>
+                    <span>@visibleReviewCount đánh giá đang hiển thị</span>
+                </div>
+            }
+            else
+            {
+                <p class="product-rating-empty">Chưa có đánh giá được duyệt</p>
+            }
+
+            <div class="product-detail-price-row">
+                <strong class="product-detail-price">@displayPrice.ToString("N0") ₫</strong>
+                @if (hasDiscount)
+                {
+                    <del class="product-detail-original-price">@product.Price.ToString("N0") ₫</del>
+                }
+            </div>
+
+            <div class="product-detail-availability">
+                @if (canAddToCart)
+                {
+                    <span class="product-availability-badge product-availability-badge--available"><span aria-hidden="true">✓</span> Còn hàng</span>
+                    <span class="product-availability-quantity">Có thể bán: @product.AvailableQuantity</span>
+                }
+                else if (product.AvailableQuantity == 0)
+                {
+                    <span class="product-availability-badge product-availability-badge--unavailable">Hết hàng</span>
+                }
+                else
+                {
+                    <span class="product-availability-badge product-availability-badge--unknown">Chưa có dữ liệu tồn kho</span>
+                }
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(product.Description))
+            {
+                <p class="product-detail-description-preview">@product.Description</p>
+            }
+
+            @if (product.Specifications.Count > 0)
+            {
+                <div class="product-highlight-specs" aria-label="Thông số nổi bật">
+                    @foreach (var specification in product.Specifications.Take(4))
+                    {
+                        var value = specification.DisplayValue ?? (specification.DataType == "NUMBER" && !string.IsNullOrWhiteSpace(specification.Unit) ? $"{specification.Value} {specification.Unit}" : specification.Value);
+                        <div class="product-highlight-spec">
+                            <span class="product-highlight-spec-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" focusable="false"><path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.64 5.64l1.42 1.42m9.88 9.88 1.42 1.42m0-12.72-1.42 1.42m-9.88 9.88-1.42 1.42"/><circle cx="12" cy="12" r="5"/></svg>
+                            </span>
+                            <span class="product-highlight-spec-copy"><strong>@specification.Name</strong><span>@value</span></span>
+                        </div>
+                    }
+                </div>
+            }
+
+            <section class="product-purchase-box" aria-label="Thao tác mua hàng">
+                @if (User.IsInRole("Customer"))
+                {
+                    <form asp-controller="Cart" asp-action="Add" method="post" class="product-purchase-form" data-catalog-cart-add>
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="productId" value="@product.Id" />
+                        <input type="hidden" name="returnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
+                        <div class="product-quantity-field">
+                            <label class="form-label" for="cartQuantity">Số lượng</label>
+                            <div class="product-quantity-control">
+                                <button type="button" class="product-quantity-step" data-product-quantity-step="-1" aria-label="Giảm số lượng" disabled="@(!canAddToCart ? "disabled" : null)">−</button>
+                                <input class="form-control" id="cartQuantity" name="quantity" type="number" value="@(canAddToCart ? 1 : 0)" min="1" max="@(product.AvailableQuantity ?? 0)" step="1" inputmode="numeric" data-product-quantity-input required disabled="@(!canAddToCart ? "disabled" : null)" />
+                                <button type="button" class="product-quantity-step" data-product-quantity-step="1" aria-label="Tăng số lượng" disabled="@(!canAddToCart ? "disabled" : null)">+</button>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary product-add-to-cart" type="submit" data-catalog-cart-add-button disabled="@(!canAddToCart ? "disabled" : null)" aria-disabled="@(!canAddToCart ? "true" : "false")">
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M2 3h2l2.4 11.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6L22 7H5"/></svg>
+                            <span data-catalog-cart-add-label>Thêm vào giỏ hàng</span>
+                            <span class="spinner-border spinner-border-sm d-none" data-catalog-cart-add-spinner aria-hidden="true"></span>
+                        </button>
+                    </form>
+                    <div class="product-secondary-actions">
+                        <form asp-controller="Favorites" asp-action="Add" method="post" data-catalog-favorite-add>
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="productId" value="@product.Id" />
+                            <input type="hidden" name="returnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
+                            <button class="btn btn-outline-secondary product-favorite-action" type="submit" data-catalog-favorite-button data-product-name="@product.Name" aria-label="Thêm @product.Name vào yêu thích">
+                                <span aria-hidden="true">♡</span><span data-catalog-favorite-label>Thêm vào yêu thích</span>
+                                <span class="spinner-border spinner-border-sm d-none" data-catalog-favorite-spinner aria-hidden="true"></span>
+                            </button>
+                        </form>
+                        <a class="btn btn-outline-secondary product-consult-action" asp-controller="Consultation" asp-action="Index">Tư vấn chọn thiết bị <span aria-hidden="true">→</span></a>
+                    </div>
+                    @if (!canAddToCart)
+                    {
+                        <p class="product-purchase-note" role="status">Sản phẩm hiện chưa thể thêm vào giỏ hàng.</p>
+                    }
+                }
+                else if (User.Identity?.IsAuthenticated != true && canAddToCart)
+                {
+                    <a class="btn btn-primary product-add-to-cart" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@($"{Context.Request.Path}{Context.Request.QueryString}")">Đăng nhập để mua hàng</a>
+                }
+                else if (!canAddToCart)
+                {
+                    <p class="product-purchase-note" role="status">Sản phẩm hiện chưa thể thêm vào giỏ hàng.</p>
+                }
+            </section>
+
+            <div class="product-detail-facts" aria-label="Thông tin mua sắm">
+                @if (product.WarrantyMonths > 0)
+                {
+                    <div class="product-detail-fact"><span class="product-fact-icon" aria-hidden="true">✓</span><span><strong>Bảo hành</strong><small>@product.WarrantyMonths tháng</small></span></div>
+                }
+                <div class="product-detail-fact"><span class="product-fact-icon" aria-hidden="true">▦</span><span><strong>Tình trạng kho</strong><small>@(canAddToCart ? "Có thể đặt hàng" : product.AvailableQuantity == 0 ? "Hiện hết hàng" : "Chưa có dữ liệu")</small></span></div>
+                <a class="product-detail-fact product-detail-fact--link" asp-controller="Consultation" asp-action="Index"><span class="product-fact-icon" aria-hidden="true">?</span><span><strong>Tư vấn thiết bị</strong><small>Trao đổi theo nhu cầu của bạn</small></span></a>
+            </div>
+        </section>
     </div>
+
+    <section class="product-detail-tabs-section" aria-label="Thông tin chi tiết sản phẩm">
+        <ul class="nav nav-tabs product-detail-tabs" id="productDetailsTabs" role="tablist">
+            <li class="nav-item" role="presentation"><button class="nav-link active" id="product-description-tab" data-bs-toggle="tab" data-bs-target="#product-description-panel" type="button" role="tab" aria-controls="product-description-panel" aria-selected="true">Mô tả sản phẩm</button></li>
+            <li class="nav-item" role="presentation"><button class="nav-link" id="product-specifications-tab" data-bs-toggle="tab" data-bs-target="#product-specifications-panel" type="button" role="tab" aria-controls="product-specifications-panel" aria-selected="false">Thông số kỹ thuật</button></li>
+            <li class="nav-item" role="presentation"><button class="nav-link" id="product-reviews-tab" data-bs-toggle="tab" data-bs-target="#product-reviews-panel" type="button" role="tab" aria-controls="product-reviews-panel" aria-selected="false">Đánh giá khách hàng</button></li>
+        </ul>
+        <div class="tab-content product-detail-tab-content">
+            <section class="tab-pane fade show active" id="product-description-panel" role="tabpanel" aria-labelledby="product-description-tab" tabindex="0">
+                @if (!string.IsNullOrWhiteSpace(product.Description))
+                {
+                    <p class="mb-0 product-description-full">@product.Description</p>
+                }
+                else
+                {
+                    <p class="mb-0 text-secondary">Mô tả sản phẩm đang được cập nhật.</p>
+                }
+            </section>
+            <section class="tab-pane fade" id="product-specifications-panel" role="tabpanel" aria-labelledby="product-specifications-tab" tabindex="0">
+                @if (product.Specifications.Count == 0)
+                {
+                    <div class="catalog-empty rounded-4 p-4 text-secondary">Thông số kỹ thuật đang được cập nhật.</div>
+                }
+                else
+                {
+                    <div class="product-specification-table-wrap"><table class="table product-specification-table align-middle mb-0"><tbody>
+                    @foreach (var specification in product.Specifications)
+                    {
+                        <tr><th scope="row">@specification.Name</th><td>@(specification.DisplayValue ?? specification.Value) @if (specification.DataType == "NUMBER" && string.IsNullOrWhiteSpace(specification.DisplayValue) && !string.IsNullOrWhiteSpace(specification.Unit)) { <span>@specification.Unit</span> }</td></tr>
+                    }
+                    </tbody></table></div>
+                }
+            </section>
+            <section class="tab-pane fade" id="product-reviews-panel" role="tabpanel" aria-labelledby="product-reviews-tab" tabindex="0">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <div><h2 class="h5 mb-1">Đánh giá đã kiểm duyệt</h2><p class="small text-secondary mb-0">Đang hiển thị @visibleReviewCount đánh giá công khai gần đây.</p></div>
+                    @if (User.IsInRole("Customer"))
+                    {
+                        <a class="btn btn-outline-primary btn-sm" asp-controller="Reviews" asp-action="Index">Đánh giá sản phẩm đã mua</a>
+                    }
+                </div>
+                @if (visibleReviewCount == 0)
+                {
+                    <div class="catalog-empty rounded-4 p-4 text-secondary">Chưa có đánh giá được công khai.</div>
+                }
+                else
+                {
+                    <div class="product-review-list">
+                        @foreach (var review in Model.ApprovedReviews)
+                        {
+                            <article class="product-review-card">
+                                <div class="product-review-heading"><strong>@review.CustomerDisplayName</strong><time datetime="@review.CreatedAt.ToString("yyyy-MM-dd")">@review.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</time></div>
+                                <div class="product-review-stars" aria-label="@review.Rating trên 5 sao">
+                                    @for (var star = 1; star <= 5; star++)
+                                    {
+                                        <span class="@(star <= review.Rating ? "is-filled" : string.Empty)" aria-hidden="true">★</span>
+                                    }
+                                    <strong>@review.Rating / 5</strong>
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(review.Comment))
+                                {
+                                    <p class="product-review-comment">@review.Comment</p>
+                                }
+                            </article>
+                        }
+                    </div>
+                }
+            </section>
+        </div>
+    </section>
+
+    @if (Model.RelatedProducts.Count > 0)
+    {
+        <section class="product-related-section" aria-labelledby="related-products-title">
+            <div class="product-related-heading"><div><p class="product-detail-eyebrow mb-1">Cùng danh mục</p><h2 id="related-products-title">Sản phẩm liên quan</h2></div><a asp-controller="Catalog" asp-action="Index" asp-route-categoryId="@product.CategoryId">Xem tất cả <span aria-hidden="true">→</span></a></div>
+            <div class="row g-3">
+                @foreach (var related in Model.RelatedProducts)
+                {
+                    var relatedHasDiscount = related.DiscountPrice is > 0 && related.DiscountPrice.Value < related.Price;
+                    <div class="col-6 col-lg-3">
+                        <article class="product-related-card h-100">
+                            <a class="product-related-image" asp-controller="Catalog" asp-action="Details" asp-route-id="@related.Id" aria-label="Xem @related.Name">
+                                @await Html.PartialAsync("_ProductImage", new NEXORA.Web.Models.ProductImageDisplayViewModel(related.PrimaryImageUrl, related.Name, "card"))
+                            </a>
+                            <div class="product-related-copy">
+                                <p>@related.BrandName</p>
+                                <h3><a asp-controller="Catalog" asp-action="Details" asp-route-id="@related.Id">@related.Name</a></h3>
+                                <strong>@((relatedHasDiscount ? related.DiscountPrice!.Value : related.Price).ToString("N0")) ₫</strong>
+                                @if (relatedHasDiscount) { <del>@related.Price.ToString("N0") ₫</del> }
+                                <span class="product-related-stock">@(related.AvailableQuantity is > 0 ? "Còn hàng" : related.AvailableQuantity == 0 ? "Hết hàng" : "Chưa có dữ liệu tồn kho")</span>
+                            </div>
+                        </article>
+                    </div>
+                }
+            </div>
+        </section>
+    }
 </div>
-<section class="mt-5" aria-labelledby="specifications-title"><h2 id="specifications-title" class="h3 mb-3">Thông số kỹ thuật</h2>
-    @if (product.Specifications.Count == 0) { <div class="catalog-empty rounded-4 p-4 text-secondary">Thông số kỹ thuật đang được cập nhật.</div> }
-    else { <div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table table-striped align-middle mb-0"><tbody>@foreach (var specification in product.Specifications) { <tr><th class="ps-3" scope="row">@specification.Name</th><td>@(specification.DisplayValue ?? specification.Value) @if (specification.DataType == "NUMBER" && string.IsNullOrWhiteSpace(specification.DisplayValue) && !string.IsNullOrWhiteSpace(specification.Unit)) { <span>@specification.Unit</span> }</td></tr> }</tbody></table></div></div> }
-</section>
+
+@if (primary is not null)
+{
+    <dialog class="product-image-dialog" data-product-gallery-dialog aria-label="Ảnh phóng to của @product.Name">
+        <form method="dialog"><button class="product-image-dialog-close" aria-label="Đóng ảnh phóng to">×</button></form>
+        <img src="@primary.ImageUrl" alt="@product.Name" data-product-gallery-zoom-image />
+    </dialog>
+}
+
+@section Scripts {
+    <script src="~/js/catalog-details.js" asp-append-version="true"></script>
+}

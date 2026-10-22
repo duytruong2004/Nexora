@@ -4,6 +4,7 @@ using NEXORA.Application.Catalog;
 using NEXORA.Application.Email;
 using NEXORA.Application.Consultation;
 using NEXORA.Application.Commerce;
+using NEXORA.Application.Identity;
 using NEXORA.Domain.Security;
 using NEXORA.Infrastructure;
 using NEXORA.Infrastructure.Identity;
@@ -15,14 +16,11 @@ using NEXORA.Web.Identity;
 var commandArguments = ProvisioningCommandArguments.Parse(args);
 var builder = WebApplication.CreateBuilder(commandArguments.HostArguments);
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-if (string.IsNullOrWhiteSpace(connectionString))
-{
-    throw new InvalidOperationException(
-        "ConnectionStrings:DefaultConnection is required. Configure it through appsettings.Development.json or environment variables.");
-}
+var connectionString = DatabaseConnectionPolicy.Resolve(
+    builder.Configuration.GetConnectionString("DefaultConnection"),
+    builder.Environment.EnvironmentName);
 
-builder.Services.AddNexoraInfrastructure(connectionString);
+builder.Services.AddNexoraInfrastructure(connectionString, builder.Environment.EnvironmentName);
 builder.Services.AddScoped<IProductImageStorage, LocalProductImageStorage>();
 builder.Services.AddIdentity<AppUser, AppRole>(options =>
     {
@@ -38,7 +36,19 @@ builder.Services.AddIdentity<AppUser, AppRole>(options =>
         options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
     })
     .AddEntityFrameworkStores<AppDbContext>()
-    .AddDefaultTokenProviders();
+    .AddDefaultTokenProviders()
+    .AddTokenProvider<StaffInvitationTokenProvider>(StaffInvitationPurpose.ProviderName);
+
+builder.Services.Configure<StaffInvitationTokenProviderOptions>(options =>
+    options.TokenLifespan = TimeSpan.FromHours(24));
+builder.Services.Configure<StaffInvitationOptions>(options =>
+{
+    builder.Configuration.GetSection("StaffInvitation").Bind(options);
+    if (builder.Environment.IsDevelopment() && string.IsNullOrWhiteSpace(options.PublicBaseUrl))
+    {
+        options.PublicBaseUrl = "http://127.0.0.1:5059";
+    }
+});
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -49,6 +59,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.SlidingExpiration = true;
 });
+builder.Services.AddAuthoritativeAccountCookieValidation();
 
 builder.Services.AddScoped<RoleSeeder>();
 builder.Services.AddSingleton<InMemoryEmailMailbox>();

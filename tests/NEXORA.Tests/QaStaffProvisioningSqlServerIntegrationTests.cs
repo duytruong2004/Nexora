@@ -143,7 +143,7 @@ public sealed class QaStaffProvisioningSqlServerIntegrationTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddNexoraInfrastructure(connectionString);
+        services.AddNexoraInfrastructure(connectionString, "QA");
         services.AddIdentityCore<AppUser>(options =>
             {
                 options.User.RequireUniqueEmail = true;

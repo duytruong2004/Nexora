@@ -1,0 +1,20 @@
+@model NEXORA.Web.Areas.Admin.Models.AdminRevenueReportViewModel
+@{
+    ViewData["Title"] = "Báo cáo doanh thu";
+}
+<div class="mb-4"><p class="text-uppercase small fw-semibold text-primary mb-1">Tổng hợp giao dịch</p><h1 class="h2 mb-1">Báo cáo doanh thu</h1><p class="text-secondary mb-0">Chỉ đơn COMPLETED; tổng tiền lấy từ snapshot Order.TotalAmount và nhóm theo ngày hoàn tất tại Việt Nam.</p></div>
+<partial name="_Navigation" />
+<form method="get" asp-area="Admin" asp-controller="Reports" asp-action="Revenue" class="card card-body border-0 shadow-sm mb-4"><div class="row g-3 align-items-end">
+    <div class="col-12 col-sm-5"><label class="form-label" for="startDate">Từ ngày (giờ Việt Nam)</label><input class="form-control" id="startDate" name="startDate" type="date" value="@Model.StartDate.ToString("yyyy-MM-dd")" /></div>
+    <div class="col-12 col-sm-5"><label class="form-label" for="endDate">Đến hết ngày</label><input class="form-control" id="endDate" name="endDate" type="date" value="@Model.EndDate.ToString("yyyy-MM-dd")" /></div>
+    <div class="col-12 col-sm-2"><button class="btn btn-primary w-100" type="submit">Xem báo cáo</button></div>
+</div></form>
+@if (Model.Error is not null) { <div class="alert alert-danger" role="alert">@Model.Error</div> }
+@if (Model.Report is { } report)
+{
+    <article class="admin-stat-card mb-4"><span>Doanh thu hoàn tất · @report.Range.StartDate.ToString("dd/MM/yyyy") – @report.Range.EndDate.ToString("dd/MM/yyyy")</span><strong>@report.TotalRevenue.ToString("N0") ₫</strong></article>
+    <section class="card border-0 shadow-sm"><div class="card-header bg-white"><h2 class="h5 mb-0">Doanh thu theo ngày hoàn tất (giờ Việt Nam)</h2></div><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Ngày</th><th class="text-end">Doanh thu</th></tr></thead><tbody>
+    @if (report.DailyRevenue.Count == 0) { <tr><td colspan="2" class="text-center text-secondary py-5">Không có đơn hoàn tất trong khoảng thời gian đã chọn.</td></tr> }
+    @foreach (var row in report.DailyRevenue) { <tr><td>@row.Date.ToString("dd/MM/yyyy")</td><td class="text-end fw-semibold text-primary">@row.Amount.ToString("N0") ₫</td></tr> }
+    </tbody></table></div></section>
+}

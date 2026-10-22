@@ -1,0 +1,6 @@
+<nav class="nav nav-pills gap-2 mb-4" aria-label="Báo cáo quản trị">
+    <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Orders" ? "active" : "")" asp-area="Admin" asp-controller="Reports" asp-action="Orders">Đơn hàng</a>
+    <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Revenue" ? "active" : "")" asp-area="Admin" asp-controller="Reports" asp-action="Revenue">Doanh thu</a>
+    <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Products" ? "active" : "")" asp-area="Admin" asp-controller="Reports" asp-action="Products">Sản phẩm bán ra</a>
+    <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Inventory" ? "active" : "")" asp-area="Admin" asp-controller="Reports" asp-action="Inventory">Tồn kho</a>
+</nav>

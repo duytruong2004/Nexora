@@ -109,6 +109,10 @@
 
     const updateCart = (cart, options = {}) => {
         updateCartBadge(cart.itemCount);
+        const distinctCount = document.querySelector('[data-cart-distinct-count]');
+        const totalCount = document.querySelector('[data-cart-total-count]');
+        if (distinctCount) distinctCount.textContent = cart.items.length;
+        if (totalCount) totalCount.textContent = cart.itemCount;
 
         if (cart.isEmpty) {
             content.replaceChildren(emptyTemplate.content.cloneNode(true));

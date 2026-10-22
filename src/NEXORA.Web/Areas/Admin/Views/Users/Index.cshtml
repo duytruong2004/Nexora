@@ -1,0 +1,63 @@
+@model NEXORA.Web.Areas.Admin.Models.AccountSearchViewModel
+@{
+    ViewData["Title"] = "Tài khoản";
+    string StateLabel(NEXORA.Application.Identity.AccountLifecycleState state) => state switch
+    {
+        NEXORA.Application.Identity.AccountLifecycleState.Active => "Đang hoạt động",
+        NEXORA.Application.Identity.AccountLifecycleState.PendingInvitation => "Chờ kích hoạt",
+        NEXORA.Application.Identity.AccountLifecycleState.Suspended => "Đã khóa",
+        _ => "Cần rà soát"
+    };
+    string StateClass(NEXORA.Application.Identity.AccountLifecycleState state) => state switch
+    {
+        NEXORA.Application.Identity.AccountLifecycleState.Active => "text-bg-success",
+        NEXORA.Application.Identity.AccountLifecycleState.PendingInvitation => "text-bg-warning",
+        NEXORA.Application.Identity.AccountLifecycleState.Suspended => "text-bg-secondary",
+        _ => "text-bg-danger"
+    };
+}
+
+<div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+    <div><p class="text-uppercase small fw-semibold text-primary mb-2">Identity & Access</p><h1 class="h3 fw-bold mb-1">Tài khoản</h1><p class="text-secondary mb-0">Tra cứu trạng thái và vai trò. Không hiển thị thông tin xác thực.</p></div>
+    <a class="btn btn-primary" asp-action="CreateStaff">Tạo nhân viên</a>
+</div>
+
+<form method="get" asp-action="Index" class="card border-0 shadow-sm mb-4">
+    <div class="card-body row g-3 align-items-end">
+        <div class="col-12 col-lg-5"><label for="search" class="form-label">Tìm tên hoặc email</label><input id="search" name="search" value="@Model.Search" class="form-control" maxlength="256" /></div>
+        <div class="col-6 col-lg-3"><label for="role" class="form-label">Vai trò</label><select id="role" name="role" class="form-select"><option value="">Tất cả vai trò</option>@foreach (var role in new[] { "Customer", "Sales", "Warehouse", "Admin" }) { <option value="@role" selected="@(Model.Role == role ? "selected" : null)">@role</option> }</select></div>
+        <div class="col-6 col-lg-2"><label for="isActive" class="form-label">Trạng thái</label><select id="isActive" name="isActive" class="form-select"><option value="">Tất cả</option><option value="true" selected="@(Model.IsActive == true ? "selected" : null)">Đang hoạt động</option><option value="false" selected="@(Model.IsActive == false ? "selected" : null)">Đã khóa</option></select></div>
+        <div class="col-12 col-lg-2 d-grid"><button class="btn btn-outline-primary" type="submit">Lọc tài khoản</button></div>
+    </div>
+</form>
+
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead><tr><th>Tài khoản</th><th>Vai trò</th><th>Trạng thái</th><th>Ngày tạo (UTC)</th><th class="text-end">Thao tác</th></tr></thead>
+            <tbody>
+            @if (Model.Results.Items.Count == 0)
+            {
+                <tr><td colspan="5" class="text-center text-secondary py-5">Không tìm thấy tài khoản phù hợp.</td></tr>
+            }
+            @foreach (var item in Model.Results.Items)
+            {
+                <tr>
+                    <td><div class="fw-semibold">@item.FullName</div><div class="small text-secondary">@item.Email <span class="text-secondary">· ID @item.Id</span></div></td>
+                    <td>@if (item.Roles.Count == 0) { <span class="text-danger">Chưa gán</span> } else { @foreach (var role in item.Roles) { <span class="badge text-bg-light border me-1">@role</span> } }@if (!item.HasSingleRole) { <span class="badge text-bg-danger">Nhiều vai trò</span> }</td>
+                    <td><span class="badge @StateClass(item.LifecycleState)">@StateLabel(item.LifecycleState)</span>@if (item.LifecycleState == NEXORA.Application.Identity.AccountLifecycleState.Inconsistent) { <div class="small text-danger mt-1">Không thể đổi role tự động</div> }</td>
+                    <td class="text-secondary small">@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@item.Id">Chi tiết</a></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    @if (Model.Results.PageCount > 1)
+    {
+        <nav class="p-3 d-flex justify-content-between" aria-label="Phân trang tài khoản">
+            <span class="small text-secondary">@Model.Results.TotalCount tài khoản · Trang @Model.Results.Page / @Model.Results.PageCount</span>
+            <div class="btn-group btn-group-sm"><a class="btn btn-outline-secondary @(Model.Results.Page <= 1 ? "disabled" : null)" asp-action="Index" asp-route-search="@Model.Search" asp-route-role="@Model.Role" asp-route-isActive="@Model.IsActive" asp-route-page="@(Model.Results.Page - 1)">Trước</a><a class="btn btn-outline-secondary @(Model.Results.Page >= Model.Results.PageCount ? "disabled" : null)" asp-action="Index" asp-route-search="@Model.Search" asp-route-role="@Model.Role" asp-route-isActive="@Model.IsActive" asp-route-page="@(Model.Results.Page + 1)">Sau</a></div>
+        </nav>
+    }
+</div>

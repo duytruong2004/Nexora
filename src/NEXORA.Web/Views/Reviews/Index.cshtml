@@ -1,0 +1,264 @@
+@model NEXORA.Web.Models.CustomerReviewsViewModel
+@using NEXORA.Domain.Entities
+@{
+    ViewData["Title"] = "Đánh giá của tôi";
+    var activeTab = Model.EligibleLines.Count > 0 || Model.Reviews.Count == 0 ? "eligible" : "submitted";
+    var hasModelErrors = ViewData.ModelState.Values.Any(entry => entry.Errors.Count > 0);
+    var attemptedOrderDetailId = int.TryParse(ViewData.ModelState["OrderDetailId"]?.AttemptedValue, out var parsedOrderDetailId)
+        ? parsedOrderDetailId
+        : 0;
+}
+
+<div class="nexora-reviews-page" data-reviews-page data-reopen-review-id="@(hasModelErrors ? attemptedOrderDetailId : 0)">
+    <nav class="nexora-reviews-breadcrumb" aria-label="Đường dẫn">
+        <ol>
+            <li><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+            <li><a asp-controller="Account" asp-action="Profile">Tài khoản</a></li>
+            <li aria-current="page">Đánh giá của tôi</li>
+        </ol>
+    </nav>
+
+    <header class="nexora-reviews-header">
+        <div>
+            <p class="nexora-reviews-eyebrow">NEXORA · TÀI KHOẢN</p>
+            <h1>Đánh giá của tôi</h1>
+            <p>Quản lý đánh giá và chia sẻ trải nghiệm mua sắm tại NEXORA.</p>
+        </div>
+        <span class="nexora-reviews-header-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M20.5 8.8c0 5.7-8.5 11-8.5 11S3.5 14.5 3.5 8.8a4.4 4.4 0 0 1 8.5-1.5 4.4 4.4 0 0 1 8.5 1.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m9.5 10.8 1.7 1.7 3.5-3.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+    </header>
+
+    @if (hasModelErrors)
+    {
+        <div class="nexora-reviews-validation-alert" role="alert">
+            <span class="nexora-reviews-alert-icon" aria-hidden="true">!</span>
+            <span>Vui lòng kiểm tra thông tin đánh giá được đánh dấu bên dưới.</span>
+        </div>
+    }
+
+    <div class="nexora-reviews-tabs" role="tablist" aria-label="Danh sách đánh giá">
+        <button id="reviews-tab-eligible" class="nexora-reviews-tab @(activeTab == "eligible" ? "is-active" : string.Empty)" type="button" role="tab" aria-controls="reviews-panel-eligible" aria-selected="@(activeTab == "eligible" ? "true" : "false")" tabindex="@(activeTab == "eligible" ? "0" : "-1")" data-reviews-tab="eligible">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3.2 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            <span>Chờ đánh giá</span><span class="nexora-reviews-tab-count">@Model.EligibleLines.Count</span>
+        </button>
+        <button id="reviews-tab-submitted" class="nexora-reviews-tab @(activeTab == "submitted" ? "is-active" : string.Empty)" type="button" role="tab" aria-controls="reviews-panel-submitted" aria-selected="@(activeTab == "submitted" ? "true" : "false")" tabindex="@(activeTab == "submitted" ? "0" : "-1")" data-reviews-tab="submitted">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+            <span>Đã đánh giá</span><span class="nexora-reviews-tab-count">@Model.Reviews.Count</span>
+        </button>
+    </div>
+
+    <section id="reviews-panel-eligible" class="nexora-reviews-panel" role="tabpanel" aria-labelledby="reviews-tab-eligible" tabindex="0" data-reviews-panel="eligible" hidden="@(activeTab != "eligible")">
+        @if (Model.EligibleLines.Count == 0)
+        {
+            <div class="nexora-reviews-empty">
+                <span class="nexora-reviews-empty-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="m17.5 16.5 1.2 1.2 2.3-2.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                <h2>Bạn đã đánh giá hết sản phẩm!</h2>
+                <p>Hiện không có sản phẩm từ đơn hàng hoàn thành đang chờ bạn đánh giá.</p>
+                <a class="nexora-reviews-empty-link" asp-controller="Orders" asp-action="Index">Xem đơn hàng của tôi <span aria-hidden="true">→</span></a>
+            </div>
+        }
+        else
+        {
+            <div class="nexora-reviews-list" aria-label="Sản phẩm đang chờ đánh giá">
+                @foreach (var line in Model.EligibleLines)
+                {
+                    var dialogId = $"review-dialog-{line.OrderDetailId}";
+                    var dialogTitleId = $"{dialogId}-title";
+                    var isRetryingThisReview = hasModelErrors && attemptedOrderDetailId == line.OrderDetailId;
+                    var ratingValue = isRetryingThisReview ? ViewData.ModelState["Rating"]?.AttemptedValue : null;
+                    var selectedRating = int.TryParse(ratingValue, out var parsedRating) ? parsedRating : 0;
+                    var commentValue = isRetryingThisReview ? ViewData.ModelState["Comment"]?.AttemptedValue : null;
+                    var ratingError = isRetryingThisReview ? ViewData.ModelState["Rating"]?.Errors.FirstOrDefault()?.ErrorMessage : null;
+                    var commentError = isRetryingThisReview ? ViewData.ModelState["Comment"]?.Errors.FirstOrDefault()?.ErrorMessage : null;
+
+                    <article class="nexora-reviews-product-card">
+                        <div class="nexora-reviews-product-image">
+                            @if (!string.IsNullOrWhiteSpace(line.ProductImageUrl))
+                            {
+                                <img src="@line.ProductImageUrl" alt="" loading="lazy" />
+                            }
+                            else
+                            {
+                                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 21h8m-6-4v4m4-4v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                            }
+                        </div>
+                        <div class="nexora-reviews-product-info">
+                            <span class="nexora-reviews-eligible-badge"><span aria-hidden="true">✓</span> Đủ điều kiện</span>
+                            <h2>@line.ProductName</h2>
+                            <p>Đơn hàng <a asp-controller="Orders" asp-action="Details" asp-route-id="@line.OrderId">#@line.OrderId</a><span aria-hidden="true"> · </span>Đặt ngày @line.OrderDate.ToLocalTime().ToString("dd/MM/yyyy")</p>
+                            <span class="nexora-reviews-quantity">Số lượng: @line.Quantity</span>
+                        </div>
+                        <div class="nexora-reviews-product-actions">
+                            <a class="nexora-reviews-product-link" asp-controller="Catalog" asp-action="Details" asp-route-id="@line.ProductId">Xem sản phẩm <span aria-hidden="true">↗</span></a>
+                            <button class="nexora-reviews-write-button" type="button" data-open-review-dialog="@dialogId" aria-haspopup="dialog" aria-controls="@dialogId">
+                                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+                                Viết đánh giá
+                            </button>
+                        </div>
+
+                        <dialog id="@dialogId" class="nexora-reviews-dialog" aria-labelledby="@dialogTitleId" data-review-dialog data-order-detail-id="@line.OrderDetailId">
+                            <div class="nexora-reviews-dialog-heading">
+                                <div>
+                                    <p class="nexora-reviews-eyebrow">CHIA SẺ TRẢI NGHIỆM</p>
+                                    <h2 id="@dialogTitleId">Viết đánh giá</h2>
+                                </div>
+                                <button class="nexora-reviews-dialog-close" type="button" data-close-review-dialog aria-label="Đóng form đánh giá">×</button>
+                            </div>
+
+                            <form asp-controller="Reviews" asp-action="Submit" method="post" class="nexora-reviews-form" data-review-form>
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="orderDetailId" value="@line.OrderDetailId" />
+                                <div class="nexora-reviews-dialog-product">
+                                    <span class="nexora-reviews-dialog-product-image" aria-hidden="true">
+                                        @if (!string.IsNullOrWhiteSpace(line.ProductImageUrl))
+                                        {
+                                            <img src="@line.ProductImageUrl" alt="" />
+                                        }
+                                        else
+                                        {
+                                            <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 21h8m-6-4v4m4-4v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                                        }
+                                    </span>
+                                    <span><strong>@line.ProductName</strong><small>Đơn hàng #@line.OrderId · @line.OrderDate.ToLocalTime().ToString("dd/MM/yyyy")</small></span>
+                                </div>
+
+                                <fieldset class="nexora-reviews-rating-fieldset" data-rating-group data-selected-rating="@selectedRating" aria-invalid="@(string.IsNullOrWhiteSpace(ratingError) ? "false" : "true")" aria-describedby="rating-help-@line.OrderDetailId">
+                                    <legend>Bạn đánh giá sản phẩm thế nào?</legend>
+                                    <div class="nexora-reviews-stars" role="radiogroup" aria-label="Chọn số sao">
+                                        @for (var rating = 1; rating <= 5; rating++)
+                                        {
+                                            var ratingId = $"rating-{line.OrderDetailId}-{rating}";
+                                            <label class="nexora-reviews-star-choice" data-star-choice="@rating" for="@ratingId" title="@rating sao">
+                                                <input class="nexora-reviews-rating-input" id="@ratingId" type="radio" name="rating" value="@rating" required checked="@(selectedRating == rating ? "checked" : null)" />
+                                                <span aria-hidden="true">★</span>
+                                            </label>
+                                        }
+                                    </div>
+                                    <p id="rating-help-@line.OrderDetailId" class="nexora-reviews-rating-feedback" data-rating-feedback aria-live="polite">@(selectedRating > 0 ? $"Bạn đã chọn {selectedRating}/5 sao." : "Chọn từ 1 đến 5 sao.")</p>
+                                    @if (!string.IsNullOrWhiteSpace(ratingError))
+                                    {
+                                        <span class="nexora-reviews-field-error" role="alert">@ratingError</span>
+                                    }
+                                </fieldset>
+
+                                <div class="nexora-reviews-comment-field">
+                                    <label for="comment-@line.OrderDetailId">Nội dung đánh giá <span>(không bắt buộc)</span></label>
+                                    <textarea id="comment-@line.OrderDetailId" name="comment" maxlength="3000" rows="4" placeholder="Chia sẻ trải nghiệm thực tế của bạn về sản phẩm..." aria-invalid="@(string.IsNullOrWhiteSpace(commentError) ? "false" : "true")">@commentValue</textarea>
+                                    <div class="nexora-reviews-comment-meta">
+                                        @if (!string.IsNullOrWhiteSpace(commentError))
+                                        {
+                                            <span class="nexora-reviews-field-error" role="alert">@commentError</span>
+                                        }
+                                        <span>Tối đa 3.000 ký tự</span>
+                                    </div>
+                                </div>
+
+                                <p class="nexora-reviews-form-note"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 11v5m0-8h.01" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Chỉ sản phẩm thuộc đơn hàng hoàn thành mới đủ điều kiện. Đánh giá đã gửi không thể sửa hoặc xóa.</p>
+
+                                <div class="nexora-reviews-form-actions">
+                                    <button class="nexora-reviews-cancel-button" type="button" data-close-review-dialog>Hủy</button>
+                                    <button class="nexora-reviews-submit-button" type="submit" data-review-submit>
+                                        <span data-submit-label>Gửi đánh giá</span>
+                                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </button>
+                                </div>
+                            </form>
+                        </dialog>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+
+    <section id="reviews-panel-submitted" class="nexora-reviews-panel" role="tabpanel" aria-labelledby="reviews-tab-submitted" tabindex="0" data-reviews-panel="submitted" hidden="@(activeTab != "submitted")">
+        @if (Model.Reviews.Count == 0)
+        {
+            <div class="nexora-reviews-empty">
+                <span class="nexora-reviews-empty-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+                </span>
+                <h2>Bạn chưa có đánh giá nào</h2>
+                <p>Các đánh giá bạn gửi sẽ được hiển thị tại đây.</p>
+                <a class="nexora-reviews-empty-link is-secondary" asp-controller="Orders" asp-action="Index">Xem đơn hàng của tôi <span aria-hidden="true">→</span></a>
+            </div>
+        }
+        else
+        {
+            <div class="nexora-reviews-list" aria-label="Đánh giá đã gửi">
+                @foreach (var review in Model.Reviews)
+                {
+                    var statusClass = review.Status switch
+                    {
+                        ReviewStatuses.Pending => "is-pending",
+                        ReviewStatuses.Approved => "is-approved",
+                        ReviewStatuses.Hidden => "is-hidden",
+                        _ => "is-unknown"
+                    };
+                    var statusLabel = review.Status switch
+                    {
+                        ReviewStatuses.Approved => "Đã duyệt",
+                        ReviewStatuses.Hidden => "Đang ẩn",
+                        ReviewStatuses.Pending => "Chờ kiểm duyệt",
+                        _ => "Trạng thái cần xem xét"
+                    };
+                    var visibleRating = Math.Clamp(review.Rating, 0, 5);
+
+                    <article class="nexora-reviews-submitted-card">
+                        <div class="nexora-reviews-submitted-main">
+                            <span class="nexora-reviews-product-image is-compact">
+                                @if (!string.IsNullOrWhiteSpace(review.ProductImageUrl))
+                                {
+                                    <img src="@review.ProductImageUrl" alt="" loading="lazy" />
+                                }
+                                else
+                                {
+                                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 21h8m-6-4v4m4-4v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                                }
+                            </span>
+                            <div class="nexora-reviews-submitted-info">
+                                <h2>@review.ProductName</h2>
+                                <p><a asp-controller="Orders" asp-action="Details" asp-route-id="@review.OrderId">Đơn hàng #@review.OrderId</a><span aria-hidden="true"> · </span>Gửi ngày @review.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy '·' HH:mm")</p>
+                                <div class="nexora-reviews-rating-display" role="img" aria-label="Đánh giá @visibleRating trên 5 sao">
+                                    @for (var star = 1; star <= 5; star++)
+                                    {
+                                        <span class="@(star <= visibleRating ? "is-filled" : string.Empty)" aria-hidden="true">★</span>
+                                    }
+                                    <strong>@visibleRating/5</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="nexora-reviews-status @statusClass"><span aria-hidden="true">@(review.Status == ReviewStatuses.Approved ? "✓" : review.Status == ReviewStatuses.Pending ? "◷" : "•")</span>@statusLabel</span>
+
+                        @if (!string.IsNullOrWhiteSpace(review.Comment))
+                        {
+                            <blockquote class="nexora-reviews-comment">@review.Comment</blockquote>
+                        }
+                        else
+                        {
+                            <p class="nexora-reviews-no-comment">Bạn chưa thêm nội dung nhận xét.</p>
+                        }
+
+                        <footer class="nexora-reviews-submitted-footer">
+                            @if (!ReviewStatuses.IsKnown(review.Status))
+                            {
+                                <span class="nexora-reviews-unknown-note">Đánh giá chưa được công khai do trạng thái không xác định.</span>
+                            }
+                            else
+                            {
+                                <span>Đánh giá đã gửi không thể chỉnh sửa hoặc xóa.</span>
+                            }
+                            <a asp-controller="Catalog" asp-action="Details" asp-route-id="@review.ProductId">Xem sản phẩm <span aria-hidden="true">↗</span></a>
+                        </footer>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+</div>
+
+@section Scripts {
+    <script src="~/js/customer-reviews.js" asp-append-version="true"></script>
+}

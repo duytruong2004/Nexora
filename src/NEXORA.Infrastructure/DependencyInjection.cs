@@ -5,10 +5,14 @@ using NEXORA.Application.Admin;
 using NEXORA.Application.Catalog;
 using NEXORA.Application.Consultation;
 using NEXORA.Application.Commerce;
+using NEXORA.Application.Identity;
+using NEXORA.Application.Engagement;
 using NEXORA.Infrastructure.Catalog;
 using NEXORA.Infrastructure.Admin;
 using NEXORA.Infrastructure.Consultation;
 using NEXORA.Infrastructure.Commerce;
+using NEXORA.Infrastructure.Identity;
+using NEXORA.Infrastructure.Engagement;
 using NEXORA.Infrastructure.Persistence;
 
 namespace NEXORA.Infrastructure;
@@ -17,9 +21,11 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddNexoraInfrastructure(
         this IServiceCollection services,
-        string connectionString)
+        string connectionString,
+        string environmentName)
     {
-        var sqlConnectionString = new SqlConnectionStringBuilder(connectionString)
+        var explicitConnectionString = DatabaseConnectionPolicy.Resolve(connectionString, environmentName);
+        var sqlConnectionString = new SqlConnectionStringBuilder(explicitConnectionString)
         {
             MultipleActiveResultSets = false
         }.ConnectionString;
@@ -38,6 +44,7 @@ public static class DependencyInjection
         services.AddScoped<IProductSpecificationManagementService, ProductSpecificationManagementService>();
         services.AddScoped<ICustomerCatalogQueryService, CustomerCatalogQueryService>();
         services.AddScoped<IAdminDashboardQueryService, SqlAdminDashboardQueryService>();
+        services.AddScoped<IAdminReportingQueryService, SqlAdminReportingQueryService>();
         services.AddScoped<ICatalogDemoSeeder, CatalogDemoSeeder>();
         services.AddSingleton<IRequirementParser, VietnameseRequirementParser>();
         services.AddScoped<IConsultationDataSource, SqlConsultationDataSource>();
@@ -54,6 +61,12 @@ public static class DependencyInjection
         services.AddScoped<IWarehouseInventoryManagementService, WarehouseInventoryManagementService>();
         services.AddScoped<IDevelopmentInventorySeeder, DevelopmentInventorySeeder>();
         services.AddScoped<IAdminPromotionManagementService, AdminPromotionManagementService>();
+        services.AddScoped<IAccountAdministrationService, IdentityAccountAdministrationService>();
+        services.AddScoped<IAccountAuthenticationStateReader, AccountAuthenticationStateReader>();
+        services.AddScoped<CustomerEngagementService>();
+        services.AddScoped<IFavoriteService>(provider => provider.GetRequiredService<CustomerEngagementService>());
+        services.AddScoped<IReviewService>(provider => provider.GetRequiredService<CustomerEngagementService>());
+        services.AddScoped<IReviewModerationService, ReviewModerationService>();
 
         return services;
     }

@@ -1,0 +1,21 @@
+@model NEXORA.Web.Areas.Admin.Models.AdminOrdersReportViewModel
+@using NEXORA.Web.Models
+@{
+    ViewData["Title"] = "Báo cáo đơn hàng";
+}
+<div class="mb-4"><p class="text-uppercase small fw-semibold text-primary mb-1">Tổng hợp vận hành</p><h1 class="h2 mb-1">Báo cáo đơn hàng</h1><p class="text-secondary mb-0">Đếm theo ngày tạo đơn, phân nhóm theo trạng thái. Số lượng đơn không phải doanh thu.</p></div>
+<partial name="_Navigation" />
+<form method="get" asp-area="Admin" asp-controller="Reports" asp-action="Orders" class="card card-body border-0 shadow-sm mb-4"><div class="row g-3 align-items-end">
+    <div class="col-12 col-sm-5"><label class="form-label" for="startDate">Từ ngày (giờ Việt Nam)</label><input class="form-control" id="startDate" name="startDate" type="date" value="@Model.StartDate.ToString("yyyy-MM-dd")" /></div>
+    <div class="col-12 col-sm-5"><label class="form-label" for="endDate">Đến hết ngày</label><input class="form-control" id="endDate" name="endDate" type="date" value="@Model.EndDate.ToString("yyyy-MM-dd")" /></div>
+    <div class="col-12 col-sm-2"><button class="btn btn-primary w-100" type="submit">Xem báo cáo</button></div>
+</div></form>
+@if (Model.Error is not null) { <div class="alert alert-danger" role="alert">@Model.Error</div> }
+@if (Model.Report is { } report)
+{
+    <section class="row g-3 mb-4"><div class="col-12 col-md-4"><article class="admin-stat-card"><span>Tổng số đơn trong kỳ</span><strong>@report.TotalOrders.ToString("N0")</strong></article></div><div class="col-12 col-md-8"><article class="card border-0 shadow-sm h-100"><div class="card-body"><h2 class="h6">Khoảng thời gian</h2><p class="mb-0">@report.Range.StartDate.ToString("dd/MM/yyyy") – @report.Range.EndDate.ToString("dd/MM/yyyy") · Asia/Ho_Chi_Minh</p></div></article></div></section>
+    <section class="card border-0 shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Trạng thái</th><th class="text-end">Số đơn</th></tr></thead><tbody>
+    @if (report.StatusCounts.Count == 0) { <tr><td colspan="2" class="text-center text-secondary py-5">Không có đơn hàng trong khoảng thời gian đã chọn.</td></tr> }
+    @foreach (var row in report.StatusCounts) { <tr><td><span class="badge @OrderStatusPresentation.BadgeClass(row.Status)">@OrderStatusPresentation.Label(row.Status)</span></td><td class="text-end fw-semibold">@row.Count.ToString("N0")</td></tr> }
+    </tbody></table></div></section>
+}

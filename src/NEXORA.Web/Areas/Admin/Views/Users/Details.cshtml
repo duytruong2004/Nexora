@@ -1,0 +1,78 @@
+@model NEXORA.Application.Identity.ManagedAccountDetails
+@{
+    ViewData["Title"] = "Chi tiết tài khoản";
+    var currentUserId = ViewData["CurrentUserId"] as int?;
+    var role = Model.Roles.Count == 1 ? Model.Roles[0] : null;
+    var isStaff = role is "Sales" or "Warehouse";
+    var stateLabel = Model.LifecycleState switch
+    {
+        NEXORA.Application.Identity.AccountLifecycleState.Active => "Đang hoạt động",
+        NEXORA.Application.Identity.AccountLifecycleState.PendingInvitation => "Chờ kích hoạt",
+        NEXORA.Application.Identity.AccountLifecycleState.Suspended => "Đã khóa",
+        _ => "Cần rà soát"
+    };
+    var badgeClass = Model.LifecycleState switch
+    {
+        NEXORA.Application.Identity.AccountLifecycleState.Active => "text-bg-success",
+        NEXORA.Application.Identity.AccountLifecycleState.PendingInvitation => "text-bg-warning",
+        NEXORA.Application.Identity.AccountLifecycleState.Suspended => "text-bg-secondary",
+        _ => "text-bg-danger"
+    };
+}
+
+<div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+    <div><p class="text-uppercase small fw-semibold text-primary mb-2">Identity & Access · ID @Model.Id</p><h1 class="h3 fw-bold mb-1">@Model.FullName</h1><p class="text-secondary mb-0">@Model.Email</p></div>
+    <a class="btn btn-outline-secondary" asp-action="Index">Quay lại danh sách</a>
+</div>
+
+@if (!Model.HasSingleRole)
+{
+    <div class="alert alert-danger" role="alert"><strong>Phát hiện tài khoản có nhiều hoặc không có vai trò.</strong> Không tự động sửa quyền; thao tác đổi role bị khóa cho đến khi được xử lý theo quy trình riêng.</div>
+}
+
+<div class="row g-4">
+    <div class="col-12 col-xl-7"><section class="card border-0 shadow-sm h-100"><div class="card-body p-4">
+        <h2 class="h5 fw-bold mb-4">Thông tin tài khoản</h2>
+        <dl class="row mb-0">
+            <dt class="col-sm-4 text-secondary">Vai trò</dt><dd class="col-sm-8">@if (Model.Roles.Count == 0) { <span class="text-danger">Chưa gán</span> } else { @foreach (var item in Model.Roles) { <span class="badge text-bg-light border me-1">@item</span> } }</dd>
+            <dt class="col-sm-4 text-secondary">Trạng thái</dt><dd class="col-sm-8"><span class="badge @badgeClass">@stateLabel</span></dd>
+            <dt class="col-sm-4 text-secondary">Email xác nhận</dt><dd class="col-sm-8">@(Model.EmailConfirmed ? "Đã xác nhận" : "Chưa xác nhận")</dd>
+            <dt class="col-sm-4 text-secondary">Thiết lập mật khẩu</dt><dd class="col-sm-8">@(Model.HasPassword ? "Đã thiết lập" : "Chưa thiết lập")</dd>
+            <dt class="col-sm-4 text-secondary">Ngày tạo (UTC)</dt><dd class="col-sm-8">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</dd>
+            <dt class="col-sm-4 text-secondary">Cập nhật (UTC)</dt><dd class="col-sm-8">@Model.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss")</dd>
+        </dl>
+        <p class="small text-secondary mt-3 mb-0">Không hiển thị PasswordHash, SecurityStamp, token hoặc thông tin xác thực.</p>
+    </div></section></div>
+    <div class="col-12 col-xl-5"><section class="card border-0 shadow-sm"><div class="card-body p-4">
+        <h2 class="h5 fw-bold mb-3">Thao tác quản trị</h2>
+        @if (currentUserId == Model.Id)
+        {
+            <div class="alert alert-warning">Không thể tự khóa hoặc tự thay đổi vai trò của tài khoản đang đăng nhập.</div>
+        }
+        @if (Model.IsActive && currentUserId != Model.Id)
+        {
+            <form asp-action="Lock" asp-route-id="@Model.Id" method="post" class="mb-3" onsubmit="return confirm('Khóa tài khoản này? Phiên cũ sẽ bị từ chối ở yêu cầu tiếp theo.');"><button class="btn btn-outline-danger w-100" type="submit">Khóa tài khoản</button></form>
+        }
+        else if (!Model.IsActive && Model.HasPassword)
+        {
+            <form asp-action="Unlock" asp-route-id="@Model.Id" method="post" class="mb-3"><button class="btn btn-outline-success w-100" type="submit">Mở khóa tài khoản</button></form>
+        }
+        @if (Model.LifecycleState == NEXORA.Application.Identity.AccountLifecycleState.PendingInvitation)
+        {
+            <form asp-action="ResendInvitation" asp-route-id="@Model.Id" method="post" class="mb-3"><button class="btn btn-outline-primary w-100" type="submit">Gửi lại lời mời</button></form>
+        }
+        @if (isStaff && currentUserId != Model.Id)
+        {
+            <form asp-action="ChangeRole" asp-route-id="@Model.Id" method="post" class="border-top pt-3">
+                <label for="Role" class="form-label">Chuyển vai trò nhân viên</label>
+                <select id="Role" name="Role" class="form-select mb-2"><option value="@(role == "Sales" ? "Warehouse" : "Sales")">@(role == "Sales" ? "Warehouse" : "Sales")</option></select>
+                <button class="btn btn-outline-primary w-100" type="submit">Cập nhật vai trò</button>
+                @if (Model.LifecycleState == NEXORA.Application.Identity.AccountLifecycleState.PendingInvitation)
+                {
+                    <div class="form-text">Việc đổi role vô hiệu liên kết cũ; gửi lại lời mời sau khi cập nhật.</div>
+                }
+            </form>
+        }
+        <div class="alert alert-light border small mt-3 mb-0">Không có thao tác cấp role Admin hoặc chuyển Customer thành nhân viên.</div>
+    </div></section></div>
+</div>

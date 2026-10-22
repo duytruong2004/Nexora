@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using NEXORA.Application.Catalog;
+using NEXORA.Application.Engagement;
 using NEXORA.Web.Models;
 
 namespace NEXORA.Web.Controllers;
 
-public sealed class CatalogController(ICustomerCatalogQueryService catalog) : Controller
+public sealed class CatalogController(ICustomerCatalogQueryService catalog, IReviewService reviews) : Controller
 {
     public async Task<IActionResult> Index(
         string? search,
@@ -42,9 +43,20 @@ public sealed class CatalogController(ICustomerCatalogQueryService catalog) : Co
     public async Task<IActionResult> Details(int id, CancellationToken cancellationToken)
     {
         var product = await catalog.GetProductAsync(id, cancellationToken);
-        return product is null
-            ? NotFound()
-            : View(new CustomerProductDetailsViewModel { Product = product });
+        if (product is null) return NotFound();
+
+        var approvedReviews = await reviews.GetApprovedForProductAsync(
+            product.Id, cancellationToken: cancellationToken);
+        var relatedPage = await catalog.SearchAsync(
+            new CatalogSearchFilter(null, product.CategoryId, null, null, null, "name-asc", PageSize: 8),
+            cancellationToken);
+
+        return View(new CustomerProductDetailsViewModel
+        {
+            Product = product,
+            ApprovedReviews = approvedReviews,
+            RelatedProducts = relatedPage.Items.Where(item => item.Id != product.Id).Take(4).ToArray()
+        });
     }
 
     public async Task<IActionResult> Compare(int[] ids, CancellationToken cancellationToken)

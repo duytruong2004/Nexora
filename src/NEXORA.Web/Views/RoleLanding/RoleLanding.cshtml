@@ -27,7 +27,11 @@
                 <div class="col-6 col-xl"><article class="admin-stat-card"><span>Đang kinh doanh</span><strong>@metrics.ActiveProducts.ToString("N0")</strong></article></div>
                 <div class="col-6 col-xl"><article class="admin-stat-card"><span>Danh mục</span><strong>@metrics.TotalCategories.ToString("N0")</strong></article></div>
                 <div class="col-6 col-xl"><article class="admin-stat-card"><span>Nhu cầu tư vấn</span><strong>@metrics.TotalUsageNeeds.ToString("N0")</strong></article></div>
-                <div class="col-12 col-xl"><article class="admin-stat-card"><span>Quy tắc tư vấn</span><strong>@metrics.TotalRecommendationRules.ToString("N0")</strong></article></div>
+                <div class="col-6 col-xl"><article class="admin-stat-card"><span>Quy tắc tư vấn</span><strong>@metrics.TotalRecommendationRules.ToString("N0")</strong></article></div>
+                <div class="col-6 col-xl"><article class="admin-stat-card"><span>Tổng đơn hàng</span><strong>@metrics.TotalOrders.ToString("N0")</strong></article></div>
+                <div class="col-6 col-xl"><article class="admin-stat-card"><span>Đơn chờ xác nhận</span><strong>@metrics.PendingOrders.ToString("N0")</strong></article></div>
+                <div class="col-6 col-xl"><article class="admin-stat-card"><span>Đơn hoàn tất</span><strong>@metrics.CompletedOrders.ToString("N0")</strong></article></div>
+                <div class="col-12 col-xl"><article class="admin-stat-card"><span>Sản phẩm chưa có bản ghi tồn kho</span><strong>@metrics.ProductsWithoutInventory.ToString("N0")</strong></article></div>
             </div>
             <p class="small text-secondary mt-2 mb-0">Đếm trực tiếp từ dữ liệu hiện có trong SQL Server.</p>
         </section>
@@ -44,6 +48,8 @@
             <div class="col-sm-6 col-xl-4"><a class="admin-module-card" asp-area="Admin" asp-controller="Specifications" asp-action="Index"><span class="admin-module-icon" aria-hidden="true">≡</span><span><strong>Thông số kỹ thuật</strong><small>Cấu hình thông số kỹ thuật động</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a></div>
             <div class="col-sm-6 col-xl-4"><a class="admin-module-card" asp-area="Admin" asp-controller="Consultation" asp-action="UsageNeeds"><span class="admin-module-icon" aria-hidden="true">✳</span><span><strong>Nhu cầu tư vấn</strong><small>Quản lý mục đích sử dụng được nhận diện</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a></div>
             <div class="col-sm-6 col-xl-4"><a class="admin-module-card" asp-area="Admin" asp-controller="Consultation" asp-action="Rules"><span class="admin-module-icon" aria-hidden="true">⚙</span><span><strong>Quy tắc xếp hạng</strong><small>Cấu hình điều kiện và trọng số tư vấn</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a></div>
+            <div class="col-sm-6 col-xl-4"><a class="admin-module-card" asp-area="Admin" asp-controller="Reports" asp-action="Orders"><span class="admin-module-icon" aria-hidden="true">▥</span><span><strong>Báo cáo</strong><small>Đơn hàng, doanh thu, sản phẩm và tồn kho</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a></div>
+            <div class="col-sm-6 col-xl-4"><a class="admin-module-card" asp-area="Admin" asp-controller="Reviews" asp-action="Index"><span class="admin-module-icon" aria-hidden="true">☆</span><span><strong>Kiểm duyệt đánh giá</strong><small>Duyệt, ẩn và khôi phục đánh giá sản phẩm</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a></div>
         </div>
     </section>
 }

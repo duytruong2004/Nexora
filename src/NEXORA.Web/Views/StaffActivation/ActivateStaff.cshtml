@@ -1,0 +1,35 @@
+@model NEXORA.Web.Models.StaffActivationViewModel
+@{
+    ViewData["Title"] = "Kích hoạt tài khoản nhân viên";
+}
+
+<div class="card account-card">
+    <div class="card-body p-4 p-md-5">
+        <p class="text-uppercase small fw-semibold text-primary mb-2">Lời mời nhân viên</p>
+        <h1 class="h3 fw-bold mb-2">Thiết lập mật khẩu</h1>
+        <p id="invitation-status" class="text-secondary mb-4" role="status" aria-live="polite">Đang xác minh lời mời…</p>
+        <div id="invitation-invalid" class="alert alert-warning" role="alert" hidden>Liên kết không còn hợp lệ. Hãy liên hệ quản trị viên để gửi lại lời mời.</div>
+        <form id="staff-activation-form" asp-action="ActivateStaff" method="post" autocomplete="off" hidden>
+            <input type="hidden" name="Email" value="@Model.Email" />
+            <input type="hidden" name="Token" value="@Model.Token" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <div class="mb-3">
+                <label for="Password" class="form-label">Mật khẩu mới</label>
+                <input id="Password" name="Password" type="password" class="form-control" minlength="10" maxlength="128" autocomplete="new-password" required />
+                <span asp-validation-for="Password" class="text-danger"></span>
+                <div class="form-text">Tối thiểu 10 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt.</div>
+            </div>
+            <div class="mb-4">
+                <label for="ConfirmPassword" class="form-label">Xác nhận mật khẩu</label>
+                <input id="ConfirmPassword" name="ConfirmPassword" type="password" class="form-control" autocomplete="new-password" required />
+                <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Kích hoạt tài khoản</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/staff-activation.js" asp-append-version="true"></script>
+}
