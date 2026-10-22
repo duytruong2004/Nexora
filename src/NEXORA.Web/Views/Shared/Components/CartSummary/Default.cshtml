@@ -3,7 +3,7 @@
     var isCurrent = string.Equals(ViewContext.RouteData.Values["controller"]?.ToString(), "Cart", StringComparison.OrdinalIgnoreCase) &&
                     string.IsNullOrEmpty(ViewContext.RouteData.Values["area"]?.ToString());
 }
-<a class="nexora-icon-action nexora-cart-action storefront-nav-link nav-cart-link @(isCurrent ? "active" : string.Empty)" data-cart-summary-link aria-current="@(isCurrent ? "page" : null)" asp-controller="Cart" asp-action="Index" aria-label="Giỏ hàng, @Model sản phẩm">
+<a class="nexora-icon-action nexora-cart-action storefront-nav-link nav-cart-link @(isCurrent ? "active" : string.Empty)" data-cart-summary-link aria-current="@(isCurrent ? "page" : null)" asp-area="" asp-controller="Cart" asp-action="Index" aria-label="Giỏ hàng, @Model sản phẩm">
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3h2l2.2 11.2a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 1.9-1.5L22 7H6"/><circle cx="10" cy="20" r="1.2"/><circle cx="18" cy="20" r="1.2"/></svg>
     <span class="nexora-action-label">Giỏ hàng</span>
     <span data-cart-count class="nexora-cart-badge @(Model > 0 ? string.Empty : "d-none")">@(Model > 99 ? "99+" : Model)</span>
