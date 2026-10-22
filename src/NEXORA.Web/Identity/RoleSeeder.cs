@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using NEXORA.Domain.Security;
 using NEXORA.Infrastructure.Identity;
 
@@ -10,6 +11,15 @@ public sealed class RoleSeeder(
 {
     public async Task EnsureRolesAsync(CancellationToken cancellationToken = default)
     {
+        var existingNames = await roleManager.Roles
+            .Select(role => role.Name)
+            .ToListAsync(cancellationToken);
+        if (!HasOnlyCanonicalRoleNames(existingNames))
+        {
+            logger.LogError("Role initialization refused because the personal Development database contains a non-canonical role name.");
+            throw new InvalidOperationException("The local database contains a role outside the four canonical NEXORA roles.");
+        }
+
         foreach (var roleName in RoleNames.All)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -34,5 +44,12 @@ public sealed class RoleSeeder(
 
             logger.LogInformation("Initialized NEXORA role {RoleName}.", roleName);
         }
+    }
+
+    public static bool HasOnlyCanonicalRoleNames(IEnumerable<string?> roleNames)
+    {
+        var names = roleNames.ToArray();
+        return names.All(name => name is not null && RoleNames.All.Contains(name, StringComparer.Ordinal)) &&
+               names.Distinct(StringComparer.Ordinal).Count() == names.Length;
     }
 }

@@ -16,11 +16,13 @@ using NEXORA.Web.Identity;
 var commandArguments = ProvisioningCommandArguments.Parse(args);
 var builder = WebApplication.CreateBuilder(commandArguments.HostArguments);
 
+var databaseProfile = builder.Configuration["Database:Profile"];
 var connectionString = DatabaseConnectionPolicy.Resolve(
     builder.Configuration.GetConnectionString("DefaultConnection"),
-    builder.Environment.EnvironmentName);
+    builder.Environment.EnvironmentName,
+    databaseProfile);
 
-builder.Services.AddNexoraInfrastructure(connectionString, builder.Environment.EnvironmentName);
+builder.Services.AddNexoraInfrastructure(connectionString, builder.Environment.EnvironmentName, databaseProfile);
 builder.Services.AddScoped<IProductImageStorage, LocalProductImageStorage>();
 builder.Services.AddIdentity<AppUser, AppRole>(options =>
     {
@@ -109,56 +111,60 @@ app.MapControllerRoute(
         pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
-// The QA staff provisioning command first verifies the existing QA role set read-only and never seeds roles.
-// Normal startup and the pre-existing Development commands retain the idempotent role initializer.
-if (!commandArguments.IsQaStaffProvisioningRequested)
-{
-    await using var scope = app.Services.CreateAsyncScope();
-    var roleSeeder = scope.ServiceProvider.GetRequiredService<RoleSeeder>();
-    await roleSeeder.EnsureRolesAsync();
-}
-
-if (app.Environment.IsDevelopment() && !commandArguments.IsRequested)
-{
-    if (DevelopmentInventoryProvisioningCommand.TargetsDevelopmentDatabase(connectionString))
-    {
-        await using var scope = app.Services.CreateAsyncScope();
-        var demoSeeder = scope.ServiceProvider.GetRequiredService<ICatalogDemoSeeder>();
-        await demoSeeder.SeedAsync(app.Lifetime.ApplicationStopping);
-        var consultationSeeder = scope.ServiceProvider.GetRequiredService<IConsultationDemoSeeder>();
-        await consultationSeeder.SeedAsync(app.Lifetime.ApplicationStopping);
-        var inventorySeeder = scope.ServiceProvider.GetRequiredService<IDevelopmentInventorySeeder>();
-        await inventorySeeder.SeedMissingAsync(app.Lifetime.ApplicationStopping);
-    }
-    else
-    {
-        app.Logger.LogWarning("Development demo seeders skipped because the configured target is not PC01\\SQLEXPRESS / NEXORA. This prevents QA databases from receiving unintended demo changes.");
-    }
-}
-
 if (commandArguments.IsRequested)
 {
-    var environmentAllowed = commandArguments.IsQaStaffProvisioningRequested
-        ? app.Environment.IsDevelopment() || app.Environment.IsEnvironment("QA")
-        : app.Environment.IsDevelopment();
-    if (!environmentAllowed)
+    if (commandArguments.IsQaStaffProvisioningRequested)
     {
-        app.Logger.LogCritical("This provisioning command is not available in the current environment.");
-        Environment.ExitCode = 1;
+        if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("QA"))
+        {
+            app.Logger.LogCritical("QA staff provisioning is not available in the current environment.");
+            Environment.ExitCode = 1;
+        }
+        else
+        {
+            Environment.ExitCode = await QaStaffProvisioningCommand.ExecuteAsync(
+                app.Services,
+                connectionString,
+                app.Environment,
+                app.Logger,
+                app.Lifetime.ApplicationStopping);
+        }
+
         return;
     }
 
-    Environment.ExitCode = commandArguments.IsQaStaffProvisioningRequested
-        ? await QaStaffProvisioningCommand.ExecuteAsync(
+    if (!DevelopmentSeedPolicy.IsAllowed(app.Environment.EnvironmentName, databaseProfile, connectionString))
+    {
+        app.Logger.LogCritical("The requested Development command requires an approved personal local database profile.");
+        Console.WriteLine("Lệnh Development chỉ được phép với Database:Profile=PersonalDevelopment và database NEXORA_Dev_<Member> cục bộ.");
+        Environment.ExitCode = 2;
+        return;
+    }
+
+    Environment.ExitCode = commandArguments.IsDevelopmentDatabaseCheckRequested
+        ? PrintDevelopmentDatabaseCheck()
+        : commandArguments.IsDevelopmentDataSeedRequested
+        ? await DevelopmentDataSeedingCommand.ExecuteAsync(
             app.Services,
             connectionString,
-            app.Environment,
+            databaseProfile,
+            app.Environment.EnvironmentName,
+            app.Logger,
+            app.Lifetime.ApplicationStopping)
+        : commandArguments.IsDevelopmentAccountsSeedRequested
+        ? await DevelopmentAccountProvisioningCommand.ExecuteAsync(
+            app.Services,
+            app.Configuration,
+            connectionString,
+            databaseProfile,
+            app.Environment.EnvironmentName,
             app.Logger,
             app.Lifetime.ApplicationStopping)
         : commandArguments.IsDevelopmentInventorySeedRequested
         ? await DevelopmentInventoryProvisioningCommand.ExecuteAsync(
             app.Services,
             connectionString,
+            databaseProfile,
             app.Logger,
             app.Lifetime.ApplicationStopping)
         : await DevelopmentAdminProvisioningCommand.ExecuteAsync(
@@ -169,5 +175,11 @@ if (commandArguments.IsRequested)
 }
 
 app.Run();
+
+static int PrintDevelopmentDatabaseCheck()
+{
+    Console.WriteLine("Development connection policy accepted the PersonalDevelopment target. No database connection was opened.");
+    return 0;
+}
 
 public partial class Program { }

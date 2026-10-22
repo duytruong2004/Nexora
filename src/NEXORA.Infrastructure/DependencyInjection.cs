@@ -22,9 +22,10 @@ public static class DependencyInjection
     public static IServiceCollection AddNexoraInfrastructure(
         this IServiceCollection services,
         string connectionString,
-        string environmentName)
+        string environmentName,
+        string? databaseProfile = null)
     {
-        var explicitConnectionString = DatabaseConnectionPolicy.Resolve(connectionString, environmentName);
+        var explicitConnectionString = DatabaseConnectionPolicy.Resolve(connectionString, environmentName, databaseProfile);
         var sqlConnectionString = new SqlConnectionStringBuilder(explicitConnectionString)
         {
             MultipleActiveResultSets = false

@@ -146,7 +146,7 @@ public sealed class AdminLayoutHttpIntegrationTests
             using var salesHomeResponse = await client.GetAsync("/?testRole=Sales");
             var salesHomeHtml = await salesHomeResponse.Content.ReadAsStringAsync();
             Assert.Equal(HttpStatusCode.OK, salesHomeResponse.StatusCode);
-            Assert.Contains("href=\"/Sales/Orders\">Quản lý đơn</a>", salesHomeHtml, StringComparison.Ordinal);
+            Assert.Contains("href=\"/Sales/Orders\">Đơn hàng</a>", salesHomeHtml, StringComparison.Ordinal);
 
             using var customerCatalogResponse = await client.GetAsync("/Catalog?testRole=Customer&search=laptop");
             Assert.Equal(HttpStatusCode.OK, customerCatalogResponse.StatusCode);
@@ -167,7 +167,7 @@ public sealed class AdminLayoutHttpIntegrationTests
             var outOfStockDetailsHtml = await outOfStockDetailsResponse.Content.ReadAsStringAsync();
             Assert.Equal(HttpStatusCode.OK, outOfStockDetailsResponse.StatusCode);
             Assert.Contains("Hết hàng", outOfStockDetailsHtml, StringComparison.Ordinal);
-            Assert.Contains("Sản phẩm hiện đang hết hàng. Vui lòng quay lại sau.", outOfStockDetailsHtml, StringComparison.Ordinal);
+            Assert.Contains("Sản phẩm hiện chưa thể thêm vào giỏ hàng.", outOfStockDetailsHtml, StringComparison.Ordinal);
             Assert.Matches("<input[^>]*id=\"cartQuantity\"[^>]*\\sdisabled(?:\\s|=|>)", outOfStockDetailsHtml);
             Assert.Matches("<button[^>]*\\sdisabled(?:\\s|=|>)", outOfStockDetailsHtml);
 
@@ -182,7 +182,7 @@ public sealed class AdminLayoutHttpIntegrationTests
             using var missingInventoryDetailsResponse = await client.GetAsync("/Catalog/Details/44?testRole=Customer");
             var missingInventoryDetailsHtml = await missingInventoryDetailsResponse.Content.ReadAsStringAsync();
             Assert.Equal(HttpStatusCode.OK, missingInventoryDetailsResponse.StatusCode);
-            Assert.Contains("Chưa có hàng", missingInventoryDetailsHtml, StringComparison.Ordinal);
+            Assert.Contains("Chưa có dữ liệu tồn kho", missingInventoryDetailsHtml, StringComparison.Ordinal);
             Assert.Matches("<input[^>]*id=\"cartQuantity\"[^>]*\\sdisabled(?:\\s|=|>)", missingInventoryDetailsHtml);
             Assert.Matches("<button[^>]*\\sdisabled(?:\\s|=|>)", missingInventoryDetailsHtml);
 
@@ -195,7 +195,9 @@ public sealed class AdminLayoutHttpIntegrationTests
             Assert.Equal(HttpStatusCode.OK, anonymousHomeResponse.StatusCode);
             Assert.Contains("Sản phẩm", anonymousHomeHtml, StringComparison.Ordinal);
             Assert.Contains("Tư vấn", anonymousHomeHtml, StringComparison.Ordinal);
-            Assert.DoesNotContain("Tài khoản", anonymousHomeHtml, StringComparison.Ordinal);
+            Assert.Contains("Tài khoản", anonymousHomeHtml, StringComparison.Ordinal);
+            Assert.Contains("Đăng nhập", anonymousHomeHtml, StringComparison.Ordinal);
+            Assert.Contains("Tạo tài khoản", anonymousHomeHtml, StringComparison.Ordinal);
             Assert.DoesNotContain("href=\"/workspace/Admin\">Quản trị</a>", anonymousHomeHtml, StringComparison.Ordinal);
 
             using var customerWorkspaceResponse = await client.GetAsync("/workspace/Customer?testRole=Customer");
@@ -257,7 +259,7 @@ public sealed class AdminLayoutHttpIntegrationTests
             Assert.Contains("name=\"RequestId\"", customerOrderDetailsHtml, StringComparison.Ordinal);
 
             using var customerOrdersResponse = await client.GetAsync("/Orders?testRole=Customer");
-            var customerOrdersHtml = await customerOrdersResponse.Content.ReadAsStringAsync();
+            var customerOrdersHtml = System.Net.WebUtility.HtmlDecode(await customerOrdersResponse.Content.ReadAsStringAsync());
             Assert.Equal(HttpStatusCode.OK, customerOrdersResponse.StatusCode);
             Assert.Contains("Đơn hàng của tôi", customerOrdersHtml, StringComparison.Ordinal);
             Assert.Contains("nexora-orders-card", customerOrdersHtml, StringComparison.Ordinal);
@@ -267,14 +269,14 @@ public sealed class AdminLayoutHttpIntegrationTests
             Assert.Equal(12, app.Services.GetRequiredService<TestCustomerOrderService>().LastListUserId);
 
             using var exportedOrdersResponse = await client.GetAsync("/Orders?status=EXPORTED&testRole=Customer");
-            var exportedOrdersHtml = await exportedOrdersResponse.Content.ReadAsStringAsync();
+            var exportedOrdersHtml = System.Net.WebUtility.HtmlDecode(await exportedOrdersResponse.Content.ReadAsStringAsync());
             Assert.Equal(HttpStatusCode.OK, exportedOrdersResponse.StatusCode);
             Assert.Contains("#702", exportedOrdersHtml, StringComparison.Ordinal);
             Assert.DoesNotContain("#701", exportedOrdersHtml, StringComparison.Ordinal);
             Assert.Contains("Đã xuất kho", exportedOrdersHtml, StringComparison.Ordinal);
 
             using var searchedOrdersResponse = await client.GetAsync("/Orders?search=%23703&testRole=Customer");
-            var searchedOrdersHtml = await searchedOrdersResponse.Content.ReadAsStringAsync();
+            var searchedOrdersHtml = System.Net.WebUtility.HtmlDecode(await searchedOrdersResponse.Content.ReadAsStringAsync());
             Assert.Equal(HttpStatusCode.OK, searchedOrdersResponse.StatusCode);
             Assert.Contains("#703", searchedOrdersHtml, StringComparison.Ordinal);
             Assert.DoesNotContain("#702", searchedOrdersHtml, StringComparison.Ordinal);

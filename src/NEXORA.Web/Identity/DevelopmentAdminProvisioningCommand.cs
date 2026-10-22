@@ -9,6 +9,9 @@ public sealed record ProvisioningCommandArguments(
     bool IsRequested,
     bool IsDevelopmentInventorySeedRequested,
     bool IsQaStaffProvisioningRequested,
+    bool IsDevelopmentDataSeedRequested,
+    bool IsDevelopmentAccountsSeedRequested,
+    bool IsDevelopmentDatabaseCheckRequested,
     string[] HostArguments)
 {
     public static ProvisioningCommandArguments Parse(string[] args)
@@ -17,13 +20,16 @@ public sealed record ProvisioningCommandArguments(
             .Select((value, index) => (value, index))
             .Where(item => string.Equals(item.value, "--provision-admin", StringComparison.Ordinal) ||
                            string.Equals(item.value, "--seed-development-inventory", StringComparison.Ordinal) ||
-                           string.Equals(item.value, "--provision-qa-staff", StringComparison.Ordinal))
+                           string.Equals(item.value, "--provision-qa-staff", StringComparison.Ordinal) ||
+                           string.Equals(item.value, "--seed-development-data", StringComparison.Ordinal) ||
+                           string.Equals(item.value, "--seed-development-accounts", StringComparison.Ordinal) ||
+                           string.Equals(item.value, "--check-development-database", StringComparison.Ordinal))
             .Select(item => item.index)
             .ToArray();
 
         if (commandIndexes.Length == 0)
         {
-            return new ProvisioningCommandArguments(false, false, false, args);
+            return new ProvisioningCommandArguments(false, false, false, false, false, false, args);
         }
 
         if (commandIndexes.Length != 1 || args.Length != 1)
@@ -35,6 +41,9 @@ public sealed record ProvisioningCommandArguments(
             true,
             string.Equals(args[0], "--seed-development-inventory", StringComparison.Ordinal),
             string.Equals(args[0], "--provision-qa-staff", StringComparison.Ordinal),
+            string.Equals(args[0], "--seed-development-data", StringComparison.Ordinal),
+            string.Equals(args[0], "--seed-development-accounts", StringComparison.Ordinal),
+            string.Equals(args[0], "--check-development-database", StringComparison.Ordinal),
             []);
     }
 }
@@ -69,11 +78,18 @@ public static class DevelopmentAdminProvisioningCommand
             return 3;
         }
 
-        if (await userManager.IsInRoleAsync(user, RoleNames.Admin))
+        var currentRoles = await userManager.GetRolesAsync(user);
+        if (currentRoles.Count == 1 && string.Equals(currentRoles[0], RoleNames.Admin, StringComparison.Ordinal))
         {
             Console.WriteLine("Tài khoản đã có role Admin; không cần thay đổi.");
             logger.LogInformation("Admin provisioning was requested for an existing administrator. UserId={UserId}", user.Id);
             return 0;
+        }
+
+        if (currentRoles.Count != 0)
+        {
+            Console.WriteLine("Tài khoản đã có vai trò khác. Lệnh không thêm role thứ hai và không thay đổi tài khoản.");
+            return 4;
         }
 
         Console.WriteLine($"Tài khoản được chọn: {user.FullName} (ID {user.Id}).");
@@ -106,13 +122,14 @@ public static class DevelopmentInventoryProvisioningCommand
     public static async Task<int> ExecuteAsync(
         IServiceProvider services,
         string? connectionString,
+        string? databaseProfile,
         ILogger logger,
         CancellationToken cancellationToken = default)
     {
-        if (!DatabaseConnectionPolicy.IsApprovedQaConnectionString(connectionString))
+        if (!DatabaseConnectionPolicy.IsPersonalDevelopmentTarget(connectionString, databaseProfile, "Development"))
         {
-            logger.LogError("Development inventory provisioning refused because the configured SQL target is not the approved QA database.");
-            Console.WriteLine("Từ chối seed: chỉ chấp nhận Windows Authentication tới PC01\\SQLEXPRESS / NEXORA_IntegrationTests.");
+            logger.LogError("Development inventory provisioning refused because the configured target is not an approved member-owned local Development database.");
+            Console.WriteLine("Từ chối seed: chỉ chấp nhận Database:Profile=PersonalDevelopment và NEXORA_Dev_<Member> trên SQL Server cục bộ.");
             return 2;
         }
 
@@ -124,21 +141,6 @@ public static class DevelopmentInventoryProvisioningCommand
         return 0;
     }
 
-    public static bool TargetsDevelopmentDatabase(string connectionString)
-    {
-        try
-        {
-            var connection = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(connectionString);
-            var expectedServer = $@"{Environment.MachineName}\SQLEXPRESS";
-            var server = connection.DataSource.Trim();
-            var isLocalExpress = string.Equals(server, expectedServer, StringComparison.OrdinalIgnoreCase) ||
-                                 (string.Equals(Environment.MachineName, "PC01", StringComparison.OrdinalIgnoreCase) &&
-                                  string.Equals(server, @".\SQLEXPRESS", StringComparison.OrdinalIgnoreCase));
-            return isLocalExpress && string.Equals(connection.InitialCatalog, "NEXORA", StringComparison.OrdinalIgnoreCase);
-        }
-        catch (ArgumentException)
-        {
-            return false;
-        }
-    }
+    public static bool TargetsDevelopmentDatabase(string connectionString, string? databaseProfile) =>
+        DatabaseConnectionPolicy.IsPersonalDevelopmentTarget(connectionString, databaseProfile, "Development");
 }

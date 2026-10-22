@@ -1,52 +1,40 @@
 # NEXORA
 
-NEXORA is an ASP.NET Core MVC .NET 10 modular monolith using Entity Framework Core and SQL Server.
+NEXORA is a .NET 10 ASP.NET Core MVC modular monolith using Entity Framework Core and SQL Server.
+
+## Run on a team member's computer
+
+Each member uses a separate local database named `NEXORA_Dev_<Member>`. The repository does not contain a database, and team members do not need access to the project owner's PC01 SQL Server.
+
+1. Install the .NET 10 SDK and SQL Server Express or LocalDB.
+2. Clone this repository and open PowerShell in its folder.
+3. Follow the Vietnamese [installation guide](docs/HUONG_DAN_CAI_DAT.md), then consult [Team Development Setup](docs/TEAM_DEVELOPMENT_SETUP.md) for full policy details.
+4. Configure the local target, apply migrations, and explicitly seed demo data using `tools/setup-development.ps1`.
+5. Start the site with `.\tools\setup-development.ps1 -Run` and open the local URL it prints.
+
+The Development connection policy requires the explicit `PersonalDevelopment` profile and a local SQL Server target with a `NEXORA_Dev_<Member>` database name. It rejects the main `NEXORA` and QA `NEXORA_IntegrationTests` databases. The owner's existing exact QA target remains a separate compatibility lane and is never seeded automatically.
 
 ## Projects
 
-- `src/NEXORA.Web` – MVC application, Identity account flows and Razor UI.
-- `src/NEXORA.Application` – application contracts, including the email sender abstraction.
-- `src/NEXORA.Domain` – business entities and domain rules.
-- `src/NEXORA.Infrastructure` – SQL Server persistence, Identity mapping and migrations.
-- `tests/NEXORA.Tests` – domain and EF model tests.
+- `src/NEXORA.Web` — MVC application, Identity, local commands, and Razor UI.
+- `src/NEXORA.Application` — application contracts and use cases.
+- `src/NEXORA.Domain` — entities and business rules.
+- `src/NEXORA.Infrastructure` — SQL Server persistence and EF Core migrations.
+- `tests/NEXORA.Tests` — unit, policy, and HTTP tests. SQL integration tests require an explicitly approved local test database.
 
-## Local prerequisites
-
-- .NET 10 SDK.
-- SQL Server Express or another supported SQL Server instance.
-- For the default Development settings, a local named instance `SQLEXPRESS` and Windows Integrated Authentication.
-
-The Development connection is `Server=.\SQLEXPRESS;Database=NEXORA;Integrated Security=True`. On the verified PC01 host, `.` resolves to `PC01`; the database was created only after approval and now contains migration `20261015173046_InitialFoundation`.
-
-## Restore, build and test
+## Restore, build, and SQL-free tests
 
 ```powershell
-dotnet restore NEXORA.sln
-dotnet build NEXORA.sln
-dotnet test NEXORA.sln
+dotnet restore .\NEXORA.sln
+dotnet build .\NEXORA.sln
 ```
 
-## Migration status
+For the reviewed SQL-free test allowlist, see `.github/workflows/nexora-tests.yml`. Do not run SQL integration tests against the project owner's QA or main database.
 
-The approved migration is in `src/NEXORA.Infrastructure/Persistence/Migrations`; it has already been applied to `PC01\SQLEXPRESS`, database `NEXORA`. Do not run the SQL review script directly. To prepare a different, newly approved empty development database, use the migration command below after changing and verifying the connection string:
+## Safety
 
-```powershell
-dotnet ef database update `
-  --project src/NEXORA.Infrastructure/NEXORA.Infrastructure.csproj `
-  --startup-project src/NEXORA.Web/NEXORA.Web.csproj `
-  --context AppDbContext
-```
-
-The migration creates 22 official business tables, four ASP.NET Identity support tables, and EF Core's `__EFMigrationsHistory` table.
-
-## Run the website
-
-To run the website against the configured database:
-
-```powershell
-dotnet run --project src/NEXORA.Web/NEXORA.Web.csproj
-```
-
-The app initializes the four required roles when it starts against an applied schema. Public registration only creates Customer accounts. No administrator account or default password is created. Production must configure `ConnectionStrings__DefaultConnection` and a real `IEmailSender` provider before enabling password reset.
-
-In Development, password reset emails are held in memory and can be inspected at `/dev/mailbox`. The mailbox disappears when the app stops and is not available outside Development.
+- Secrets belong in ASP.NET Core User Secrets or local environment variables, never in Git.
+- No database is migrated at website startup. Applying migrations is an explicit setup step.
+- Demo roles, accounts, catalog, consultation rules, and initial demo inventory are seeded only by explicit commands against a member-owned local Development database.
+- Never copy QA/Production accounts, password hashes, or business data into a member's database.
+- If Windows Smart App Control or Code Integrity blocks a locally built assembly, do not disable or bypass it; use a code-signing or administrator-approved allowlisting process.
