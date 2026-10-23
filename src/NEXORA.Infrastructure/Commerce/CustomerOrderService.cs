@@ -42,6 +42,8 @@ public sealed class CustomerOrderService(AppDbContext db, ILogger<CustomerOrderS
 
         var order = await db.Orders.AsNoTracking()
             .Include(item => item.Details)
+                .ThenInclude(line => line.Product)
+                    .ThenInclude(product => product.Images)
             .Where(order => order.Id == orderId && order.UserId == userId)
             .SingleOrDefaultAsync(cancellationToken);
         if (order is null) return null;
@@ -69,7 +71,14 @@ public sealed class CustomerOrderService(AppDbContext db, ILogger<CustomerOrderS
                     line.Quantity,
                     line.UnitPrice,
                     line.DiscountAmount,
-                    line.TotalPrice))
+                    line.TotalPrice)
+                {
+                    ImageUrl = line.Product.Images
+                        .OrderByDescending(image => image.IsPrimary)
+                        .ThenBy(image => image.SortOrder)
+                        .Select(image => image.ImageUrl)
+                        .FirstOrDefault()
+                })
                 .ToArray());
     }
 

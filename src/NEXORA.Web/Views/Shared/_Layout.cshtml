@@ -18,6 +18,17 @@
             : string.Empty;
         var canAccessOrders = User.IsInRole("Customer") || User.IsInRole("Sales") ||
                               User.IsInRole("Warehouse") || User.IsInRole("Admin");
+        var accountDisplayName = User.Identity?.IsAuthenticated == true
+            ? User.FindFirst(NEXORA.Web.Identity.NexoraUserClaimsPrincipalFactory.FullNameClaimType)?.Value?.Trim()
+            : null;
+        if (string.IsNullOrWhiteSpace(accountDisplayName) && User.Identity?.IsAuthenticated == true)
+        {
+            accountDisplayName = User.Identity.Name?.Trim();
+        }
+        if (string.IsNullOrWhiteSpace(accountDisplayName))
+        {
+            accountDisplayName = "Tài khoản";
+        }
         bool IsCurrent(string controller, string? action = null, string? area = null) =>
             string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase) &&
             (action is null || string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase)) &&
@@ -31,7 +42,7 @@
         <nav class="navbar navbar-expand-xl navbar-dark nexora-navbar nexora-nav" aria-label="Điều hướng chính">
             <div class="container nexora-nav-shell">
                 <a class="navbar-brand nexora-wordmark" asp-area="" asp-controller="Home" asp-action="Index" aria-label="NEXORA - Trang chủ">
-                    <span class="nexora-brand-mark" aria-hidden="true">N</span><span>NEXORA</span>
+                    <img class="nexora-logo-lockup" src="~/images/nexora-logo.svg" asp-append-version="true" alt="" aria-hidden="true" />
                 </a>
 
                 <div class="collapse navbar-collapse nexora-nav-collapse" id="mainNavigation">
@@ -96,10 +107,10 @@
                         @await Component.InvokeAsync("CartSummary")
                     }
 
-                    <div class="dropdown nexora-account d-none d-md-flex">
+                    <div class="dropdown nexora-account">
                         <button class="nexora-account-toggle dropdown-toggle" type="button" id="accountMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="nexora-account-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg></span>
-                            <span>Tài khoản</span>
+                            <span class="nexora-account-name" title="@accountDisplayName">@accountDisplayName</span>
                         </button>
                         <div class="dropdown-menu dropdown-menu-end nexora-account-menu" aria-labelledby="accountMenuButton">
                             @if (User.Identity?.IsAuthenticated == true)

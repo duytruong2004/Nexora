@@ -17,6 +17,7 @@
     <UserSecretsId>NEXORA-team-development-local</UserSecretsId>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <DefaultItemExcludes>$(DefaultItemExcludes);artifacts/**</DefaultItemExcludes>
   </PropertyGroup>
 
 </Project>

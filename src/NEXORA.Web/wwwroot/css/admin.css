@@ -32,10 +32,9 @@
 .admin-mobile-sidebar .offcanvas-header { min-height: 2.5rem; padding-bottom: 0; }
 .admin-mobile-sidebar .admin-brand { padding-top: .2rem; }
 .admin-brand { padding: .45rem .55rem 1.4rem; }
-.admin-brand-link { display: inline-flex; align-items: center; gap: .7rem; color: #fff; text-decoration: none; }
+.admin-brand-link { display: inline-flex; align-items: flex-start; flex-direction: column; gap: .25rem; color: #fff; text-decoration: none; }
 .admin-brand-link:hover { color: #fff; }
-.admin-brand-mark { width: 2.35rem; height: 2.35rem; border-radius: .72rem; font-size: 1.15rem; }
-.admin-brand-link strong { display: block; font-size: 1.04rem; letter-spacing: .12em; }
+.admin-logo-lockup { display: block; width: 9rem; height: auto; }
 .admin-brand-link small { display: block; margin-top: .1rem; color: #95a7c2; font-size: .58rem; font-weight: 700; letter-spacing: .15em; }
 
 .admin-menu { display: flex; flex-direction: column; gap: .25rem; }

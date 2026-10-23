@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">NEXORA — logo concept</title>
+  <desc id="desc">Geometric NEXORA monogram and wordmark, shown in construction grid, color, reverse, and monochrome variants.</desc>
+  <defs>
+    <pattern id="grid" width="8" height="8" patternUnits="userSpaceOnUse">
+      <path d="M8 0H0V8" fill="none" stroke="#94a3b8" stroke-width="0.7" opacity=".62"/>
+    </pattern>
+    <symbol id="mark" viewBox="0 0 120 92">
+      <path d="M7 78V14c0-6 4-10 10-10h13l60 55 18-20 12 12-25 28c-4 4-10 4-15 0L27 34v44c0 6-4 10-10 10S7 84 7 78Z" fill="currentColor"/>
+      <path d="M70 15 84 2h29L84 32 70 15Z" fill="currentColor"/>
+      <path d="m54 42 15-16 43 40c4 4 6 8 6 13v7H91L54 42Z" fill="currentColor"/>
+    </symbol>
+    <style>
+      .sans { font-family: Inter, "Segoe UI", Arial, sans-serif; }
+      .word { font-size: 36px; font-weight: 650; letter-spacing: 4px; }
+      .label { font-size: 13px; font-weight: 700; letter-spacing: 1.7px; fill: #64748b; }
+      .small { font-size: 13px; fill: #475569; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="760" fill="#f1f5f9"/>
+  <text x="54" y="52" class="sans" font-size="23" font-weight="700" fill="#0f172a">NEXORA</text>
+  <text x="54" y="77" class="sans small">LOGO CONCEPT · GEOMETRIC MONOGRAM</text>
+
+  <!-- Construction study -->
+  <rect x="54" y="112" width="530" height="250" rx="16" fill="#fff" stroke="#cbd5e1"/>
+  <text x="78" y="143" class="sans label">01 · CONSTRUCTION</text>
+  <rect x="86" y="166" width="250" height="150" fill="url(#grid)" opacity=".82"/>
+  <g color="#0969f5"><use href="#mark" x="128" y="192" width="150" height="115"/></g>
+  <path d="M103 184H321M103 299H321M121 175V308M286 175V308" fill="none" stroke="#64748b" stroke-width="1" stroke-dasharray="4 4" opacity=".55"/>
+  <g color="#0969f5"><use href="#mark" x="366" y="196" width="104" height="80"/></g>
+  <text x="469" y="248" class="sans" font-size="23" font-weight="650" letter-spacing="2.5" fill="#0969f5">NEXORA</text>
+  <text x="366" y="310" class="sans small">Clear geometry · forward motion · digital commerce</text>
+
+  <!-- Primary blue lockup -->
+  <rect x="616" y="112" width="530" height="250" rx="16" fill="#fff" stroke="#cbd5e1"/>
+  <text x="640" y="143" class="sans label">02 · PRIMARY / LIGHT</text>
+  <g color="#0969f5"><use href="#mark" x="692" y="194" width="154" height="118"/></g>
+  <text x="844" y="265" class="sans word" fill="#0969f5">NEXORA</text>
+  <text x="692" y="331" class="sans small">Brand blue on white · default digital lockup</text>
+
+  <!-- Reverse lockup -->
+  <rect x="54" y="390" width="530" height="250" rx="16" fill="#05070d"/>
+  <text x="78" y="421" class="sans label" fill="#94a3b8">03 · REVERSE / DARK</text>
+  <g color="#fff"><use href="#mark" x="133" y="472" width="148" height="114"/></g>
+  <text x="285" y="541" class="sans word" font-size="33" fill="#fff">NEXORA</text>
+  <text x="133" y="610" class="sans" font-size="13" fill="#cbd5e1">White mark and wordmark on near-black</text>
+
+  <!-- Monochrome lockup -->
+  <rect x="616" y="390" width="530" height="250" rx="16" fill="#fff" stroke="#64748b" stroke-width="1.5"/>
+  <text x="640" y="421" class="sans label">04 · MONOCHROME</text>
+  <g color="#101828"><use href="#mark" x="694" y="472" width="148" height="114"/></g>
+  <text x="846" y="541" class="sans word" font-size="33" fill="#101828">NEXORA</text>
+  <text x="694" y="610" class="sans" font-size="13" fill="#475569">Single-color version for compact and print use</text>
+
+  <!-- Brand colors -->
+  <text x="54" y="696" class="sans label">COLOR PALETTE</text>
+  <rect x="190" y="671" width="34" height="34" rx="7" fill="#0969f5"/>
+  <text x="236" y="686" class="sans" font-size="13" font-weight="700" fill="#0f172a">NEXORA Blue</text>
+  <text x="236" y="703" class="sans small">#0969F5</text>
+  <rect x="380" y="671" width="34" height="34" rx="7" fill="#101828"/>
+  <text x="426" y="686" class="sans" font-size="13" font-weight="700" fill="#0f172a">Deep Navy</text>
+  <text x="426" y="703" class="sans small">#101828</text>
+  <rect x="570" y="671" width="34" height="34" rx="7" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="616" y="686" class="sans" font-size="13" font-weight="700" fill="#0f172a">White</text>
+  <text x="616" y="703" class="sans small">#FFFFFF</text>
+  <text x="1146" y="728" text-anchor="end" class="sans" font-size="11" fill="#64748b">Concept artwork · review before site-wide adoption</text>
+</svg>

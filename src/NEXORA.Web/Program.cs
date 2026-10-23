@@ -38,6 +38,7 @@ builder.Services.AddIdentity<AppUser, AppRole>(options =>
         options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
     })
     .AddEntityFrameworkStores<AppDbContext>()
+    .AddClaimsPrincipalFactory<NexoraUserClaimsPrincipalFactory>()
     .AddDefaultTokenProviders()
     .AddTokenProvider<StaffInvitationTokenProvider>(StaffInvitationPurpose.ProviderName);
 

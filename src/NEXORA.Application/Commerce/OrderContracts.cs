@@ -75,7 +75,10 @@ public sealed record OrderDetailLine(
     int Quantity,
     decimal UnitPrice,
     decimal DiscountAmount,
-    decimal TotalPrice);
+    decimal TotalPrice)
+{
+    public string? ImageUrl { get; init; }
+}
 
 public sealed record OrderDetailView(
     int Id,
