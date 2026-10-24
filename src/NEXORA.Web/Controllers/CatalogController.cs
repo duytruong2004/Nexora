@@ -7,7 +7,7 @@ namespace NEXORA.Web.Controllers;
 
 public sealed class CatalogController(ICustomerCatalogQueryService catalog, IReviewService reviews) : Controller
 {
-    private const int CatalogPageSize = 10;
+    private const int CatalogPageSize = 20;
 
     public async Task<IActionResult> Index(
         string? search,

@@ -1008,7 +1008,7 @@ textarea.form-control { min-height: unset; }
 }
 
 /* Storefront navigation refresh */
-.nexora-header { position: relative; z-index: 1020; }
+.nexora-header { position: sticky; top: 0; z-index: 1020; }
 .nexora-nav {
     min-height: 5rem;
     padding-block: .55rem;
