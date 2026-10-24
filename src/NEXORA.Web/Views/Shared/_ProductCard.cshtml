@@ -1,5 +1,9 @@
 @model NEXORA.Application.Catalog.CatalogProductCard
-<article class="card h-100 product-card border-0">
+@{
+    var catalogCard = ViewData["CatalogCard"] as bool? == true;
+    var compareFormId = ViewData["CompareFormId"] as string;
+}
+<article class="card h-100 product-card border-0 @(catalogCard ? "catalog-product-card" : "")">
     <div class="product-card-media">
         <a asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id" class="product-card-image text-decoration-none">
             @await Html.PartialAsync("_ProductImage", new NEXORA.Web.Models.ProductImageDisplayViewModel(Model.PrimaryImageUrl, Model.Name, "card"))
@@ -32,20 +36,19 @@
     </div>
     <div class="card-body d-flex flex-column">
         <div class="product-card-meta small"><span>@Model.CategoryName</span><span aria-hidden="true">·</span><span>@Model.BrandName</span></div>
-        <h3 class="product-card-heading"><a asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id" class="product-card-title text-decoration-none">@Model.Name</a></h3>
-        <p class="small text-secondary product-card-sku">Mã: @Model.Sku</p>
-        @if (Model.KeySpecifications.Count > 0)
-        {
-            <ul class="product-card-specs" aria-label="Thông số chính">
-                @foreach (var specification in Model.KeySpecifications)
-                {
-                    var value = specification.DisplayValue ?? (specification.DataType == "NUMBER" && !string.IsNullOrWhiteSpace(specification.Unit) ? $"{specification.Value} {specification.Unit}" : specification.Value);
-                    <li><span>@specification.Name</span><strong>@value</strong></li>
-                }
-            </ul>
-        }
+        <h3 class="product-card-heading"><a asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id" class="product-card-title text-decoration-none" title="@Model.Name" aria-label="@Model.Name">@Model.Name</a></h3>
         <div class="product-card-footer mt-auto">
-            <div class="product-card-price-row"><strong class="product-card-price">@((Model.DiscountPrice ?? Model.Price).ToString("N0")) ₫</strong>@if (Model.DiscountPrice.HasValue) { <del class="small text-secondary">@Model.Price.ToString("N0") ₫</del> }</div>
+            <div class="product-card-price-row">
+                <strong class="product-card-price">@((Model.DiscountPrice ?? Model.Price).ToString("N0")) ₫</strong>
+                @if (Model.DiscountPrice.HasValue)
+                {
+                    <del>@Model.Price.ToString("N0") ₫</del>
+                }
+                else
+                {
+                    <span class="product-card-original-placeholder" aria-hidden="true"></span>
+                }
+            </div>
             <div class="product-card-actions">
                 @if (User.IsInRole("Customer"))
                 {
@@ -65,6 +68,13 @@
                     <span aria-hidden="true">↗</span>
                 </a>
             </div>
+            @if (catalogCard && !string.IsNullOrWhiteSpace(compareFormId))
+            {
+                <label class="catalog-card-compare">
+                    <input class="form-check-input compare-product" form="@compareFormId" type="checkbox" name="ids" value="@Model.Id" data-category-id="@Model.CategoryId" />
+                    <span>Thêm vào so sánh</span>
+                </label>
+            }
         </div>
     </div>
 </article>

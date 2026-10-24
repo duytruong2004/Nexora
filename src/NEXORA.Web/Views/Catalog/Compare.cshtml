@@ -2,31 +2,205 @@
 @{
     ViewData["Title"] = "So sánh sản phẩm";
 }
-<div class="mb-4"><a asp-controller="Catalog" asp-action="Index" class="text-decoration-none">← Danh sách sản phẩm</a><h1 class="h2 mt-2">So sánh sản phẩm</h1></div>
-@if (Model.Error is not null)
-{
-    <div class="catalog-empty rounded-4 p-4 text-center"><h2 class="h5">Chưa thể so sánh</h2><p class="text-secondary mb-0">@Model.Error</p><a asp-action="Index" class="btn btn-primary mt-3">Quay lại danh sách</a></div>
+@section Head {
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet" />
 }
-else if (Model.Comparison is { } comparison)
-{
-    <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-3"><p class="text-secondary mb-0">Đang so sánh @comparison.Products.Count sản phẩm cùng danh mục.</p><label class="form-check mb-0"><input id="onlyDifferent" class="form-check-input" type="checkbox" /><span class="form-check-label">Chỉ hiện thông số khác nhau</span></label></div>
-    <div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table comparison-table align-middle mb-0"><thead class="table-light"><tr><th class="comparison-spec-head" scope="col">Thông tin</th>
-        @foreach (var product in comparison.Products)
-        {
-            var primaryImage = product.Images.FirstOrDefault(image => image.IsPrimary) ?? product.Images.OrderBy(image => image.SortOrder).FirstOrDefault();
-            <th scope="col"><div class="comparison-product-image">@await Html.PartialAsync("_ProductImage", new NEXORA.Web.Models.ProductImageDisplayViewModel(primaryImage?.ImageUrl, product.Name, "comparison"))</div><a asp-action="Details" asp-route-id="@product.Id" class="comparison-product-name">@product.Name</a><div class="small text-secondary fw-normal mt-1">@product.BrandName</div><strong class="d-block text-primary mt-2">@((product.DiscountPrice ?? product.Price).ToString("N0")) ₫</strong></th>
-        }
-    </tr></thead><tbody>
-        <tr><th scope="row">Danh mục</th>@foreach (var product in comparison.Products) { <td>@product.CategoryName</td> }</tr>
-        <tr><th scope="row">Mã sản phẩm</th>@foreach (var product in comparison.Products) { <td>@product.Sku</td> }</tr>
-        <tr><th scope="row">Tình trạng tồn kho</th>@foreach (var product in comparison.Products) { <td>@(product.AvailableQuantity is > 0 ? $"Còn hàng ({product.AvailableQuantity})" : product.AvailableQuantity == 0 ? "Hết hàng" : "Chưa có hàng")</td> }</tr>
-        @foreach (var specification in comparison.Specifications)
-        {
-            <tr class="@(specification.IsDifferent ? "comparison-different" : "")" data-different="@(specification.IsDifferent ? "true" : "false")"><th scope="row">@specification.Name@(specification.Unit is null ? "" : $" ({specification.Unit})")</th>
-                @foreach (var value in specification.Values) { <td>@(value ?? "Chưa có dữ liệu")</td> }
-            </tr>
-        }
-        <tr><th scope="row">Bảo hành</th>@foreach (var product in comparison.Products) { <td>@product.WarrantyMonths tháng</td> }</tr>
-    </tbody></table></div></div>
+
+<div class="comparison-page">
+    @if (Model.Error is not null)
+    {
+        <nav aria-label="Đường dẫn" class="comparison-breadcrumb">
+            <a asp-controller="Home" asp-action="Index">Trang chủ</a>
+            <span aria-hidden="true">/</span>
+            <a asp-controller="Catalog" asp-action="Index">Sản phẩm</a>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">So sánh</span>
+        </nav>
+        <section class="comparison-empty card" aria-labelledby="comparison-empty-title">
+            <span class="comparison-empty-icon" aria-hidden="true">⇄</span>
+            <h1 id="comparison-empty-title">Chưa thể so sánh sản phẩm</h1>
+            <p>@Model.Error</p>
+            <a asp-controller="Catalog" asp-action="Index" class="btn btn-primary">Quay lại danh sách sản phẩm</a>
+        </section>
+    }
+    else if (Model.Comparison is { } comparison && comparison.Products.Count > 0)
+    {
+        var firstProduct = comparison.Products[0];
+        <nav aria-label="Đường dẫn" class="comparison-breadcrumb">
+            <a asp-controller="Home" asp-action="Index">Trang chủ</a>
+            <span aria-hidden="true">/</span>
+            <a asp-controller="Catalog" asp-action="Category" asp-route-id="@firstProduct.CategoryId">@firstProduct.CategoryName</a>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">So sánh sản phẩm</span>
+        </nav>
+
+        <header class="comparison-page-header">
+            <div>
+                <p class="comparison-eyebrow">SO SÁNH THIẾT BỊ</p>
+                <h1>So sánh sản phẩm</h1>
+                <p class="comparison-page-description">
+                    Đang so sánh <strong>@comparison.Products.Count sản phẩm</strong> thuộc danh mục
+                    <strong>@firstProduct.CategoryName</strong>.
+                </p>
+            </div>
+            <label class="comparison-difference-switch" for="onlyDifferent">
+                <span class="form-check form-switch">
+                    <input id="onlyDifferent" class="form-check-input" type="checkbox" role="switch" />
+                </span>
+                <span>Chỉ hiện thông số khác nhau</span>
+            </label>
+        </header>
+
+        <p class="comparison-mobile-hint">Vuốt ngang bảng để xem lần lượt các sản phẩm.</p>
+
+        <section class="comparison-table-card" aria-label="Bảng so sánh sản phẩm">
+            <div class="comparison-table-wrap" tabindex="0" role="region" aria-label="Bảng so sánh có thể cuộn ngang">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th class="comparison-spec-head" scope="col">Thông số</th>
+                            @foreach (var product in comparison.Products)
+                            {
+                                var primaryImage = product.Images.FirstOrDefault(image => image.IsPrimary)
+                                    ?? product.Images.OrderBy(image => image.SortOrder).FirstOrDefault();
+                                var remainingProducts = comparison.Products.Where(item => item.Id != product.Id).ToArray();
+                                <th scope="col" class="comparison-product-column" data-comparison-product-column="@product.Id">
+                                    <article class="comparison-product-card">
+                                        <div class="comparison-product-topline">
+                                            <span class="comparison-brand">@product.BrandName</span>
+                                            @if (remainingProducts.Length > 1)
+                                            {
+                                                <form asp-action="Compare" method="get" class="comparison-remove-form">
+                                                    @foreach (var remainingProduct in remainingProducts)
+                                                    {
+                                                        <input type="hidden" name="ids" value="@remainingProduct.Id" />
+                                                    }
+                                                    <button type="submit" class="comparison-remove-button" title="Xóa khỏi so sánh" aria-label="Xóa @product.Name khỏi danh sách so sánh">
+                                                        <span aria-hidden="true">×</span>
+                                                    </button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <a asp-action="Category" asp-route-id="@product.CategoryId" class="comparison-remove-button" title="Xóa khỏi so sánh và quay lại danh mục" aria-label="Xóa @product.Name khỏi danh sách so sánh">
+                                                    <span aria-hidden="true">×</span>
+                                                </a>
+                                            }
+                                        </div>
+
+                                        <div class="comparison-product-image">
+                                            @await Html.PartialAsync("_ProductImage", new NEXORA.Web.Models.ProductImageDisplayViewModel(primaryImage?.ImageUrl, product.Name, "comparison"))
+                                        </div>
+
+                                        <a asp-action="Details" asp-route-id="@product.Id" class="comparison-product-name" title="@product.Name">@product.Name</a>
+                                        <div class="comparison-product-price-row">
+                                            <strong class="comparison-product-price">@((product.DiscountPrice ?? product.Price).ToString("N0")) ₫</strong>
+                                            @if (product.DiscountPrice.HasValue)
+                                            {
+                                                <del>@product.Price.ToString("N0") ₫</del>
+                                            }
+                                        </div>
+
+                                        <div class="comparison-product-actions">
+                                            @if (product.AvailableQuantity is not > 0)
+                                            {
+                                                <button type="button" class="btn btn-primary comparison-cart-button" disabled>
+                                                    @(product.AvailableQuantity == 0 ? "Hết hàng" : "Chưa có hàng")
+                                                </button>
+                                            }
+                                            else if (User.IsInRole("Customer"))
+                                            {
+                                                <form asp-controller="Cart" asp-action="Add" method="post" class="comparison-cart-form">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="productId" value="@product.Id" />
+                                                    <input type="hidden" name="quantity" value="1" />
+                                                    <input type="hidden" name="returnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
+                                                    <button type="submit" class="btn btn-primary comparison-cart-button">
+                                                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="9" cy="20" r="1" /><circle cx="18" cy="20" r="1" /><path d="M2 3h2l2.4 11.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6L22 7H5" /></svg>
+                                                        <span>Thêm vào giỏ</span>
+                                                    </button>
+                                                </form>
+                                            }
+                                            else if (User.Identity?.IsAuthenticated != true)
+                                            {
+                                                <a class="btn btn-primary comparison-cart-button" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@($"{Context.Request.Path}{Context.Request.QueryString}")">Đăng nhập để mua</a>
+                                            }
+
+                                            <a asp-action="Details" asp-route-id="@product.Id" class="btn btn-outline-primary comparison-details-button">
+                                                <span aria-hidden="true">↗</span><span>Xem chi tiết</span>
+                                            </a>
+                                        </div>
+                                    </article>
+                                </th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="comparison-group-row"><th colspan="@(comparison.Products.Count + 1)" scope="colgroup">Thông tin sản phẩm</th></tr>
+                        <tr>
+                            <th scope="row">Danh mục</th>
+                            @foreach (var product in comparison.Products) { <td data-comparison-product-column="@product.Id">@product.CategoryName</td> }
+                        </tr>
+                        <tr>
+                            <th scope="row">Mã sản phẩm</th>
+                            @foreach (var product in comparison.Products) { <td data-comparison-product-column="@product.Id">@product.Sku</td> }
+                        </tr>
+                        <tr>
+                            <th scope="row">Thương hiệu</th>
+                            @foreach (var product in comparison.Products) { <td data-comparison-product-column="@product.Id">@product.BrandName</td> }
+                        </tr>
+                        <tr>
+                            <th scope="row">Tình trạng tồn kho</th>
+                            @foreach (var product in comparison.Products)
+                            {
+                                <td data-comparison-product-column="@product.Id">
+                                    @(product.AvailableQuantity is > 0 ? $"Còn hàng ({product.AvailableQuantity})" : product.AvailableQuantity == 0 ? "Hết hàng" : "Chưa có hàng")
+                                </td>
+                            }
+                        </tr>
+                        <tr>
+                            <th scope="row">Bảo hành</th>
+                            @foreach (var product in comparison.Products) { <td data-comparison-product-column="@product.Id">@product.WarrantyMonths tháng</td> }
+                        </tr>
+
+                        @if (comparison.Specifications.Count > 0)
+                        {
+                            <tr class="comparison-group-row" data-comparison-group-heading="specifications">
+                                <th colspan="@(comparison.Products.Count + 1)" scope="colgroup">Thông số kỹ thuật</th>
+                            </tr>
+                            @foreach (var specification in comparison.Specifications)
+                            {
+                                <tr class="@(specification.IsDifferent ? "comparison-different" : "")"
+                                    data-comparison-specification
+                                    data-comparison-group="specifications"
+                                    data-different="@(specification.IsDifferent ? "true" : "false")">
+                                    <th scope="row">@specification.Name@(specification.Unit is null ? "" : $" ({specification.Unit})")</th>
+                                    @for (var index = 0; index < comparison.Products.Count; index++)
+                                    {
+                                        var value = specification.Values[index];
+                                        <td data-comparison-product-column="@comparison.Products[index].Id">@(value ?? "Chưa có dữ liệu")</td>
+                                    }
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+    else
+    {
+        <section class="comparison-empty card" aria-labelledby="comparison-empty-title">
+            <span class="comparison-empty-icon" aria-hidden="true">⇄</span>
+            <h1 id="comparison-empty-title">So sánh sản phẩm</h1>
+            <p>Chọn ít nhất hai sản phẩm cùng danh mục để xem bảng đối chiếu.</p>
+            <a asp-controller="Catalog" asp-action="Index" class="btn btn-primary">Chọn sản phẩm</a>
+        </section>
+    }
+</div>
+
+@section Scripts {
+    <script src="~/js/catalog-compare-display.js" asp-append-version="true"></script>
 }
-@section Scripts { <script src="~/js/catalog-compare-display.js" asp-append-version="true"></script> }

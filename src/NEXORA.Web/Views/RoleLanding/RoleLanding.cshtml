@@ -10,48 +10,61 @@
 
 @if (ViewData["UseAdminLayout"] is true)
 {
-    <section class="admin-welcome mb-4">
+    <section class="admin-welcome">
         <div>
-            <p class="text-uppercase small fw-semibold mb-2">Không gian quản trị NEXORA</p>
+            <p class="text-uppercase small fw-semibold mb-2">QUẢN TRỊ CỬA HÀNG</p>
             <h1 class="h2 mb-2">Quản lý cửa hàng từ một nơi</h1>
-            <p class="mb-0">Chọn một module để cập nhật danh mục, thông tin sản phẩm hoặc cấu hình tư vấn.</p>
+            <p class="mb-0">Mở nhanh khu vực cần xử lý và tiếp tục công việc quản lý cửa hàng.</p>
         </div>
-        <span class="admin-welcome-mark" aria-hidden="true">N</span>
+    </section>
+
+    <section aria-labelledby="admin-modules-title">
+        <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+            <div><p class="text-uppercase small fw-semibold text-primary mb-1">LỐI TẮT CÔNG VIỆC</p><h2 id="admin-modules-title" class="h4 mb-0">Khu vực quản lý</h2></div>
+        </div>
+        <div class="admin-workspace-grid">
+            <section class="admin-workspace-group" aria-labelledby="admin-sales-title">
+                <h3 id="admin-sales-title">Bán hàng & chăm sóc</h3>
+                <a class="admin-action-link" asp-area="Admin" asp-controller="Orders" asp-action="Index"><span class="admin-action-icon" aria-hidden="true">▤</span><span><strong>Đơn hàng</strong><small>Theo dõi và xử lý đơn hàng</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a>
+                <a class="admin-action-link" asp-area="Admin" asp-controller="Users" asp-action="Index"><span class="admin-action-icon" aria-hidden="true">♙</span><span><strong>Tài khoản</strong><small>Quản lý khách hàng và nhân viên</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a>
+                <a class="admin-action-link" asp-area="Admin" asp-controller="Reviews" asp-action="Index"><span class="admin-action-icon" aria-hidden="true">☆</span><span><strong>Đánh giá</strong><small>Kiểm duyệt nội dung đánh giá</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a>
+                <a class="admin-action-link" asp-area="Admin" asp-controller="Reports" asp-action="Orders"><span class="admin-action-icon" aria-hidden="true">▥</span><span><strong>Báo cáo</strong><small>Xem báo cáo khi cần đối chiếu</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a>
+            </section>
+            <section class="admin-workspace-group" aria-labelledby="admin-catalog-title">
+                <h3 id="admin-catalog-title">Danh mục sản phẩm</h3>
+                <a class="admin-action-link" asp-area="Admin" asp-controller="Products" asp-action="Index"><span class="admin-action-icon" aria-hidden="true">▣</span><span><strong>Sản phẩm</strong><small>Tìm và cập nhật thông tin sản phẩm</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a>
+                <a class="admin-action-link" asp-area="Admin" asp-controller="Categories" asp-action="Index"><span class="admin-action-icon" aria-hidden="true">▦</span><span><strong>Danh mục</strong><small>Tổ chức nhóm sản phẩm</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a>
+                <a class="admin-action-link" asp-area="Admin" asp-controller="Brands" asp-action="Index"><span class="admin-action-icon" aria-hidden="true">◇</span><span><strong>Thương hiệu</strong><small>Quản lý các thương hiệu</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a>
+                <a class="admin-action-link" asp-area="Admin" asp-controller="Specifications" asp-action="Index"><span class="admin-action-icon" aria-hidden="true">≡</span><span><strong>Thông số kỹ thuật</strong><small>Cấu hình thuộc tính sản phẩm</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a>
+            </section>
+            <section class="admin-workspace-group" aria-labelledby="admin-consultation-title">
+                <h3 id="admin-consultation-title">Tư vấn sản phẩm</h3>
+                <a class="admin-action-link" asp-area="Admin" asp-controller="Consultation" asp-action="UsageNeeds"><span class="admin-action-icon" aria-hidden="true">✳</span><span><strong>Nhu cầu sử dụng</strong><small>Quản lý mục đích tư vấn</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a>
+                <a class="admin-action-link" asp-area="Admin" asp-controller="Consultation" asp-action="Rules"><span class="admin-action-icon" aria-hidden="true">⚙</span><span><strong>Quy tắc xếp hạng</strong><small>Cấu hình điều kiện và trọng số</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a>
+            </section>
+        </div>
     </section>
 
     @if (metrics is not null)
     {
-        <section class="admin-dashboard-metrics mb-4" aria-label="Số liệu hiện tại từ hệ thống">
-            <div class="row g-3">
-                <div class="col-6 col-xl"><article class="admin-stat-card"><span>Tổng sản phẩm</span><strong>@metrics.TotalProducts.ToString("N0")</strong></article></div>
-                <div class="col-6 col-xl"><article class="admin-stat-card"><span>Đang kinh doanh</span><strong>@metrics.ActiveProducts.ToString("N0")</strong></article></div>
-                <div class="col-6 col-xl"><article class="admin-stat-card"><span>Danh mục</span><strong>@metrics.TotalCategories.ToString("N0")</strong></article></div>
-                <div class="col-6 col-xl"><article class="admin-stat-card"><span>Nhu cầu tư vấn</span><strong>@metrics.TotalUsageNeeds.ToString("N0")</strong></article></div>
-                <div class="col-6 col-xl"><article class="admin-stat-card"><span>Quy tắc tư vấn</span><strong>@metrics.TotalRecommendationRules.ToString("N0")</strong></article></div>
-                <div class="col-6 col-xl"><article class="admin-stat-card"><span>Tổng đơn hàng</span><strong>@metrics.TotalOrders.ToString("N0")</strong></article></div>
-                <div class="col-6 col-xl"><article class="admin-stat-card"><span>Đơn chờ xác nhận</span><strong>@metrics.PendingOrders.ToString("N0")</strong></article></div>
-                <div class="col-6 col-xl"><article class="admin-stat-card"><span>Đơn hoàn tất</span><strong>@metrics.CompletedOrders.ToString("N0")</strong></article></div>
-                <div class="col-12 col-xl"><article class="admin-stat-card"><span>Sản phẩm chưa có bản ghi tồn kho</span><strong>@metrics.ProductsWithoutInventory.ToString("N0")</strong></article></div>
-            </div>
-            <p class="small text-secondary mt-2 mb-0">Đếm trực tiếp từ dữ liệu hiện có trong SQL Server.</p>
-        </section>
+        <details class="admin-optional-metrics mt-4">
+            <summary><span>Số liệu tổng quan</span><span class="admin-optional-metrics-hint">Mở khi cần xem nhanh</span></summary>
+            <section class="admin-dashboard-metrics pt-3" aria-label="Số liệu hiện tại từ hệ thống">
+                <div class="row g-3">
+                    <div class="col-6 col-xl"><article class="admin-stat-card"><span>Tổng sản phẩm</span><strong>@metrics.TotalProducts.ToString("N0")</strong></article></div>
+                    <div class="col-6 col-xl"><article class="admin-stat-card"><span>Đang kinh doanh</span><strong>@metrics.ActiveProducts.ToString("N0")</strong></article></div>
+                    <div class="col-6 col-xl"><article class="admin-stat-card"><span>Danh mục</span><strong>@metrics.TotalCategories.ToString("N0")</strong></article></div>
+                    <div class="col-6 col-xl"><article class="admin-stat-card"><span>Nhu cầu tư vấn</span><strong>@metrics.TotalUsageNeeds.ToString("N0")</strong></article></div>
+                    <div class="col-6 col-xl"><article class="admin-stat-card"><span>Quy tắc tư vấn</span><strong>@metrics.TotalRecommendationRules.ToString("N0")</strong></article></div>
+                    <div class="col-6 col-xl"><article class="admin-stat-card"><span>Tổng đơn hàng</span><strong>@metrics.TotalOrders.ToString("N0")</strong></article></div>
+                    <div class="col-6 col-xl"><article class="admin-stat-card"><span>Đơn chờ xác nhận</span><strong>@metrics.PendingOrders.ToString("N0")</strong></article></div>
+                    <div class="col-6 col-xl"><article class="admin-stat-card"><span>Đơn hoàn tất</span><strong>@metrics.CompletedOrders.ToString("N0")</strong></article></div>
+                    <div class="col-12 col-xl"><article class="admin-stat-card"><span>Sản phẩm chưa có bản ghi tồn kho</span><strong>@metrics.ProductsWithoutInventory.ToString("N0")</strong></article></div>
+                </div>
+                <p class="small text-secondary mt-2 mb-0">Đếm trực tiếp từ dữ liệu hiện có trong SQL Server.</p>
+            </section>
+        </details>
     }
-
-    <section aria-labelledby="admin-modules-title">
-        <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
-            <div><p class="text-uppercase small fw-semibold text-primary mb-1">Điều hướng nhanh</p><h2 id="admin-modules-title" class="h4 mb-0">Các module quản trị</h2></div>
-        </div>
-        <div class="row g-3">
-            <div class="col-sm-6 col-xl-4"><a class="admin-module-card" asp-area="Admin" asp-controller="Products" asp-action="Index"><span class="admin-module-icon" aria-hidden="true">▣</span><span><strong>Sản phẩm</strong><small>Tìm, chỉnh sửa và quản lý thông tin sản phẩm</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a></div>
-            <div class="col-sm-6 col-xl-4"><a class="admin-module-card" asp-area="Admin" asp-controller="Categories" asp-action="Index"><span class="admin-module-icon" aria-hidden="true">▦</span><span><strong>Danh mục</strong><small>Tổ chức nhóm sản phẩm và thuộc tính</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a></div>
-            <div class="col-sm-6 col-xl-4"><a class="admin-module-card" asp-area="Admin" asp-controller="Brands" asp-action="Index"><span class="admin-module-icon" aria-hidden="true">◇</span><span><strong>Thương hiệu</strong><small>Quản lý thương hiệu đang kinh doanh</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a></div>
-            <div class="col-sm-6 col-xl-4"><a class="admin-module-card" asp-area="Admin" asp-controller="Specifications" asp-action="Index"><span class="admin-module-icon" aria-hidden="true">≡</span><span><strong>Thông số kỹ thuật</strong><small>Cấu hình thông số kỹ thuật động</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a></div>
-            <div class="col-sm-6 col-xl-4"><a class="admin-module-card" asp-area="Admin" asp-controller="Consultation" asp-action="UsageNeeds"><span class="admin-module-icon" aria-hidden="true">✳</span><span><strong>Nhu cầu tư vấn</strong><small>Quản lý mục đích sử dụng được nhận diện</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a></div>
-            <div class="col-sm-6 col-xl-4"><a class="admin-module-card" asp-area="Admin" asp-controller="Consultation" asp-action="Rules"><span class="admin-module-icon" aria-hidden="true">⚙</span><span><strong>Quy tắc xếp hạng</strong><small>Cấu hình điều kiện và trọng số tư vấn</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a></div>
-            <div class="col-sm-6 col-xl-4"><a class="admin-module-card" asp-area="Admin" asp-controller="Reports" asp-action="Orders"><span class="admin-module-icon" aria-hidden="true">▥</span><span><strong>Báo cáo</strong><small>Đơn hàng, doanh thu, sản phẩm và tồn kho</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a></div>
-            <div class="col-sm-6 col-xl-4"><a class="admin-module-card" asp-area="Admin" asp-controller="Reviews" asp-action="Index"><span class="admin-module-icon" aria-hidden="true">☆</span><span><strong>Kiểm duyệt đánh giá</strong><small>Duyệt, ẩn và khôi phục đánh giá sản phẩm</small></span><span class="admin-module-arrow" aria-hidden="true">→</span></a></div>
-        </div>
-    </section>
 }
 else
 {

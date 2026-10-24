@@ -105,7 +105,9 @@ public sealed class AdminLayoutHttpIntegrationTests
                          "/lib/bootstrap/dist/js/bootstrap.bundle.min.js",
                          "/lib/jquery/dist/jquery.min.js",
                          "/lib/jquery-validation/dist/jquery.validate.min.js",
-                         "/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"
+                         "/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js",
+                         "/js/catalog-index.js",
+                         "/js/catalog-compare-selection.js"
                      })
             {
                 using var assetResponse = await client.GetAsync(assetPath);
@@ -124,18 +126,32 @@ public sealed class AdminLayoutHttpIntegrationTests
             var adminHomeHtml = await adminHomeResponse.Content.ReadAsStringAsync();
             Assert.Equal(HttpStatusCode.OK, adminHomeResponse.StatusCode);
             AssertCommonNavigation(adminHomeHtml);
+            Assert.Contains("storefront-hero-product", adminHomeHtml, StringComparison.Ordinal);
+            Assert.Equal(10, System.Text.RegularExpressions.Regex.Matches(adminHomeHtml, "storefront-product-grid-item").Count);
+            Assert.DoesNotContain("HOME-SKU-TEST", adminHomeHtml, StringComparison.Ordinal);
+            Assert.DoesNotContain("16 GB", adminHomeHtml, StringComparison.Ordinal);
             Assert.Contains("href=\"/workspace/Admin\">Quản trị</a>", adminHomeHtml, StringComparison.Ordinal);
 
             using var adminCatalogResponse = await client.GetAsync("/Catalog?testRole=Admin");
             Assert.Equal(HttpStatusCode.OK, adminCatalogResponse.StatusCode);
             Assert.Contains("Không tìm thấy sản phẩm", await adminCatalogResponse.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+            Assert.Equal(10, ((TestCustomerCatalogQueryService)app.Services.GetRequiredService<ICustomerCatalogQueryService>()).LastRequestedPageSize);
 
             using var catalogVisualResponse = await client.GetAsync("/Catalog?search=ui-product-image-test&testRole=Admin");
             var catalogVisualHtml = await catalogVisualResponse.Content.ReadAsStringAsync();
             Assert.Equal(HttpStatusCode.OK, catalogVisualResponse.StatusCode);
             Assert.Contains("nexora-product-visual--card", catalogVisualHtml, StringComparison.Ordinal);
             Assert.Contains("hình ảnh chưa được cập nhật", catalogVisualHtml, StringComparison.OrdinalIgnoreCase);
-            Assert.Contains("16 GB", catalogVisualHtml, StringComparison.Ordinal);
+            Assert.Contains("catalog-toolbar", catalogVisualHtml, StringComparison.Ordinal);
+            Assert.Contains("ui-product-image-test", catalogVisualHtml, StringComparison.Ordinal);
+            Assert.Contains("id=\"sortBy\"", catalogVisualHtml, StringComparison.Ordinal);
+            Assert.Contains("form=\"catalogFilterForm\"", catalogVisualHtml, StringComparison.Ordinal);
+            Assert.Contains("catalog-card-compare", catalogVisualHtml, StringComparison.Ordinal);
+            Assert.DoesNotContain("product-card-sku", catalogVisualHtml, StringComparison.Ordinal);
+            Assert.DoesNotContain("product-card-spec-chip", catalogVisualHtml, StringComparison.Ordinal);
+            Assert.DoesNotContain("16 GB", catalogVisualHtml, StringComparison.Ordinal);
+            Assert.DoesNotContain("UI-VISUAL-1", catalogVisualHtml, StringComparison.Ordinal);
+            Assert.Contains("/js/catalog-index.js", catalogVisualHtml, StringComparison.Ordinal);
 
             using var customerHomeResponse = await client.GetAsync("/?testRole=Customer");
             var customerHomeHtml = await customerHomeResponse.Content.ReadAsStringAsync();
@@ -195,7 +211,7 @@ public sealed class AdminLayoutHttpIntegrationTests
             Assert.Equal(HttpStatusCode.OK, anonymousHomeResponse.StatusCode);
             Assert.Contains("Sản phẩm", anonymousHomeHtml, StringComparison.Ordinal);
             Assert.Contains("Tư vấn", anonymousHomeHtml, StringComparison.Ordinal);
-            Assert.Contains("Tài khoản", anonymousHomeHtml, StringComparison.Ordinal);
+            Assert.Contains("Tài khoản", WebUtility.HtmlDecode(anonymousHomeHtml), StringComparison.Ordinal);
             Assert.Contains("Đăng nhập", anonymousHomeHtml, StringComparison.Ordinal);
             Assert.Contains("Tạo tài khoản", anonymousHomeHtml, StringComparison.Ordinal);
             Assert.DoesNotContain("href=\"/workspace/Admin\">Quản trị</a>", anonymousHomeHtml, StringComparison.Ordinal);
@@ -378,7 +394,7 @@ public sealed class AdminLayoutHttpIntegrationTests
         Assert.Contains("Trang chủ", html, StringComparison.Ordinal);
         Assert.Contains("Sản phẩm", html, StringComparison.Ordinal);
         Assert.Contains("Tư vấn", html, StringComparison.Ordinal);
-        Assert.Contains("Tài khoản", html, StringComparison.Ordinal);
+        Assert.Contains("class=\"nexora-account-name\"", html, StringComparison.Ordinal);
         Assert.Contains("role=\"search\"", html, StringComparison.Ordinal);
     }
 
@@ -547,11 +563,21 @@ public sealed class AdminLayoutHttpIntegrationTests
 
     private sealed class TestCustomerCatalogQueryService : ICustomerCatalogQueryService
     {
-        public Task<CatalogHomeData> GetHomeAsync(CancellationToken cancellationToken = default) =>
-            Task.FromResult(new CatalogHomeData([], []));
+        public int LastRequestedPageSize { get; private set; }
+
+        public Task<CatalogHomeData> GetHomeAsync(CancellationToken cancellationToken = default)
+        {
+            var products = Enumerable.Range(1, 10).Select(index => new CatalogProductCard(
+                8 + index, 1, $"Sản phẩm kiểm tra trang chủ {index}", $"HOME-SKU-TEST-{index}", "Laptop", "Demo", 10000000m, null, null, "Mô tả sản phẩm kiểm tra")
+            {
+                KeySpecifications = [new CatalogProductSpecification(1, "RAM", "NUMBER", "GB", "16", 16m, null)]
+            }).ToArray();
+            return Task.FromResult(new CatalogHomeData([], products));
+        }
 
         public Task<CatalogProductPage> SearchAsync(CatalogSearchFilter filter, CancellationToken cancellationToken = default)
         {
+            LastRequestedPageSize = filter.PageSize;
             CatalogProductCard[] items = filter.Search switch
             {
                 "ui-product-image-test" =>

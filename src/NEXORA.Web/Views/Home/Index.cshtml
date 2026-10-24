@@ -3,6 +3,11 @@
     ViewData["Title"] = "Trang chủ";
     var featured = Model.Data.Products.FirstOrDefault();
 }
+@section Head {
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet" />
+}
 
 <section class="storefront-hero storefront-hero--home mb-4 mb-lg-5" aria-labelledby="home-title">
     <div class="storefront-hero-copy">
@@ -10,7 +15,7 @@
         {
             <p class="storefront-hero-kicker"><span aria-hidden="true"></span> NEXORA ĐỀ XUẤT <b aria-hidden="true">·</b> @featured.CategoryName</p>
             <h1 id="home-title">@featured.Name</h1>
-            <p class="storefront-hero-description">@(!string.IsNullOrWhiteSpace(featured.Description) ? featured.Description : "Khám phá thông tin, thông số và lựa chọn thiết bị phù hợp tại NEXORA.")</p>
+            <p class="storefront-hero-description">@(!string.IsNullOrWhiteSpace(featured.Description) ? featured.Description : "Khám phá sản phẩm phù hợp với nhu cầu của bạn tại NEXORA.")</p>
             <div class="storefront-hero-price">
                 <span class="storefront-hero-price-label">@(featured.DiscountPrice.HasValue ? "Giá ưu đãi" : "Giá sản phẩm")</span>
                 <strong>@((featured.DiscountPrice ?? featured.Price).ToString("N0")) ₫</strong>
@@ -20,15 +25,6 @@
                     <span class="storefront-hero-sale-badge">Đang giảm giá</span>
                 }
             </div>
-            @if (featured.KeySpecifications.Count > 0)
-            {
-                <ul class="storefront-hero-specs" aria-label="Thông số nổi bật">
-                    @foreach (var spec in featured.KeySpecifications.Take(3))
-                    {
-                        <li><span>@spec.Name</span><strong>@(string.IsNullOrWhiteSpace(spec.DisplayValue) ? spec.Value : spec.DisplayValue)</strong></li>
-                    }
-                </ul>
-            }
             <div class="storefront-hero-actions">
                 <a class="btn btn-primary btn-lg" asp-controller="Catalog" asp-action="Details" asp-route-id="@featured.Id">Xem chi tiết <span aria-hidden="true">↗</span></a>
                 <a class="btn btn-outline-primary btn-lg" asp-controller="Catalog" asp-action="Index">Khám phá sản phẩm</a>
@@ -38,13 +34,13 @@
         {
             <p class="storefront-hero-kicker"><span aria-hidden="true"></span> NEXORA · MUA SẮM CÔNG NGHỆ</p>
             <h1 id="home-title">Tìm thiết bị phù hợp với bạn.</h1>
-            <p class="storefront-hero-description">Khám phá sản phẩm theo danh mục, so sánh thông số và tìm lựa chọn phù hợp với nhu cầu của bạn.</p>
+            <p class="storefront-hero-description">Khám phá sản phẩm theo danh mục và tìm lựa chọn phù hợp với nhu cầu của bạn.</p>
             <div class="storefront-hero-actions">
                 <a class="btn btn-primary btn-lg" asp-controller="Catalog" asp-action="Index">Khám phá sản phẩm <span aria-hidden="true">↗</span></a>
                 <a class="btn btn-outline-primary btn-lg" asp-controller="Consultation" asp-action="Index">Bắt đầu tư vấn</a>
             </div>
         }
-        <div class="storefront-hero-assurance"><span aria-hidden="true">✓</span> Thông tin sản phẩm và thông số rõ ràng</div>
+        <div class="storefront-hero-assurance"><span aria-hidden="true">✓</span> Thông tin sản phẩm minh bạch</div>
     </div>
     @if (featured is not null)
     {
@@ -52,7 +48,7 @@
             <span class="storefront-hero-product-tag"><span aria-hidden="true">✦</span> SẢN PHẨM NỔI BẬT</span>
             <span class="storefront-hero-product-brand">@featured.BrandName</span>
             @await Html.PartialAsync("_ProductImage", new NEXORA.Web.Models.ProductImageDisplayViewModel(featured.PrimaryImageUrl, featured.Name, "card"))
-            <span class="storefront-hero-product-caption"><span>@featured.CategoryName</span><strong>@featured.Sku</strong></span>
+            <span class="storefront-hero-product-caption"><span>@featured.CategoryName</span></span>
         </a>
     }
     else
@@ -89,10 +85,10 @@
     }
     else
     {
-        <div class="row g-3 g-lg-4">
+        <div class="storefront-product-grid">
             @foreach (var product in Model.Data.Products)
             {
-                <div class="col-6 col-md-4 col-xl-3"><partial name="_ProductCard" model="product" /></div>
+                <div class="storefront-product-grid-item"><partial name="_ProductCard" model="product" /></div>
             }
         </div>
     }

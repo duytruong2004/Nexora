@@ -1,93 +1,250 @@
 @model NEXORA.Web.Models.CustomerCatalogViewModel
 @using System.Globalization
 @{
+    ViewData["WideCatalogLayout"] = true;
     ViewData["Title"] = string.IsNullOrWhiteSpace(Model.Filter.Search) ? (Model.Page.SelectedCategoryName ?? "Sản phẩm") : "Kết quả tìm kiếm";
     var visiblePages = Enumerable.Range(Math.Max(1, Model.Page.Page - 1),
             Math.Max(1, Math.Min(Model.Page.PageCount, Model.Page.Page + 1) - Math.Max(1, Model.Page.Page - 1) + 1))
         .Concat([1, Model.Page.PageCount]).Distinct().OrderBy(pageNumber => pageNumber).ToArray();
-}
-<div class="mb-4"><p class="text-uppercase small fw-semibold text-primary mb-1">Danh mục sản phẩm</p><h1 class="h2 mb-1">@ViewData["Title"]</h1>@if (!string.IsNullOrWhiteSpace(Model.Filter.Search)) { <p class="text-secondary mb-0">Kết quả cho “@Model.Filter.Search”</p> }</div>
+    var selectedCategoryName = Model.Filter.CategoryId is int selectedCategoryId
+        ? Model.Page.Categories.FirstOrDefault(category => category.Id == selectedCategoryId)?.Name
+        : null;
+    var selectedBrandName = Model.Filter.BrandId is int selectedBrandId
+        ? Model.Page.Brands.FirstOrDefault(brand => brand.Id == selectedBrandId)?.Name
+        : null;
+    var activeFilters = new List<string>();
+    if (!string.IsNullOrWhiteSpace(Model.Filter.Search)) activeFilters.Add($"Từ khóa: {Model.Filter.Search}");
+    if (selectedCategoryName is not null) activeFilters.Add($"Danh mục: {selectedCategoryName}");
+    if (selectedBrandName is not null) activeFilters.Add($"Thương hiệu: {selectedBrandName}");
+    if (Model.Filter.MinimumPrice.HasValue || Model.Filter.MaximumPrice.HasValue)
+    {
+        var minimum = Model.Filter.MinimumPrice?.ToString("N0", CultureInfo.GetCultureInfo("vi-VN")) ?? "0";
+        var maximum = Model.Filter.MaximumPrice?.ToString("N0", CultureInfo.GetCultureInfo("vi-VN")) ?? "Không giới hạn";
+        activeFilters.Add($"Giá: {minimum} – {maximum} ₫");
+    }
+    foreach (var specificationFilter in Model.Filter.SpecificationFilters)
+    {
+        var facet = Model.Page.SpecificationFacets.FirstOrDefault(item => item.SpecificationId == specificationFilter.SpecificationId);
+        if (facet is null) continue;
 
-<div class="d-flex justify-content-end d-lg-none mb-3">
-    <button class="btn btn-outline-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#catalogFilters" aria-controls="catalogFilters">Lọc sản phẩm</button>
-</div>
-<div class="row g-4">
-    <aside id="catalogFilters" class="offcanvas-lg offcanvas-start col-lg-3 catalog-filter-offcanvas" tabindex="-1" aria-labelledby="catalogFiltersTitle">
-        <div class="offcanvas-header d-lg-none">
-            <h2 class="offcanvas-title h5" id="catalogFiltersTitle">Lọc sản phẩm</h2>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Đóng bộ lọc"></button>
-        </div>
-        <div class="offcanvas-body p-0">
-        <form method="get" asp-action="Index" class="card border-0 shadow-sm p-3 p-lg-4 sticky-lg-top catalog-filter">
-            <h2 class="h5 mb-3 d-none d-lg-block">Lọc sản phẩm</h2>
-            <div class="mb-3"><label for="catalogSearch" class="form-label">Từ khóa</label><input id="catalogSearch" name="search" value="@Model.Filter.Search" class="form-control" placeholder="Tên hoặc mã sản phẩm" /></div>
-            <div class="mb-3"><label for="categoryId" class="form-label">Danh mục</label><select id="categoryId" name="categoryId" class="form-select"><option value="">Tất cả danh mục</option>@foreach (var category in Model.Page.Categories) { <option value="@category.Id" selected="@(category.Id == Model.Filter.CategoryId ? "selected" : null)">@category.Name</option> }</select></div>
-            <div class="mb-3"><label for="brandId" class="form-label">Thương hiệu</label><select id="brandId" name="brandId" class="form-select"><option value="">Tất cả thương hiệu</option>@foreach (var brand in Model.Page.Brands) { <option value="@brand.Id" selected="@(brand.Id == Model.Filter.BrandId ? "selected" : null)">@brand.Name</option> }</select></div>
-            <div class="row g-2 mb-3"><div class="col-6"><label for="minimumPrice" class="form-label">Giá từ</label><input id="minimumPrice" name="minimumPrice" value="@(Model.Filter.MinimumPrice?.ToString(CultureInfo.InvariantCulture))" type="number" min="0" step="1" class="form-control" /></div><div class="col-6"><label for="maximumPrice" class="form-label">Đến</label><input id="maximumPrice" name="maximumPrice" value="@(Model.Filter.MaximumPrice?.ToString(CultureInfo.InvariantCulture))" type="number" min="0" step="1" class="form-control" /></div></div>
-            @for (var index = 0; index < Model.Page.SpecificationFacets.Count; index++)
+        var selectedOption = facet.Options.FirstOrDefault(option => option.Value == specificationFilter.Value)?.DisplayValue;
+        var value = !string.IsNullOrWhiteSpace(selectedOption)
+            ? selectedOption
+            : specificationFilter.MinimumValue.HasValue || specificationFilter.MaximumValue.HasValue
+                ? $"{specificationFilter.MinimumValue?.ToString("0.####", CultureInfo.GetCultureInfo("vi-VN")) ?? "—"}–{specificationFilter.MaximumValue?.ToString("0.####", CultureInfo.GetCultureInfo("vi-VN")) ?? "—"}{(string.IsNullOrWhiteSpace(facet.Unit) ? "" : $" {facet.Unit}")}"
+                : specificationFilter.Value;
+        if (!string.IsNullOrWhiteSpace(value)) activeFilters.Add($"{facet.Name}: {value}");
+    }
+    var hasSpecificationFilter = Model.Filter.SpecificationFilters.Any(item =>
+        !string.IsNullOrWhiteSpace(item.Value) || item.MinimumValue.HasValue || item.MaximumValue.HasValue);
+}
+@section Head {
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet" />
+}
+<div class="catalog-page">
+    <header class="catalog-page-heading mb-4">
+        <p class="text-uppercase small fw-semibold text-primary mb-1">Danh mục sản phẩm</p>
+        <h1 class="h2 mb-1">@ViewData["Title"]</h1>
+        @if (!string.IsNullOrWhiteSpace(Model.Filter.Search))
+        {
+            <p class="text-secondary mb-0">Kết quả cho “@Model.Filter.Search”</p>
+        }
+    </header>
+
+    <div class="d-flex justify-content-end d-lg-none mb-3">
+        <button class="btn btn-outline-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#catalogFilters" aria-controls="catalogFilters">Lọc sản phẩm</button>
+    </div>
+
+    <div class="catalog-layout">
+        <aside id="catalogFilters" class="offcanvas-lg offcanvas-start catalog-filter-offcanvas" tabindex="-1" aria-label="Lọc danh sách sản phẩm">
+            <div class="offcanvas-header d-lg-none">
+                <h2 class="offcanvas-title h5" id="catalogFiltersTitle">Lọc sản phẩm</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Đóng bộ lọc"></button>
+            </div>
+            <div class="offcanvas-body p-0">
+                <form method="get" asp-action="Index" id="catalogFilterForm" class="card border-0 shadow-sm p-3 p-lg-4 sticky-lg-top catalog-filter">
+                    <h2 class="h5 mb-3 d-none d-lg-block" id="catalogFiltersTitleDesktop">Lọc sản phẩm</h2>
+                    <div class="mb-3">
+                        <label for="catalogSearch" class="form-label">Từ khóa</label>
+                        <input id="catalogSearch" name="search" value="@Model.Filter.Search" class="form-control" placeholder="Tên hoặc mã sản phẩm" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="categoryId" class="form-label">Danh mục</label>
+                        <select id="categoryId" name="categoryId" class="form-select">
+                            <option value="">Tất cả danh mục</option>
+                            @foreach (var category in Model.Page.Categories)
+                            {
+                                <option value="@category.Id" selected="@(category.Id == Model.Filter.CategoryId ? "selected" : null)">@category.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="brandId" class="form-label">Thương hiệu</label>
+                        <select id="brandId" name="brandId" class="form-select">
+                            <option value="">Tất cả thương hiệu</option>
+                            @foreach (var brand in Model.Page.Brands)
+                            {
+                                <option value="@brand.Id" selected="@(brand.Id == Model.Filter.BrandId ? "selected" : null)">@brand.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <fieldset class="catalog-price-filter mb-3">
+                        <legend class="form-label">Khoảng giá</legend>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label for="minimumPrice" class="visually-hidden">Giá từ</label>
+                                <input id="minimumPrice" name="minimumPrice" value="@(Model.Filter.MinimumPrice?.ToString(CultureInfo.InvariantCulture))" type="number" min="0" step="1" class="form-control" placeholder="Giá từ" />
+                            </div>
+                            <div class="col-6">
+                                <label for="maximumPrice" class="visually-hidden">Giá đến</label>
+                                <input id="maximumPrice" name="maximumPrice" value="@(Model.Filter.MaximumPrice?.ToString(CultureInfo.InvariantCulture))" type="number" min="0" step="1" class="form-control" placeholder="Đến" />
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    @if (Model.Page.SpecificationFacets.Count > 0)
+                    {
+                        <details class="catalog-specification-filters mb-3" open="@(hasSpecificationFilter ? "open" : null)">
+                            <summary>Thông số kỹ thuật</summary>
+                            <div class="pt-3">
+                                @for (var index = 0; index < Model.Page.SpecificationFacets.Count; index++)
+                                {
+                                    var facet = Model.Page.SpecificationFacets[index];
+                                    var filter = Model.Filter.SpecificationFilters.FirstOrDefault(item => item.SpecificationId == facet.SpecificationId);
+                                    <div class="mb-3">
+                                        <label class="form-label" for="specification-@facet.SpecificationId">@facet.Name@(facet.Unit is null ? "" : $" ({facet.Unit})")</label>
+                                        <input type="hidden" name="specificationFilters[@index].SpecificationId" value="@facet.SpecificationId" />
+                                        @if (facet.DataType == "NUMBER")
+                                        {
+                                            <div class="d-flex gap-2">
+                                                <input class="form-control" aria-label="@facet.Name tối thiểu" type="number" step="any" name="specificationFilters[@index].MinimumValue" value="@(filter?.MinimumValue?.ToString(CultureInfo.InvariantCulture))" placeholder="Từ" />
+                                                <input class="form-control" aria-label="@facet.Name tối đa" type="number" step="any" name="specificationFilters[@index].MaximumValue" value="@(filter?.MaximumValue?.ToString(CultureInfo.InvariantCulture))" placeholder="Đến" />
+                                            </div>
+                                            <div class="form-text">@(facet.MinimumValue?.ToString("0.####") ?? "—")–@(facet.MaximumValue?.ToString("0.####") ?? "—") @facet.Unit</div>
+                                        }
+                                        else if (facet.DataType is "ENUM" or "BOOLEAN")
+                                        {
+                                            <select id="specification-@facet.SpecificationId" class="form-select" name="specificationFilters[@index].Value">
+                                                <option value="">Tất cả</option>
+                                                @foreach (var option in facet.Options)
+                                                {
+                                                    <option value="@option.Value" selected="@(option.Value == filter?.Value ? "selected" : null)">@option.DisplayValue</option>
+                                                }
+                                            </select>
+                                        }
+                                        else
+                                        {
+                                            <input id="specification-@facet.SpecificationId" class="form-control" name="specificationFilters[@index].Value" value="@filter?.Value" placeholder="Nhập @facet.Name" />
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </details>
+                    }
+
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" type="submit">Áp dụng bộ lọc</button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">Xóa bộ lọc</a>
+                    </div>
+                </form>
+            </div>
+        </aside>
+
+        <section class="catalog-results" aria-label="Danh sách sản phẩm">
+            <div class="catalog-toolbar">
+                <div class="catalog-toolbar-summary">
+                    <h2>@(string.IsNullOrWhiteSpace(Model.Filter.Search) ? (Model.Page.SelectedCategoryName ?? "Tất cả sản phẩm") : "Kết quả tìm kiếm")</h2>
+                    <p>@Model.Page.TotalCount sản phẩm</p>
+                </div>
+                <div class="catalog-sort-control">
+                    <label for="sortBy">Sắp xếp</label>
+                    <select id="sortBy" name="sortBy" form="catalogFilterForm" class="form-select">
+                        <option value="name-asc" selected="@(Model.Filter.SortBy is null or "name-asc" ? "selected" : null)">Tên A–Z</option>
+                        <option value="name-desc" selected="@(Model.Filter.SortBy == "name-desc" ? "selected" : null)">Tên Z–A</option>
+                        <option value="price-low" selected="@(Model.Filter.SortBy == "price-low" ? "selected" : null)">Giá thấp đến cao</option>
+                        <option value="price-high" selected="@(Model.Filter.SortBy == "price-high" ? "selected" : null)">Giá cao đến thấp</option>
+                    </select>
+                </div>
+            </div>
+
+            @if (activeFilters.Count > 0)
             {
-                var facet = Model.Page.SpecificationFacets[index];
-                var filter = Model.Filter.SpecificationFilters.FirstOrDefault(item => item.SpecificationId == facet.SpecificationId);
-                <div class="mb-3"><label class="form-label" for="specification-@facet.SpecificationId">@facet.Name@(facet.Unit is null ? "" : $" ({facet.Unit})")</label>
-                    <input type="hidden" name="specificationFilters[@index].SpecificationId" value="@facet.SpecificationId" />
-                    @if (facet.DataType == "NUMBER")
+                <div class="catalog-active-filters" aria-label="Bộ lọc đang áp dụng">
+                    @foreach (var activeFilter in activeFilters)
                     {
-                        <div class="d-flex gap-2"><input class="form-control" aria-label="@facet.Name tối thiểu" type="number" step="any" name="specificationFilters[@index].MinimumValue" value="@(filter?.MinimumValue?.ToString(CultureInfo.InvariantCulture))" placeholder="Từ" /><input class="form-control" aria-label="@facet.Name tối đa" type="number" step="any" name="specificationFilters[@index].MaximumValue" value="@(filter?.MaximumValue?.ToString(CultureInfo.InvariantCulture))" placeholder="Đến" /></div><div class="form-text">@(facet.MinimumValue?.ToString("0.####") ?? "—")–@(facet.MaximumValue?.ToString("0.####") ?? "—") @facet.Unit</div>
+                        <span class="catalog-filter-chip">@activeFilter</span>
                     }
-                    else if (facet.DataType is "ENUM" or "BOOLEAN")
-                    {
-                        <select id="specification-@facet.SpecificationId" class="form-select" name="specificationFilters[@index].Value"><option value="">Tất cả</option>@foreach (var option in facet.Options) { <option value="@option.Value" selected="@(option.Value == filter?.Value ? "selected" : null)">@option.DisplayValue</option> }</select>
-                    }
-                    else
-                    {
-                        <input id="specification-@facet.SpecificationId" class="form-control" name="specificationFilters[@index].Value" value="@filter?.Value" placeholder="Nhập @facet.Name" />
-                    }
+                    <a asp-action="Index" class="catalog-clear-filters">Xóa bộ lọc</a>
                 </div>
             }
-            <div class="mb-3"><label for="sortBy" class="form-label">Sắp xếp</label><select id="sortBy" name="sortBy" class="form-select"><option value="name-asc" selected="@(Model.Filter.SortBy is null or "name-asc" ? "selected" : null)">Tên A–Z</option><option value="name-desc" selected="@(Model.Filter.SortBy == "name-desc" ? "selected" : null)">Tên Z–A</option><option value="price-low" selected="@(Model.Filter.SortBy == "price-low" ? "selected" : null)">Giá thấp đến cao</option><option value="price-high" selected="@(Model.Filter.SortBy == "price-high" ? "selected" : null)">Giá cao đến thấp</option></select></div>
-            <div class="d-grid gap-2"><button class="btn btn-primary" type="submit">Áp dụng bộ lọc</button><a asp-action="Index" class="btn btn-outline-secondary">Xóa bộ lọc</a></div>
-        </form>
-        </div>
-    </aside>
-    <section class="col-lg-9" aria-label="Danh sách sản phẩm">
-        <div class="d-flex justify-content-between align-items-center mb-3"><span class="small text-secondary">@Model.Page.TotalCount sản phẩm</span><span class="small text-secondary">Trang @Model.Page.Page / @Model.Page.PageCount</span></div>
-        @if (Model.Page.Items.Count == 0)
-        {
-            <div class="catalog-empty rounded-4 p-5 text-center"><h2 class="h5">Không tìm thấy sản phẩm</h2><p class="text-secondary mb-0">Hãy thử từ khóa hoặc bộ lọc khác.</p></div>
-        }
-        else
-        {
-            <form asp-action="Compare" method="get" id="compareSelectionForm" class="mb-3">
-                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><span id="compareSelectionStatus" class="small text-secondary">Chọn 2 hoặc 3 sản phẩm cùng danh mục để so sánh.</span><button id="compareSelectionSubmit" class="btn btn-sm btn-outline-primary" type="submit">So sánh đã chọn</button></div>
-            </form>
-            <div class="row g-3 g-xl-4">
-                @foreach (var product in Model.Page.Items)
-                {
-                    <div class="col-6 col-md-6 col-xl-4"><partial name="_ProductCard" model="product" /><label class="form-check mt-2 small"><input class="form-check-input compare-product" form="compareSelectionForm" type="checkbox" name="ids" value="@product.Id" data-category-id="@product.CategoryId" /><span class="form-check-label">Thêm vào so sánh</span></label></div>
-                }
-            </div>
-            @foreach (var targetPage in visiblePages)
+
+            @if (Model.Page.Items.Count == 0)
             {
-                <form id="@PageFormId(targetPage)" method="get" asp-action="Index" class="d-none catalog-page-form" data-target-page="@targetPage">
-                    <partial name="_CatalogFilterHiddenFields" model="Model" />
-                    <input type="hidden" name="page" value="@targetPage" />
-                </form>
+                <div class="catalog-empty rounded-4 p-5 text-center">
+                    <h2 class="h5">Không tìm thấy sản phẩm</h2>
+                    <p class="text-secondary mb-0">Hãy thử từ khóa hoặc bộ lọc khác.</p>
+                </div>
             }
-            <nav class="mt-4" aria-label="Phân trang"><ul class="pagination justify-content-center">
-                @if (Model.Page.Page > 1) { <li class="page-item"><button form="@PageFormId(Model.Page.Page - 1)" class="page-link" type="submit">Trước</button></li> }
-                @{ var previousPage = 0; }
+            else
+            {
+                <form asp-action="Compare" method="get" id="compareSelectionForm" class="catalog-compare-toolbar">
+                    <span id="compareSelectionStatus" class="small text-secondary">Đã chọn 0/3 sản phẩm. Chọn ít nhất 2 sản phẩm cùng danh mục.</span>
+                    <button id="compareSelectionSubmit" class="btn btn-sm btn-outline-primary" type="submit" disabled>So sánh đã chọn</button>
+                </form>
+
+                <div class="catalog-product-grid">
+                    @foreach (var product in Model.Page.Items)
+                    {
+                        <div class="catalog-product-grid-item">
+                            @await Html.PartialAsync("_ProductCard", product, new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
+                            {
+                                ["CatalogCard"] = true,
+                                ["CompareFormId"] = "compareSelectionForm"
+                            })
+                        </div>
+                    }
+                </div>
+
                 @foreach (var targetPage in visiblePages)
                 {
-                    if (targetPage - previousPage > 1) { <li class="page-item disabled"><span class="page-link">…</span></li> }
-                    <li class="page-item @(targetPage == Model.Page.Page ? "active" : "")"><button form="@PageFormId(targetPage)" class="page-link" type="submit" aria-current="@(targetPage == Model.Page.Page ? "page" : null)">@targetPage</button></li>
-                    previousPage = targetPage;
+                    <form id="@PageFormId(targetPage)" method="get" asp-action="Index" class="d-none catalog-page-form" data-target-page="@targetPage">
+                        <partial name="_CatalogFilterHiddenFields" model="Model" />
+                        <input type="hidden" name="page" value="@targetPage" />
+                    </form>
                 }
-                @if (Model.Page.Page < Model.Page.PageCount) { <li class="page-item"><button form="@PageFormId(Model.Page.Page + 1)" class="page-link" type="submit">Sau</button></li> }
-            </ul></nav>
-        }
-    </section>
+                <nav class="mt-4" aria-label="Phân trang">
+                    <p class="catalog-pagination-summary">Trang @Model.Page.Page / @Model.Page.PageCount</p>
+                    <ul class="pagination justify-content-center">
+                        @if (Model.Page.Page > 1)
+                        {
+                            <li class="page-item"><button form="@PageFormId(Model.Page.Page - 1)" class="page-link" type="submit">Trước</button></li>
+                        }
+                        @{ var previousPage = 0; }
+                        @foreach (var targetPage in visiblePages)
+                        {
+                            if (targetPage - previousPage > 1)
+                            {
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                            }
+                            <li class="page-item @(targetPage == Model.Page.Page ? "active" : "")"><button form="@PageFormId(targetPage)" class="page-link" type="submit" aria-current="@(targetPage == Model.Page.Page ? "page" : null)">@targetPage</button></li>
+                            previousPage = targetPage;
+                        }
+                        @if (Model.Page.Page < Model.Page.PageCount)
+                        {
+                            <li class="page-item"><button form="@PageFormId(Model.Page.Page + 1)" class="page-link" type="submit">Sau</button></li>
+                        }
+                    </ul>
+                </nav>
+            }
+        </section>
+    </div>
 </div>
-@functions { private static string PageFormId(int page) => $"catalog-page-{page}"; }
+@functions {
+    private static string PageFormId(int page) => $"catalog-page-{page}";
+}
 @section Scripts {
     <script src="~/js/catalog-compare-selection.js" asp-append-version="true"></script>
+    <script src="~/js/catalog-index.js" asp-append-version="true"></script>
 }

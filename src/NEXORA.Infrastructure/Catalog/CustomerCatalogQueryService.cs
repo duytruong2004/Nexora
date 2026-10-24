@@ -21,7 +21,7 @@ public sealed class CustomerCatalogQueryService(AppDbContext db) : ICustomerCata
         var products = await VisibleProducts()
             .OrderByDescending(product => product.CreatedAt)
             .ThenByDescending(product => product.Id)
-            .Take(8)
+            .Take(10)
             .Select(ToCard())
             .ToListAsync(cancellationToken);
 

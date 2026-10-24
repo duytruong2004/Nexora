@@ -7,6 +7,8 @@ namespace NEXORA.Web.Controllers;
 
 public sealed class CatalogController(ICustomerCatalogQueryService catalog, IReviewService reviews) : Controller
 {
+    private const int CatalogPageSize = 10;
+
     public async Task<IActionResult> Index(
         string? search,
         int? categoryId,
@@ -19,7 +21,7 @@ public sealed class CatalogController(ICustomerCatalogQueryService catalog, IRev
         CancellationToken cancellationToken = default)
     {
         var filter = new CatalogSearchFilter(
-            search, categoryId, brandId, minimumPrice, maximumPrice, sortBy, page)
+            search, categoryId, brandId, minimumPrice, maximumPrice, sortBy, page, CatalogPageSize)
         {
             SpecificationFilters = specificationFilters ?? []
         };
@@ -35,7 +37,7 @@ public sealed class CatalogController(ICustomerCatalogQueryService catalog, IRev
             return NotFound();
         }
 
-        var filter = new CatalogSearchFilter(null, id, null, null, null, null);
+        var filter = new CatalogSearchFilter(null, id, null, null, null, null, PageSize: CatalogPageSize);
         var result = await catalog.SearchAsync(filter, cancellationToken);
         return View("Index", new CustomerCatalogViewModel { Filter = filter, Page = result });
     }
