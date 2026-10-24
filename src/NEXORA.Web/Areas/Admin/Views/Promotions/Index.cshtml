@@ -18,7 +18,7 @@
             <td class="text-nowrap"><div>@DateTime.SpecifyKind(item.StartDate, DateTimeKind.Utc).ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div><div class="small text-secondary">đến @DateTime.SpecifyKind(item.EndDate, DateTimeKind.Utc).ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div></td>
             <td><div>@item.ProductCount sản phẩm</div><div class="small text-secondary text-truncate" style="max-width: 18rem">@string.Join(", ", item.ProductNames)</div></td>
             <td><span class="badge @(item.IsActive ? "text-bg-success" : "text-bg-secondary")">@(item.IsActive ? "Đang bật" : "Đang tắt")</span></td>
-            <td class="text-end text-nowrap"><div class="admin-table-actions"><a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@item.Id">Sửa</a><form asp-action="SetActive" method="post">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@item.Id" /><input type="hidden" name="isActive" value="@(!item.IsActive)" /><button class="btn btn-sm @(item.IsActive ? "btn-outline-secondary" : "btn-outline-success")" type="submit">@(item.IsActive ? "Tắt" : "Bật")</button></form></div></td>
+            <td class="text-end text-nowrap"><div class="admin-table-actions"><a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@item.Id">Sửa</a><form asp-area="Admin" asp-controller="Promotions" asp-action="@(item.IsActive ? "Disable" : "Enable")" method="post">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@item.Id" /><button class="btn btn-sm @(item.IsActive ? "btn-outline-secondary" : "btn-outline-success")" type="submit">@(item.IsActive ? "Tắt" : "Bật")</button></form></div></td>
         </tr>
     }
     </tbody>

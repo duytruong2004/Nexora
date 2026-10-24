@@ -42,8 +42,8 @@ public sealed class WarehouseInventoryManagementService(
         var pageCount = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
         var page = Math.Min(requestedPage, pageCount);
         var rows = await query
-            .OrderBy(product => product.Name)
-            .ThenBy(product => product.Id)
+            .OrderByDescending(product => product.CreatedAt)
+            .ThenByDescending(product => product.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(product => new WarehouseInventoryRow(

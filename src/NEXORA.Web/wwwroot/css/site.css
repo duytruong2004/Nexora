@@ -243,26 +243,90 @@ a { text-underline-offset: .18em; }
 .comparison-different > * { background-color: #fff8e3 !important; }
 
 .consultation-page-hero {
+    position: relative;
+    display: grid;
+    min-height: 22rem;
+    grid-template-columns: minmax(0, 1.15fr) minmax(17rem, .85fr);
+    align-items: center;
+    gap: 2rem;
+    padding: clamp(1.5rem, 4vw, 3.5rem);
+    overflow: hidden;
+    isolation: isolate;
     color: #fff;
-    border: 1px solid rgb(112 147 233 / 30%);
-    background: radial-gradient(ellipse at 88% 8%, rgb(91 133 255 / 43%), transparent 45%), linear-gradient(120deg, #101a33, #213f87 72%, #245b87);
-    box-shadow: 0 1rem 2.8rem rgb(20 44 100 / 18%);
+    border: 1px solid rgb(125 164 255 / 23%);
+    background: radial-gradient(ellipse at 72% 4%, rgb(63 115 239 / 42%), transparent 39%), linear-gradient(115deg, #0d1930 0%, #142b57 58%, #173d79 100%);
+    box-shadow: 0 1.1rem 2.8rem rgb(20 44 100 / 17%);
 }
 
-.consultation-page-hero h1 { max-width: 20ch; letter-spacing: -.035em; }
+.consultation-page-hero::before { position: absolute; z-index: -1; top: -13rem; right: 12%; width: 34rem; aspect-ratio: 1; border: 1px solid rgb(167 198 255 / 12%); border-radius: 50%; box-shadow: 0 0 0 2.5rem rgb(167 198 255 / 3%), 0 0 0 5rem rgb(167 198 255 / 2%); content: ""; }
+.consultation-hero-copy { position: relative; z-index: 2; }
+.consultation-hero-kicker { display: inline-flex; align-items: center; gap: .45rem; margin: 0 0 1.1rem; color: #a9c8ff; font-size: .72rem; font-weight: 800; letter-spacing: .12em; }
+.consultation-hero-kicker span { color: #72e2f4; font-size: 1rem; }
+.consultation-page-hero h1 { max-width: 15ch; margin: 0 0 .8rem; color: #fff; font-size: clamp(2rem, 4vw, 3.25rem); font-weight: 800; letter-spacing: -.052em; line-height: 1.07; }
+.consultation-hero-description { max-width: 38rem; margin: 0; color: rgb(231 239 255 / 76%); font-size: clamp(.95rem, 1.5vw, 1.08rem); line-height: 1.75; }
+.consultation-hero-benefits { display: flex; flex-wrap: wrap; gap: .55rem 1.1rem; margin-top: 1.5rem; }
+.consultation-hero-benefits span { display: inline-flex; align-items: center; gap: .4rem; color: #e7efff; font-size: .76rem; font-weight: 600; }
+.consultation-hero-benefits i { display: inline-grid; width: 1.1rem; height: 1.1rem; place-items: center; border-radius: 50%; color: #06213c; background: #7be3d1; font-size: .66rem; font-style: normal; font-weight: 900; }
+.consultation-hero-visual { position: relative; display: grid; min-height: 17rem; place-items: center; }
+.consultation-orbit { position: absolute; aspect-ratio: 1; border: 1px solid rgb(176 203 255 / 18%); border-radius: 50%; }
+.consultation-orbit--outer { width: min(100%, 18rem); box-shadow: 0 0 0 1.35rem rgb(137 174 247 / 4%), 0 0 0 2.7rem rgb(137 174 247 / 3%); }
+.consultation-orbit--inner { width: min(72%, 13rem); border-style: dashed; border-color: rgb(176 203 255 / 23%); }
+.consultation-hero-device { position: relative; display: grid; width: 8.2rem; aspect-ratio: 1; place-items: center; border: 1px solid rgb(255 255 255 / 66%); border-radius: 2.2rem; background: linear-gradient(145deg, #fff, #dceaff 78%); box-shadow: 0 1.7rem 3rem rgb(1 10 31 / 30%), inset 0 1px 1px #fff; transform: rotate(-7deg); }
+.consultation-device-glow { position: absolute; inset: .65rem; border-radius: 1.7rem; background: linear-gradient(145deg, #52d8e9, #3577f2 52%, #2048a9); box-shadow: inset 0 0 1.5rem rgb(255 255 255 / 28%); }
+.consultation-device-mark { position: relative; z-index: 1; color: #fff; font-size: 4.6rem; font-weight: 900; letter-spacing: -.1em; text-shadow: 0 .35rem .7rem rgb(13 36 89 / 25%); }
+.consultation-float-card { position: absolute; z-index: 2; display: flex; align-items: center; gap: .65rem; min-width: 11.7rem; padding: .7rem .8rem; border: 1px solid rgb(255 255 255 / 78%); border-radius: .9rem; color: #172744; background: rgb(255 255 255 / 94%); box-shadow: 0 .8rem 1.8rem rgb(3 14 38 / 22%); }
+.consultation-float-card--top { top: 12%; right: -1%; }
+.consultation-float-card--bottom { bottom: 10%; left: -1%; }
+.consultation-float-card > span:first-child { display: grid; width: 2rem; height: 2rem; flex: 0 0 auto; place-items: center; border-radius: .65rem; color: #1659ca; background: #e8f0ff; font-size: .74rem; font-weight: 850; }
+.consultation-float-card div { display: grid; gap: .08rem; }
+.consultation-float-card strong { font-size: .75rem; }
+.consultation-float-card small { color: #75839a; font-size: .65rem; }
+.consultation-float-check { color: #087f5b !important; background: #dff7ed !important; font-size: 1rem !important; }
 .consultation-card { border: 1px solid var(--nx-line) !important; border-radius: 1rem; background: #fff; box-shadow: 0 .7rem 2rem rgb(28 47 82 / 6%); }
 .consultation-result-card { overflow: hidden; border: 1px solid var(--nx-line) !important; border-radius: 1rem; box-shadow: 0 .7rem 2rem rgb(28 47 82 / 6%); }
 .consultation-result-card .card-body { padding: 1.3rem; }
-.consultation-page-hero { padding: clamp(1.25rem, 2.8vw, 2rem) !important; margin-bottom: 1.25rem !important; }
-.consultation-page-hero .lead { max-width: 58rem; font-size: 1.02rem; }
-.consultation-page-hero h1 { max-width: 24ch; margin-bottom: .55rem; font-size: clamp(1.8rem, 3.5vw, 2.65rem); }
+.consultation-form-card { padding: clamp(1.1rem, 2.2vw, 1.65rem) !important; }
+.consultation-form-heading { display: flex; align-items: center; gap: .85rem; margin-bottom: 1.35rem; }
+.consultation-step-number { display: grid; width: 2.8rem; height: 2.8rem; flex: 0 0 auto; place-items: center; border: 1px solid #d9e6ff; border-radius: .85rem; color: #1d5ed1; background: linear-gradient(145deg, #f4f8ff, #e8f0ff); font-size: .84rem; font-weight: 850; }
+.consultation-form-heading p { margin: 0 0 .18rem; color: #5272ad; font-size: .63rem; font-weight: 800; letter-spacing: .105em; }
+.consultation-form-heading h2 { margin: 0; color: #14213b; font-size: 1.08rem; font-weight: 760; letter-spacing: -.02em; }
+.consultation-form-heading div > span { display: block; margin-top: .22rem; color: #79869a; font-size: .73rem; line-height: 1.45; }
+.consultation-prompt-field .form-label { margin-bottom: .5rem; color: #293851; font-size: .84rem; }
 .consultation-prompt { min-height: 7rem; resize: vertical; }
-.consultation-submit { min-height: 3.2rem; font-weight: 750; box-shadow: 0 .4rem 1rem rgb(37 99 235 / 18%); }
+.consultation-form-card .consultation-prompt { min-height: 8.2rem; padding: .85rem 1rem; border-radius: .85rem; background: #fbfcff; line-height: 1.6; }
+.consultation-suggestion-section { margin-top: 1rem; }
+.consultation-suggestion-section > p { margin: 0 0 .55rem; color: #7b879a; font-size: .63rem; font-weight: 800; letter-spacing: .09em; }
+.consultation-suggestion-list { display: flex; flex-wrap: wrap; gap: .45rem; }
+.consultation-suggestion-list .suggestion { display: inline-flex; min-height: 2.1rem; align-items: center; gap: .35rem; padding: .35rem .6rem; border-color: #e2e8f0; border-radius: 999px; color: #465671; background: #f8faff; font-size: .7rem; font-weight: 650; transition: border-color .16s ease, background .16s ease, color .16s ease, transform .16s ease; }
+.consultation-suggestion-list .suggestion svg { width: .9rem; height: .9rem; flex: 0 0 auto; color: #3772da; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
+.consultation-suggestion-list .suggestion:hover { border-color: #b9cdf8; color: #1d4da6; background: #edf4ff; transform: translateY(-1px); }
+.consultation-suggestion-list .suggestion[aria-pressed="true"] { border-color: #8fb0f2; color: #1e429f; background: #eaf0ff; box-shadow: inset 0 0 0 1px rgb(37 99 235 / 10%); }
+.consultation-selects { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin: 1.2rem 0 1rem; }
+.consultation-selects .form-label { margin-bottom: .4rem; color: #293851; font-size: .75rem; font-weight: 700; }
+.consultation-selects .form-label span { color: #8a96a9; font-weight: 500; }
+.consultation-selects .form-select { font-size: .77rem; }
+.consultation-submit { display: flex; min-height: 3.2rem; align-items: center; justify-content: space-between; padding: .65rem 1rem .65rem 1.15rem; border-radius: .8rem; font-size: .87rem; font-weight: 750; box-shadow: 0 .55rem 1.1rem rgb(37 99 235 / 20%); }
+.consultation-submit span:last-child { display: grid; width: 1.8rem; height: 1.8rem; place-items: center; border: 1px solid rgb(255 255 255 / 28%); border-radius: 50%; font-size: 1rem; transition: transform .16s ease; }
+.consultation-submit:hover span:last-child { transform: translateX(2px); }
+.consultation-form-note { display: flex; align-items: flex-start; gap: .45rem; margin: .85rem 0 0; color: #7b879a; font-size: .68rem; line-height: 1.5; }
+.consultation-form-note span { color: #3873df; font-size: .82rem; }
 .consultation-loading { display: flex; align-items: center; gap: .55rem; padding: .7rem .8rem; border-radius: .65rem; color: #244f9f; background: #eff5ff; }
 .consultation-loading[hidden] { display: none; }
-.consultation-instructions { height: auto !important; padding: 1.5rem !important; background: linear-gradient(145deg, #fff, #f6f9ff); }
-.consultation-instructions h2 { color: var(--nx-ink); }
-.consultation-instructions ul { display: grid; gap: .45rem; padding-left: 1.15rem; }
+.consultation-guide { padding: clamp(1.25rem, 2.5vw, 2rem); border: 1px solid #e1e8f3; border-radius: 1.1rem; background: linear-gradient(145deg, #fff, #f7f9fe); box-shadow: 0 .7rem 2rem rgb(28 47 82 / 5%); }
+.consultation-guide-heading { display: flex; align-items: center; justify-content: space-between; gap: .75rem; color: #59719b; font-size: .65rem; font-weight: 800; letter-spacing: .1em; }
+.consultation-guide-live { display: inline-flex; align-items: center; gap: .35rem; padding: .3rem .5rem; border-radius: 999px; color: #167556; background: #e4f7ef; font-size: .65rem; letter-spacing: 0; }
+.consultation-guide-live i { width: .42rem; height: .42rem; border-radius: 50%; background: #22a879; box-shadow: 0 0 0 .18rem rgb(34 168 121 / 12%); }
+.consultation-guide h2 { margin: 1.3rem 0 1.2rem; color: #17243d; font-size: clamp(1.12rem, 2vw, 1.45rem); font-weight: 760; letter-spacing: -.03em; }
+.consultation-guide-steps { display: grid; gap: .7rem; }
+.consultation-guide-steps > div { display: flex; align-items: flex-start; gap: .8rem; padding: .75rem; border: 1px solid #e8edf5; border-radius: .8rem; background: rgb(255 255 255 / 82%); }
+.consultation-guide-steps > div > span { display: grid; width: 2rem; height: 2rem; flex: 0 0 auto; place-items: center; border-radius: .65rem; color: #2258bd; background: #edf3ff; font-size: .7rem; font-weight: 850; }
+.consultation-guide-steps section { min-width: 0; }
+.consultation-guide-steps strong { color: #253650; font-size: .8rem; }
+.consultation-guide-steps p { margin: .16rem 0 0; color: #76839a; font-size: .72rem; line-height: 1.5; }
+.consultation-guide-tip { display: flex; gap: .55rem; margin-top: 1rem; padding: .75rem .8rem; border: 1px solid #dce9ff; border-radius: .75rem; color: #435a7d; background: #eff5ff; }
+.consultation-guide-tip > span { flex: 0 0 auto; color: #3474e9; }
+.consultation-guide-tip p { margin: 0; font-size: .72rem; line-height: 1.55; }
+.consultation-guide-tip strong { color: #244f9f; }
 .consultation-recognized-group + .consultation-recognized-group { margin-top: .9rem; padding-top: .85rem; border-top: 1px solid #e8edf5; }
 .consultation-recognized-group h3 { margin-bottom: .45rem; color: #405472; font-size: .78rem; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
 .consultation-recognized-list { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: .35rem .8rem; margin: 0; font-size: .86rem; }
@@ -271,8 +335,15 @@ a { text-underline-offset: .18em; }
 .consultation-result-reasons { padding: .7rem .85rem; border-radius: .7rem; background: #f5f8ff; }
 .consultation-result-reasons h4 { margin-bottom: .4rem; color: #394e73; font-size: .78rem; font-weight: 750; }
 .consultation-result-reasons ul { margin-bottom: 0; padding-left: 1.1rem; }
-.consultation-result-image { height: 100%; min-height: 11rem; }
-.consultation-empty { border: 1px dashed #c8d5ea; border-radius: .9rem; background: #f8fbff; }
+.consultation-result-image { height: 100%; min-height: 11rem; padding: .8rem; background: radial-gradient(ellipse at center, #fff 5%, #f2f6ff 100%); }
+.consultation-result-card--product { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+.consultation-result-card--product:hover { transform: translateY(-2px); border-color: #cbdaf6 !important; box-shadow: 0 1rem 2.2rem rgb(28 47 82 / 10%); }
+.consultation-result-card--product .card-body { padding: clamp(1rem, 2vw, 1.4rem); }
+.consultation-result-card--product h3 { margin-bottom: .7rem; line-height: 1.35; }
+.consultation-result-card--product h3 a { color: #192943; }
+.consultation-result-card--product h3 a:hover { color: var(--nx-blue-dark); }
+.consultation-result-card--product .badge { flex: 0 0 auto; border-radius: 999px; }
+.consultation-empty { border: 1px dashed #c8d5ea; border-radius: 1rem; background: linear-gradient(145deg, #fff, #f7faff); }
 .suggestion { border-color: #d9e1ed; background: #f9fbfe; }
 .suggestion:hover { border-color: #aabcf0; color: var(--nx-blue-dark); background: #eff3ff; }
 .suggestion[aria-pressed="true"] { border-color: #90a9ed; color: #1e429f; background: #eaf0ff; box-shadow: inset 0 0 0 1px rgb(37 99 235 / 12%); }
@@ -327,6 +398,19 @@ textarea.form-control { min-height: unset; }
     .catalog-filter { position: static !important; }
 }
 
+@media (max-width: 767.98px) {
+    .consultation-page-hero { min-height: 0; grid-template-columns: minmax(0, 1fr); gap: .5rem; }
+    .consultation-page-hero h1 { max-width: 18ch; }
+    .consultation-hero-visual { min-height: 14rem; margin-top: .25rem; }
+    .consultation-orbit--outer { width: 13.5rem; }
+    .consultation-orbit--inner { width: 9.8rem; }
+    .consultation-hero-device { width: 6rem; border-radius: 1.7rem; }
+    .consultation-device-glow { inset: .5rem; border-radius: 1.25rem; }
+    .consultation-device-mark { font-size: 3.5rem; }
+    .consultation-float-card--top { top: 4%; right: 2%; }
+    .consultation-float-card--bottom { bottom: 3%; left: 2%; }
+}
+
 @media (max-width: 575.98px) {
     .nexora-hero { border-radius: 1.25rem !important; }
     .nexora-hero h1 { font-size: clamp(2rem, 9vw, 2.8rem); }
@@ -338,10 +422,19 @@ textarea.form-control { min-height: unset; }
     .product-card-heading { min-height: 3.2rem; font-size: .9rem; }
     .product-card-specs { font-size: .72rem; }
     .product-card .btn { min-height: 2.65rem; }
-    .consultation-page-hero { border-radius: 1rem !important; }
-    .consultation-page-hero h1 { font-size: 1.8rem; }
+    .consultation-page-hero { gap: .3rem; padding: 1.25rem !important; border-radius: 1rem !important; }
+    .consultation-page-hero h1 { font-size: clamp(1.8rem, 8vw, 2.35rem); }
+    .consultation-hero-kicker { margin-bottom: .8rem; font-size: .62rem; }
+    .consultation-hero-benefits { display: grid; gap: .45rem; margin-top: 1rem; }
+    .consultation-hero-visual { min-height: 12.5rem; }
+    .consultation-float-card { min-width: 10.5rem; padding: .55rem .65rem; }
+    .consultation-float-card--top { right: 0; }
+    .consultation-float-card--bottom { left: 0; }
+    .consultation-selects { grid-template-columns: minmax(0, 1fr); gap: .7rem; }
+    .consultation-suggestion-list .suggestion { font-size: .66rem; }
     .consultation-card { padding: 1rem !important; }
     .consultation-result-card .card-body { padding: 1rem; }
+    .consultation-guide { padding: 1.15rem; }
     .consultation-recognized-list { grid-template-columns: minmax(0, 1fr); gap: .15rem; }
     .consultation-recognized-list dd { margin-bottom: .45rem; }
     .nexora-product-visual--consultation { min-height: 8rem; aspect-ratio: 16 / 9; }
@@ -1428,4 +1521,111 @@ textarea.form-control { min-height: unset; }
     .nexora-reviews-dialog-product small { font-size: .64rem; }
     .nexora-reviews-star-choice { width: 2.65rem; height: 2.8rem; }
     .nexora-reviews-form-actions > button { flex: 1; }
+}
+
+/* Warehouse inventory workspace */
+.warehouse-inventory-page { display: grid; gap: 1.35rem; min-width: 0; }
+.warehouse-inventory-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 1.5rem; }
+.warehouse-inventory-heading { min-width: 0; }
+.warehouse-inventory-eyebrow { display: inline-block; margin-bottom: .35rem; color: var(--nx-blue); font-size: .72rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+.warehouse-inventory-heading h1 { margin: 0; color: #10203a; font-size: clamp(1.65rem, 2.7vw, 2.25rem); font-weight: 780; letter-spacing: -.035em; }
+.warehouse-inventory-heading p { margin: .45rem 0 0; color: #64748b; font-size: .92rem; }
+.warehouse-inventory-toolbar { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .55rem; }
+.warehouse-inventory-toolbar-link { display: inline-flex; min-height: 2.65rem; align-items: center; justify-content: center; gap: .5rem; padding: .56rem .82rem; border: 1px solid #d6e1f2; border-radius: .72rem; color: #244b91; background: #fff; font-size: .78rem; font-weight: 680; text-decoration: none; transition: border-color .16s ease, background .16s ease, transform .16s ease, box-shadow .16s ease; }
+.warehouse-inventory-toolbar-link:hover { transform: translateY(-1px); border-color: #a9c2f5; color: #1d4ed8; background: #f8fbff; box-shadow: 0 .35rem .9rem rgb(37 99 235 / 8%); }
+.warehouse-inventory-toolbar-link svg { width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.warehouse-inventory-toolbar-link.is-primary { border-color: var(--nx-blue); color: #fff; background: var(--nx-blue); box-shadow: 0 .35rem .8rem rgb(37 99 235 / 18%); }
+.warehouse-inventory-toolbar-link.is-primary:hover { border-color: var(--nx-blue-dark); color: #fff; background: var(--nx-blue-dark); }
+.warehouse-inventory-search { padding: 1rem; border: 1px solid #e3eaf4; border-radius: 1rem; background: #fff; box-shadow: 0 .4rem 1.25rem rgb(15 23 42 / 4%); }
+.warehouse-inventory-search-form { display: grid; grid-template-columns: minmax(15rem, 1fr) auto auto; align-items: end; gap: .9rem 1.1rem; }
+.warehouse-inventory-search-field { display: grid; min-width: 0; gap: .42rem; }
+.warehouse-inventory-search-field label { color: #334155; font-size: .75rem; font-weight: 700; }
+.warehouse-inventory-input-wrap { position: relative; }
+.warehouse-inventory-input-wrap svg { position: absolute; top: 50%; left: .85rem; width: 1.05rem; height: 1.05rem; transform: translateY(-50%); fill: none; stroke: #8593a8; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; pointer-events: none; }
+.warehouse-inventory-input-wrap input { width: 100%; min-height: 2.85rem; padding: .65rem .85rem .65rem 2.55rem; border: 1px solid #dce5f1; border-radius: .72rem; outline: 0; color: #172033; background: #fbfdff; font: inherit; font-size: .83rem; transition: border-color .16s ease, box-shadow .16s ease, background .16s ease; }
+.warehouse-inventory-input-wrap input::placeholder { color: #98a4b5; }
+.warehouse-inventory-input-wrap input:focus { border-color: #7ba4f6; background: #fff; box-shadow: 0 0 0 3px rgb(37 99 235 / 11%); }
+.warehouse-inventory-stock-filter { display: inline-flex; min-height: 2.85rem; align-items: center; gap: .55rem; padding: 0 .3rem; color: #475569; font-size: .78rem; font-weight: 570; cursor: pointer; white-space: nowrap; }
+.warehouse-inventory-stock-filter .form-check-input { float: none; width: 1.08rem; height: 1.08rem; margin: 0; border-color: #cbd5e1; cursor: pointer; }
+.warehouse-inventory-stock-filter .form-check-input:checked { border-color: var(--nx-blue); background-color: var(--nx-blue); }
+.warehouse-inventory-search-actions { display: flex; align-items: center; justify-content: flex-end; gap: .65rem; }
+.warehouse-inventory-search-button { display: inline-flex; min-width: 7.8rem; min-height: 2.85rem; align-items: center; justify-content: center; gap: .45rem; padding: .6rem .9rem; border: 1px solid var(--nx-blue); border-radius: .72rem; color: #fff; background: var(--nx-blue); font: inherit; font-size: .8rem; font-weight: 730; transition: background .16s ease, transform .16s ease, box-shadow .16s ease; }
+.warehouse-inventory-search-button:hover { transform: translateY(-1px); border-color: var(--nx-blue-dark); background: var(--nx-blue-dark); box-shadow: 0 .35rem .8rem rgb(37 99 235 / 16%); }
+.warehouse-inventory-search-button svg { width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.warehouse-inventory-clear { color: #64748b; font-size: .75rem; font-weight: 650; text-decoration: none; white-space: nowrap; }
+.warehouse-inventory-clear:hover { color: var(--nx-blue-dark); text-decoration: underline; }
+.warehouse-inventory-results { min-width: 0; }
+.warehouse-inventory-results-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .65rem; }
+.warehouse-inventory-results-heading h2 { margin: 0; color: #172033; font-size: 1.05rem; font-weight: 760; letter-spacing: -.015em; }
+.warehouse-inventory-results-heading p { margin: .24rem 0 0; color: #77859a; font-size: .72rem; }
+.warehouse-inventory-results-heading p strong { color: #475569; font-weight: 720; }
+.warehouse-inventory-sort-note { display: inline-flex; flex: 0 0 auto; align-items: center; gap: .38rem; padding: .42rem .62rem; border: 1px solid #dce7f8; border-radius: 999px; color: #315997; background: #f5f8ff; font-size: .68rem; font-weight: 680; }
+.warehouse-inventory-sort-note svg { width: .9rem; height: .9rem; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
+.warehouse-inventory-table-shell { overflow: hidden; border: 1px solid #e2e8f0; border-radius: .95rem; background: #fff; box-shadow: 0 .35rem 1rem rgb(15 23 42 / 4%); }
+.warehouse-inventory-scroll-hint { display: none; padding: .5rem .8rem; border-bottom: 1px solid #e9eef5; color: #75839a; background: #f8fafc; font-size: .65rem; }
+.warehouse-inventory-table-scroll { min-width: 0; }
+.warehouse-inventory-table { min-width: 930px; color: #26354d; font-size: .76rem; }
+.warehouse-inventory-table thead th { padding: .78rem .85rem; border-bottom: 1px solid #e5ebf3; color: #68778e; background: #f7f9fc; font-size: .64rem; font-weight: 760; letter-spacing: .055em; text-transform: uppercase; white-space: nowrap; }
+.warehouse-inventory-table tbody td { padding: .78rem .85rem; border-color: #edf1f6; }
+.warehouse-inventory-table tbody tr { transition: background .14s ease; }
+.warehouse-inventory-table tbody tr:hover { background: #f8fbff; }
+.warehouse-inventory-table tbody tr:last-child td { border-bottom: 0; }
+.warehouse-inventory-product-column { min-width: 19rem; }
+.warehouse-inventory-product-name { max-width: 38rem; overflow: hidden; color: #1c2c44; font-size: .79rem; font-weight: 690; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
+.warehouse-inventory-sku { display: inline-block; margin-top: .22rem; color: #8190a5; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .66rem; }
+.warehouse-inventory-category { display: inline-flex; padding: .3rem .55rem; border: 1px solid #e6edf7; border-radius: .48rem; color: #53647d; background: #f8fafc; font-size: .68rem; white-space: nowrap; }
+.warehouse-inventory-quantity { color: #334155; font-variant-numeric: tabular-nums; font-size: .82rem; font-weight: 590; }
+.warehouse-inventory-quantity.is-muted { color: #8190a5; }
+.warehouse-inventory-quantity.is-strong { color: #172033; font-weight: 760; }
+.warehouse-inventory-status { display: inline-flex; align-items: center; gap: .38rem; padding: .32rem .52rem; border: 1px solid transparent; border-radius: 999px; font-size: .63rem; font-weight: 720; white-space: nowrap; }
+.warehouse-inventory-status > span { width: .4rem; height: .4rem; border-radius: 50%; background: currentColor; }
+.warehouse-inventory-status.is-available { border-color: #c8edda; color: #147344; background: #ecf9f1; }
+.warehouse-inventory-status.is-low { border-color: #f6dfad; color: #97610b; background: #fff8e8; }
+.warehouse-inventory-status.is-empty { border-color: #f4cbd0; color: #b42335; background: #fff1f2; }
+.warehouse-inventory-status.is-missing { border-color: #dbe2ec; color: #64748b; background: #f4f6f9; }
+.warehouse-inventory-row-actions { display: inline-flex; justify-content: flex-end; gap: .35rem; white-space: nowrap; }
+.warehouse-inventory-row-action { display: inline-flex; min-height: 2rem; align-items: center; justify-content: center; padding: .38rem .55rem; border: 1px solid #d5e1f4; border-radius: .58rem; color: #2856a6; background: #fff; font-size: .66rem; font-weight: 680; text-decoration: none; transition: border-color .14s ease, color .14s ease, background .14s ease; }
+.warehouse-inventory-row-action:hover { border-color: #9dbaf0; color: #1746a0; background: #f5f8ff; }
+.warehouse-inventory-row-action.is-history { border-color: #e1e6ee; color: #637188; }
+.warehouse-inventory-row-action.is-history:hover { border-color: #c7d3e2; color: #334155; background: #f8fafc; }
+.warehouse-inventory-empty { display: grid; justify-items: center; padding: 3rem 1rem; border: 1px dashed #d7e1ef; border-radius: .95rem; text-align: center; background: #fff; }
+.warehouse-inventory-empty-icon { display: grid; width: 3rem; height: 3rem; place-items: center; margin-bottom: .8rem; border-radius: 1rem; color: #3768c7; background: #edf4ff; }
+.warehouse-inventory-empty-icon svg { width: 1.35rem; height: 1.35rem; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
+.warehouse-inventory-empty h3 { margin: 0; color: #1f2e44; font-size: .95rem; font-weight: 740; }
+.warehouse-inventory-empty p { margin: .35rem 0 .85rem; color: #76849a; font-size: .75rem; }
+.warehouse-inventory-pagination { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: .8rem; color: #77859a; font-size: .7rem; }
+.warehouse-inventory-pagination .pagination { gap: .18rem; }
+.warehouse-inventory-pagination .page-link { min-width: 2rem; border-color: #e0e7f0; border-radius: .48rem !important; color: #52647e; background: #fff; font-size: .72rem; text-align: center; }
+.warehouse-inventory-pagination .page-item.active .page-link { border-color: var(--nx-blue); color: #fff; background: var(--nx-blue); }
+.warehouse-inventory-pagination .page-item.disabled .page-link { color: #b1bac7; background: #f8fafc; }
+@media (max-width: 991.98px) {
+    .warehouse-inventory-header { align-items: flex-start; flex-direction: column; }
+    .warehouse-inventory-toolbar { justify-content: flex-start; }
+    .warehouse-inventory-search-form { grid-template-columns: minmax(0, 1fr) auto; }
+    .warehouse-inventory-search-field { grid-column: 1 / -1; }
+}
+@media (max-width: 575.98px) {
+    .warehouse-inventory-page { gap: 1rem; }
+    .warehouse-inventory-header { gap: .9rem; }
+    .warehouse-inventory-heading h1 { font-size: 1.65rem; }
+    .warehouse-inventory-heading p { max-width: 35ch; font-size: .78rem; line-height: 1.45; }
+    .warehouse-inventory-toolbar { display: grid; width: 100%; grid-template-columns: 1fr 1fr; }
+    .warehouse-inventory-toolbar-link { min-height: 2.55rem; padding-inline: .5rem; font-size: .68rem; }
+    .warehouse-inventory-search { padding: .8rem; border-radius: .85rem; }
+    .warehouse-inventory-search-form { grid-template-columns: minmax(0, 1fr); gap: .55rem; }
+    .warehouse-inventory-search-field { grid-column: auto; }
+    .warehouse-inventory-stock-filter { min-height: 2rem; white-space: normal; }
+    .warehouse-inventory-search-actions { justify-content: space-between; }
+    .warehouse-inventory-search-button { min-height: 2.6rem; }
+    .warehouse-inventory-results-heading { align-items: flex-start; }
+    .warehouse-inventory-results-heading h2 { font-size: .95rem; }
+    .warehouse-inventory-results-heading p { max-width: 27ch; font-size: .65rem; }
+    .warehouse-inventory-sort-note { gap: .25rem; padding: .35rem .45rem; font-size: .59rem; }
+    .warehouse-inventory-sort-note svg { width: .78rem; height: .78rem; }
+    .warehouse-inventory-scroll-hint { display: block; }
+    .warehouse-inventory-table { min-width: 880px; }
+    .warehouse-inventory-table thead th { padding: .65rem .68rem; }
+    .warehouse-inventory-table tbody td { padding: .68rem; }
+    .warehouse-inventory-product-column { min-width: 16rem; }
+    .warehouse-inventory-pagination { align-items: flex-start; flex-direction: column; }
 }

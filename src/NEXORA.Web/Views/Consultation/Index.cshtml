@@ -4,51 +4,72 @@
     var profile = Model.Outcome?.Profile;
 }
 
-<section class="consultation-page-hero rounded-4 p-4 p-lg-5 mb-4" aria-labelledby="consultation-page-title">
-    <p class="text-uppercase small fw-semibold text-info mb-2">NEXORA Consultation</p>
-    <h1 id="consultation-page-title" class="display-6 fw-bold">Tìm thiết bị phù hợp với nhu cầu của bạn</h1>
-    <p class="lead text-white-50 mb-0">Mô tả bằng tiếng Việt. NEXORA tra cứu sản phẩm và quy tắc tư vấn đang lưu trong hệ thống.</p>
+<section class="consultation-page-hero rounded-4 mb-4" aria-labelledby="consultation-page-title">
+    <div class="consultation-hero-copy">
+        <p class="consultation-hero-kicker"><span aria-hidden="true">✦</span> NEXORA · TƯ VẤN CÔNG NGHỆ</p>
+        <h1 id="consultation-page-title">Chọn đúng thiết bị, bắt đầu từ nhu cầu của bạn.</h1>
+        <p class="consultation-hero-description">Kể chúng tôi nghe bạn cần gì. NEXORA sẽ đối chiếu ngân sách, mục đích sử dụng và thông số để gợi ý sản phẩm phù hợp.</p>
+        <div class="consultation-hero-benefits" aria-label="Điểm nổi bật">
+            <span><i aria-hidden="true">✓</i> Gợi ý theo ngân sách</span>
+            <span><i aria-hidden="true">✓</i> Nêu rõ lý do lựa chọn</span>
+            <span><i aria-hidden="true">✓</i> Dữ liệu sản phẩm NEXORA</span>
+        </div>
+    </div>
+    <div class="consultation-hero-visual" aria-hidden="true">
+        <div class="consultation-orbit consultation-orbit--outer"></div>
+        <div class="consultation-orbit consultation-orbit--inner"></div>
+        <div class="consultation-hero-device"><span class="consultation-device-glow"></span><span class="consultation-device-mark">N</span></div>
+        <div class="consultation-float-card consultation-float-card--top"><span>01</span><div><strong>Mô tả nhu cầu</strong><small>Điều bạn ưu tiên</small></div></div>
+        <div class="consultation-float-card consultation-float-card--bottom"><span class="consultation-float-check">✓</span><div><strong>Gợi ý phù hợp</strong><small>Có giải thích rõ ràng</small></div></div>
+    </div>
 </section>
 
 <div class="row g-4 align-items-start">
     <div class="col-lg-5">
-        <form asp-controller="Consultation" asp-action="Submit" method="post" id="consultation-form" class="card consultation-card p-3 p-lg-4" aria-busy="false">
+        <form asp-controller="Consultation" asp-action="Submit" method="post" id="consultation-form" class="card consultation-card consultation-form-card p-3 p-lg-4" aria-busy="false">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="mb-3">
+            <div class="consultation-form-heading">
+                <span class="consultation-step-number">01</span>
+                <div><p>BẮT ĐẦU TỪ NHU CẦU</p><h2>Mô tả thiết bị bạn cần</h2><span>Viết tự nhiên như đang chia sẻ với nhân viên tư vấn.</span></div>
+            </div>
+            <div class="consultation-prompt-field">
                 <label asp-for="Description" class="form-label fw-semibold"></label>
                 <textarea asp-for="Description" class="form-control consultation-prompt" rows="4" maxlength="1200" placeholder="Ví dụ: Laptop dưới 25 triệu để lập trình, ưu tiên RAM lớn và máy nhẹ"></textarea>
                 <span asp-validation-for="Description" class="text-danger"></span>
             </div>
-            <p class="small text-secondary mb-2">Chọn câu gợi ý để điền nhanh</p>
-            <div class="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Câu gợi ý tư vấn">
-                <button type="button" class="btn btn-sm btn-outline-secondary suggestion" aria-pressed="false" data-text="Laptop dưới 25 triệu, lập trình, ưu tiên RAM và máy nhẹ">Laptop lập trình</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary suggestion" aria-pressed="false" data-text="Điện thoại khoảng 12 triệu để học tập, ưu tiên pin tốt">Điện thoại học tập</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary suggestion" aria-pressed="false" data-text="Máy tính bảng từ 7 đến 13 triệu để học online, ưu tiên pin tốt">Máy tính bảng học online</button>
+            <div class="consultation-suggestion-section">
+                <p>THỬ MỘT CÂU GỢI Ý</p>
+                <div class="consultation-suggestion-list" role="group" aria-label="Câu gợi ý tư vấn">
+                    <button type="button" class="btn btn-sm suggestion" aria-pressed="false" data-text="Laptop dưới 25 triệu, lập trình, ưu tiên RAM và máy nhẹ"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="11" rx="1.8"/><path d="M2.5 19h19M9 16l-.7 3m6.4-3 .7 3"/></svg> Laptop lập trình</button>
+                    <button type="button" class="btn btn-sm suggestion" aria-pressed="false" data-text="Điện thoại khoảng 12 triệu để học tập, ưu tiên pin tốt"><svg viewBox="0 0 24 24" fill="none"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M10 5h4m-2 13.5h.01"/></svg> Điện thoại học tập</button>
+                    <button type="button" class="btn btn-sm suggestion" aria-pressed="false" data-text="Máy tính bảng từ 7 đến 13 triệu để học online, ưu tiên pin tốt"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M11 18.5h2"/></svg> Máy tính bảng</button>
+                </div>
             </div>
-            <div class="row g-3 mb-3">
-                <div class="col-md-6"><label asp-for="ConfirmedCategory" class="form-label">Danh mục (có thể chỉnh)</label><select asp-for="ConfirmedCategory" asp-items="Model.CategoryOptions" class="form-select"><option value="">Để hệ thống nhận diện</option></select></div>
-                <div class="col-md-6"><label asp-for="ConfirmedUsage" class="form-label">Mục đích (có thể chỉnh)</label><select asp-for="ConfirmedUsage" asp-items="Model.UsageOptions" class="form-select"><option value="">Để hệ thống nhận diện</option></select></div>
+            <div class="consultation-selects">
+                <div><label asp-for="ConfirmedCategory" class="form-label">Danh mục <span>(tùy chọn)</span></label><select asp-for="ConfirmedCategory" asp-items="Model.CategoryOptions" class="form-select"><option value="">Để hệ thống nhận diện</option></select></div>
+                <div><label asp-for="ConfirmedUsage" class="form-label">Mục đích <span>(tùy chọn)</span></label><select asp-for="ConfirmedUsage" asp-items="Model.UsageOptions" class="form-select"><option value="">Để hệ thống nhận diện</option></select></div>
             </div>
-            <button class="btn btn-primary btn-lg consultation-submit" type="submit" id="consultation-submit">Tư vấn sản phẩm</button>
+            <button class="btn btn-primary btn-lg consultation-submit" type="submit" id="consultation-submit"><span>Tìm gợi ý cho tôi</span><span aria-hidden="true">→</span></button>
             <div id="consultation-loading" class="consultation-loading small mt-2" role="status" aria-live="polite" hidden>
                 <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
                 <span>Đang phân tích yêu cầu và tra cứu dữ liệu sản phẩm…</span>
             </div>
-            <p class="small text-secondary mt-3 mb-0">Mô tả được xử lý trong ứng dụng; kết quả dựa trên dữ liệu sản phẩm hiện có.</p>
+            <p class="consultation-form-note"><span aria-hidden="true">ⓘ</span> Kết quả dựa trên danh mục và thông tin sản phẩm hiện có của NEXORA.</p>
         </form>
     </div>
 
     <div class="col-lg-7">
         @if (Model.Outcome is null)
         {
-            <aside class="card consultation-card consultation-instructions" aria-labelledby="consultation-help-title">
-                <p class="text-uppercase small fw-semibold text-primary mb-2">Bắt đầu trong một câu</p>
-                <h2 id="consultation-help-title" class="h5">Bạn có thể mô tả</h2>
-                <ul class="text-secondary mb-0">
-                    <li>Loại thiết bị và khoảng giá.</li>
-                    <li>Mục đích như học tập, văn phòng, lập trình hoặc chơi game.</li>
-                    <li>Thông số tối thiểu hoặc ưu tiên như RAM, pin và trọng lượng.</li>
-                </ul>
+            <aside class="consultation-guide" aria-labelledby="consultation-help-title">
+                <div class="consultation-guide-heading"><span>QUY TRÌNH TƯ VẤN</span><span class="consultation-guide-live"><i></i> Sẵn sàng</span></div>
+                <h2 id="consultation-help-title">Một mô tả tốt thường có 3 điều</h2>
+                <div class="consultation-guide-steps">
+                    <div><span>01</span><section><strong>Thiết bị</strong><p>Laptop, điện thoại hay máy tính bảng?</p></section></div>
+                    <div><span>02</span><section><strong>Ngân sách</strong><p>Mức giá tối đa hoặc khoảng giá bạn mong muốn.</p></section></div>
+                    <div><span>03</span><section><strong>Cách sử dụng</strong><p>Học tập, làm việc, lập trình hay giải trí.</p></section></div>
+                </div>
+                <div class="consultation-guide-tip"><span aria-hidden="true">✦</span><p><strong>Mẹo nhỏ</strong> — Nêu thêm 1–2 ưu tiên như pin lâu, máy nhẹ hoặc RAM lớn để gợi ý sát hơn.</p></div>
             </aside>
         }
         else
@@ -119,7 +140,7 @@
                     @for (var index = 0; index < Model.Outcome.Recommendations.Count; index++)
                     {
                         var item = Model.Outcome.Recommendations[index];
-                        <article class="card consultation-result-card">
+                        <article class="card consultation-result-card consultation-result-card--product">
                             <div class="row g-0 align-items-stretch">
                                 <div class="col-12 col-md-4"><div class="consultation-result-image">@await Html.PartialAsync("_ProductImage", new NEXORA.Web.Models.ProductImageDisplayViewModel(item.Product.PrimaryImageUrl, item.Product.Name, "consultation"))</div></div>
                                 <div class="col-12 col-md-8"><div class="card-body">

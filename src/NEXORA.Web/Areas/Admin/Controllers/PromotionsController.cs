@@ -68,7 +68,15 @@ public sealed class PromotionsController(IAdminPromotionManagementService promot
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> SetActive(int id, bool isActive, CancellationToken cancellationToken)
+    public Task<IActionResult> Enable(int id, CancellationToken cancellationToken) =>
+        UpdateActiveStateAsync(id, true, cancellationToken);
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public Task<IActionResult> Disable(int id, CancellationToken cancellationToken) =>
+        UpdateActiveStateAsync(id, false, cancellationToken);
+
+    private async Task<IActionResult> UpdateActiveStateAsync(int id, bool isActive, CancellationToken cancellationToken)
     {
         var found = await promotions.SetActiveAsync(id, isActive, cancellationToken);
         TempData[found ? "Success" : "Error"] = found
