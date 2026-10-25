@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Globalization;
+using System.Threading.RateLimiting;
 using NEXORA.Application.Catalog;
 using NEXORA.Application.Email;
 using NEXORA.Application.Consultation;
@@ -7,6 +9,7 @@ using NEXORA.Application.Commerce;
 using NEXORA.Application.Identity;
 using NEXORA.Domain.Security;
 using NEXORA.Infrastructure;
+using NEXORA.Infrastructure.Consultation;
 using NEXORA.Infrastructure.Identity;
 using NEXORA.Infrastructure.Persistence;
 using NEXORA.Web.Email;
@@ -23,6 +26,12 @@ var connectionString = DatabaseConnectionPolicy.Resolve(
     databaseProfile);
 
 builder.Services.AddNexoraInfrastructure(connectionString, builder.Environment.EnvironmentName, databaseProfile);
+builder.Services.Configure<QwenConsultationOptions>(builder.Configuration.GetSection("ConsultationAI:Qwen"));
+builder.Services.AddHttpClient<IConsultationAiAssistant, QwenConsultationAiAssistant>(client =>
+{
+    client.BaseAddress = new Uri("https://api.xkiro.com/v1/");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 builder.Services.AddScoped<IProductImageStorage, LocalProductImageStorage>();
 builder.Services.AddIdentity<AppUser, AppRole>(options =>
     {
@@ -76,6 +85,20 @@ else
 }
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("consultation-chat", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            AutoReplenishment = true,
+            PermitLimit = 12,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+        }));
+});
 
 var app = builder.Build();
 
@@ -100,6 +123,7 @@ app.UseRequestLocalization(new RequestLocalizationOptions
 // Uploads are created at runtime and are not included in the static asset manifest.
 app.UseStaticFiles();
 app.UseRouting();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapStaticAssets();

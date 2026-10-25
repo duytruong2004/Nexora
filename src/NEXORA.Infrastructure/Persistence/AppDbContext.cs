@@ -31,6 +31,8 @@ public sealed class AppDbContext(
     public DbSet<PromotionProduct> PromotionProducts => Set<PromotionProduct>();
     public DbSet<UsageNeed> UsageNeeds => Set<UsageNeed>();
     public DbSet<RecommendationRule> RecommendationRules => Set<RecommendationRule>();
+    public DbSet<ConsultationConversation> ConsultationConversations => Set<ConsultationConversation>();
+    public DbSet<ConsultationChatMessage> ConsultationChatMessages => Set<ConsultationChatMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

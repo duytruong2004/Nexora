@@ -103,6 +103,28 @@ public sealed class UsageNeed
     public ICollection<RecommendationRule> Rules { get; set; } = new List<RecommendationRule>();
 }
 
+/// <summary>Private, authenticated shopping-assistant conversation owned by one NEXORA user.</summary>
+public sealed class ConsultationConversation
+{
+    public Guid Id { get; set; }
+    public int UserId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public ICollection<ConsultationChatMessage> Messages { get; set; } = new List<ConsultationChatMessage>();
+}
+
+public sealed class ConsultationChatMessage
+{
+    public long Id { get; set; }
+    public Guid ConversationId { get; set; }
+    public string Role { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public string? RecommendedProductIdsJson { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public ConsultationConversation Conversation { get; set; } = null!;
+}
+
 public sealed class RecommendationRule
 {
     public int Id { get; set; }

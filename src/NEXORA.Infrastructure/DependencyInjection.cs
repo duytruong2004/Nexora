@@ -49,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<ICatalogDemoSeeder, CatalogDemoSeeder>();
         services.AddSingleton<IRequirementParser, VietnameseRequirementParser>();
         services.AddScoped<IConsultationDataSource, SqlConsultationDataSource>();
+        services.AddScoped<IConsultationChatStore, SqlConsultationChatStore>();
         services.AddScoped<IConsultationManagementService, ConsultationManagementService>();
         services.AddScoped<IConsultationService, ConsultationOrchestrator>();
         services.AddScoped<IConsultationDemoSeeder, ConsultationDemoSeeder>();

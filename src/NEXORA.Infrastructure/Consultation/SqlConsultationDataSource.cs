@@ -8,6 +8,13 @@ namespace NEXORA.Infrastructure.Consultation;
 /// <summary>Loads consultation configuration and candidates from SQL Server; no catalog data is hardcoded here.</summary>
 public sealed class SqlConsultationDataSource(AppDbContext db) : IConsultationDataSource
 {
+    public async Task<IReadOnlyList<string>> GetActiveBrandNamesAsync(CancellationToken cancellationToken = default) =>
+        await db.Brands.AsNoTracking()
+            .Where(item => item.IsActive)
+            .OrderBy(item => item.Name)
+            .Select(item => item.Name)
+            .ToListAsync(cancellationToken);
+
     public async Task<IReadOnlyList<ConsultationNeedOption>> GetActiveUsageNeedsAsync(CancellationToken cancellationToken = default) =>
         await db.UsageNeeds.AsNoTracking()
             .Where(item => item.IsActive)
@@ -68,6 +75,11 @@ public sealed class SqlConsultationDataSource(AppDbContext db) : IConsultationDa
                               product.Status == ProductStatuses.Active &&
                               product.Category.IsActive && product.Brand.IsActive);
 
+        if (!string.IsNullOrWhiteSpace(query.BrandName))
+        {
+            products = products.Where(product => product.Brand.Name == query.BrandName);
+        }
+
         if (query.MinimumPrice is decimal minimumPrice)
         {
             products = products.Where(product => (product.DiscountPrice ?? product.Price) >= minimumPrice);
@@ -123,7 +135,12 @@ public sealed class SqlConsultationDataSource(AppDbContext db) : IConsultationDa
                         value.Value,
                         value.NumericValue,
                         value.DisplayValue))
-                    .ToList()))
+                    .ToList())
+            {
+                AvailableQuantity = product.Inventory == null
+                    ? null
+                    : product.Inventory.QuantityInStock - product.Inventory.ReservedQuantity
+            })
             .ToListAsync(cancellationToken);
     }
 }

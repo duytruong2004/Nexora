@@ -13,9 +13,18 @@ public sealed class VietnameseRequirementParser : IRequirementParser
     private static readonly (string Canonical, string[] Aliases)[] Categories =
     [
         ("Laptop", ["laptop", "may tinh xach tay", "notebook"]),
-        ("Điện thoại", ["dien thoai", "smartphone", "phone"]),
-        ("Máy tính bảng", ["may tinh bang", "tablet", "ipad"])
+        ("Điện thoại", ["dien thoai", "smartphone", "phone", "iphone", "i phone"]),
+        ("Máy tính bảng", ["may tinh bang", "tablet", "ipad"]),
+        ("Màn hình", ["man hinh may tinh", "monitor", "computer display"]),
+        ("Bàn phím", ["ban phim", "keyboard"]),
+        ("Chuột", ["chuot", "mouse"]),
+        ("Tai nghe", ["tai nghe", "headphone", "headset", "earphone"]),
+        ("Đồng hồ thông minh", ["dong ho thong minh", "smartwatch"]),
+        ("Máy ảnh", ["may anh", "camera"]),
+        ("Phụ kiện công nghệ", ["phu kien cong nghe", "phu kien", "adapter", "cu sac"])
     ];
+
+    private static readonly string[] CorrectionMarkers = ["khong phai", "y toi la", "y minh la"];
 
     private static readonly (string Code, string Name, string[] Aliases)[] UsageNeeds =
     [
@@ -77,7 +86,7 @@ public sealed class VietnameseRequirementParser : IRequirementParser
         if (category.State is RecognitionState.Missing or RecognitionState.Uncertain)
         {
             missing.Add("danh mục");
-            questions.Add("Bạn muốn tìm laptop, điện thoại hay máy tính bảng?");
+            questions.Add("Bạn muốn tìm nhóm sản phẩm nào? Ví dụ laptop, điện thoại, máy tính bảng, bàn phím, chuột hoặc phụ kiện.");
         }
 
         if (usage.State is RecognitionState.Missing or RecognitionState.Uncertain)
@@ -131,6 +140,40 @@ public sealed class VietnameseRequirementParser : IRequirementParser
             .GroupBy(match => match.Canonical, StringComparer.Ordinal)
             .Select(group => group.First())
             .ToArray();
+
+        var correctionStart = CorrectionMarkers
+            .Select(marker => (Index: normalized.LastIndexOf(marker, StringComparison.Ordinal), Length: marker.Length))
+            .Where(match => match.Index >= 0)
+            .OrderByDescending(match => match.Index)
+            .Select(match => match.Index + match.Length)
+            .FirstOrDefault(-1);
+
+        if (correctionStart >= 0)
+        {
+            var correctedMatch = definitions
+                .SelectMany(definition => definition.Aliases.Select(alias =>
+                    (definition.Canonical, Alias: alias, Position: FindPhrasePosition(normalized, alias, correctionStart))))
+                .Where(match => match.Position >= 0)
+                .OrderByDescending(match => match.Position)
+                .FirstOrDefault();
+            if (correctedMatch.Alias is not null)
+            {
+                var correctedState = string.Equals(
+                    NormalizeForMatching(correctedMatch.Canonical), correctedMatch.Alias, StringComparison.Ordinal)
+                    ? RecognitionState.Explicit
+                    : RecognitionState.Normalized;
+                return new RecognizedField(
+                    correctedMatch.Canonical,
+                    FindPhrase(original, normalized, [correctedMatch.Alias]),
+                    correctedState);
+            }
+
+            if (matches.Any(match => FindPhrasePosition(normalized, match.Alias, 0) < correctionStart))
+            {
+                warnings.Add($"Câu đính chính {fieldName} chưa nêu giá trị thay thế.");
+                return new RecognizedField(null, FindPhrase(original, normalized, matches.Select(match => match.Alias).ToArray()), RecognitionState.Uncertain);
+            }
+        }
 
         if (matches.Length == 0)
         {
@@ -471,6 +514,14 @@ public sealed class VietnameseRequirementParser : IRequirementParser
 
     private static bool ContainsPhrase(string text, string phrase) =>
         Regex.IsMatch(text, $@"(?<![a-z0-9]){Regex.Escape(phrase)}(?![a-z0-9])", RegexOptions.CultureInvariant);
+
+    private static int FindPhrasePosition(string text, string phrase, int startIndex)
+    {
+        var match = Regex.Match(text, $@"(?<![a-z0-9]){Regex.Escape(phrase)}(?![a-z0-9])",
+            RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+        while (match.Success && match.Index < startIndex) match = match.NextMatch();
+        return match.Success ? match.Index : -1;
+    }
 
     private static bool ContainsAny(string text, params string[] phrases) => phrases.Any(phrase => text.Contains(phrase, StringComparison.Ordinal));
 

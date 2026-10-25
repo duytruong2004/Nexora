@@ -68,7 +68,61 @@ public interface IRequirementParser
     ConsultationParseResult Parse(string? input);
 }
 
-public sealed record ConsultationRequest(string? Description, string? ConfirmedCategory = null, string? ConfirmedUsage = null);
+public sealed record ConsultationAiInterpretation(string? CategoryName, string? UsageNeedCode);
+
+public interface IConsultationAiAssistant
+{
+    bool IsAvailable { get; }
+
+    Task<ConsultationAiInterpretation?> InterpretAsync(
+        string input,
+        IReadOnlyList<ConsultationNeedOption> allowedUsageNeeds,
+        CancellationToken cancellationToken = default);
+
+    Task<string?> ComposeResponseAsync(
+        string input,
+        ConsultationOutcome outcome,
+        Func<string, CancellationToken, ValueTask>? onChunk = null,
+        CancellationToken cancellationToken = default);
+}
+
+public sealed record ConsultationChatMessageItem(
+    string Role,
+    string Content,
+    DateTime CreatedAt,
+    IReadOnlyList<int> RecommendedProductIds);
+
+public sealed record ConsultationChatSummary(Guid Id, string Title, DateTime UpdatedAt);
+
+public sealed record ConsultationChatHistory(
+    Guid Id,
+    string Title,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    IReadOnlyList<ConsultationChatMessageItem> Messages);
+
+public interface IConsultationChatStore
+{
+    Task<IReadOnlyList<ConsultationChatSummary>> GetRecentAsync(int userId, CancellationToken cancellationToken = default);
+    Task<ConsultationChatHistory?> GetAsync(int userId, Guid conversationId, CancellationToken cancellationToken = default);
+    Task<Guid> AppendExchangeAsync(
+        int userId,
+        Guid? conversationId,
+        string userMessage,
+        string assistantMessage,
+        IReadOnlyList<int> recommendedProductIds,
+        CancellationToken cancellationToken = default);
+    Task<bool> DeleteAsync(int userId, Guid conversationId, CancellationToken cancellationToken = default);
+}
+
+public sealed class ConsultationConversationNotFoundException : Exception { }
+
+public sealed record ConsultationRequest(
+    string? Description,
+    string? ConfirmedCategory = null,
+    string? ConfirmedUsage = null,
+    string? PreviousAssistantMessage = null,
+    bool IsAffirmativeReply = false);
 
 public sealed record ConsultationProduct(
     int Id,
@@ -81,7 +135,10 @@ public sealed record ConsultationProduct(
     decimal? DiscountPrice,
     string? PrimaryImageUrl,
     string? Description,
-    IReadOnlyList<ConsultationSpecificationValue> Specifications);
+    IReadOnlyList<ConsultationSpecificationValue> Specifications)
+{
+    public int? AvailableQuantity { get; init; }
+}
 
 public sealed record ConsultationSpecificationDefinition(
     int Id,
@@ -115,10 +172,14 @@ public sealed record CandidateQuery(
     int CategoryId,
     decimal? MinimumPrice,
     decimal? MaximumPrice,
-    IReadOnlyList<(int SpecificationId, string Operator, decimal Value)> NumericConstraints);
+    IReadOnlyList<(int SpecificationId, string Operator, decimal Value)> NumericConstraints)
+{
+    public string? BrandName { get; init; }
+}
 
 public interface IConsultationDataSource
 {
+    Task<IReadOnlyList<string>> GetActiveBrandNamesAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ConsultationNeedOption>> GetActiveUsageNeedsAsync(CancellationToken cancellationToken = default);
 
     Task<ConsultationDataContext?> GetContextAsync(
@@ -170,7 +231,8 @@ public sealed record ConsultationOutcome(
     RequirementProfile Profile,
     IReadOnlyList<RecommendedProduct> Recommendations,
     string Message,
-    long ElapsedMilliseconds = 0);
+    long ElapsedMilliseconds = 0,
+    bool AiAssisted = false);
 
 public interface IConsultationService
 {

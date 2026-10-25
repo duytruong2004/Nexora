@@ -8,6 +8,7 @@ namespace NEXORA.Infrastructure.Catalog;
 public sealed class CustomerCatalogQueryService(AppDbContext db) : ICustomerCatalogQueryService
 {
     private const int MaximumPageSize = 48;
+    private const int HomeProductsPerCategory = 4;
 
     public async Task<CatalogHomeData> GetHomeAsync(CancellationToken cancellationToken = default)
     {
@@ -25,7 +26,27 @@ public sealed class CustomerCatalogQueryService(AppDbContext db) : ICustomerCata
             .Select(ToCard())
             .ToListAsync(cancellationToken);
 
-        return new CatalogHomeData(categories, products);
+        var categorySections = new List<CatalogHomeCategorySection>(categories.Count);
+        foreach (var category in categories)
+        {
+            var categoryProducts = await VisibleProducts()
+                .Where(product => product.CategoryId == category.Id)
+                .OrderByDescending(product => product.CreatedAt)
+                .ThenByDescending(product => product.Id)
+                .Take(HomeProductsPerCategory)
+                .Select(ToCard())
+                .ToListAsync(cancellationToken);
+
+            if (categoryProducts.Count > 0)
+            {
+                categorySections.Add(new CatalogHomeCategorySection(category, categoryProducts));
+            }
+        }
+
+        return new CatalogHomeData(categories, products)
+        {
+            CategorySections = categorySections
+        };
     }
 
     public async Task<CatalogProductPage> SearchAsync(

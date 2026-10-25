@@ -97,6 +97,13 @@ public sealed record CatalogProductPage(
 
 public sealed record CatalogHomeData(
     IReadOnlyList<CatalogCategoryOption> Categories,
+    IReadOnlyList<CatalogProductCard> Products)
+{
+    public IReadOnlyList<CatalogHomeCategorySection> CategorySections { get; init; } = [];
+}
+
+public sealed record CatalogHomeCategorySection(
+    CatalogCategoryOption Category,
     IReadOnlyList<CatalogProductCard> Products);
 
 public sealed record CatalogComparisonRow(

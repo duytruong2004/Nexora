@@ -74,25 +74,56 @@
     </section>
 }
 
-<section class="mb-5" aria-labelledby="featured-title">
-    <div class="storefront-section-heading">
-        <div><p class="storefront-eyebrow mb-1">Lựa chọn dành cho bạn</p><h2 id="featured-title">Sản phẩm đang kinh doanh</h2></div>
-        <a asp-controller="Catalog" asp-action="Index" class="storefront-section-link">Xem tất cả <span aria-hidden="true">→</span></a>
-    </div>
-    @if (Model.Data.Products.Count == 0)
-    {
+@if (Model.Data.CategorySections.Count > 0)
+{
+    <section class="mb-5" aria-labelledby="home-category-products-title">
+        <div class="storefront-section-heading">
+            <div><p class="storefront-eyebrow mb-1">Khám phá theo nhu cầu</p><h2 id="home-category-products-title">Sản phẩm theo danh mục</h2></div>
+            <a asp-controller="Catalog" asp-action="Index" class="storefront-section-link">Tất cả sản phẩm <span aria-hidden="true">→</span></a>
+        </div>
+        @foreach (var categorySection in Model.Data.CategorySections)
+        {
+            var categoryHeadingId = $"home-category-{categorySection.Category.Id}";
+            <section class="storefront-home-category mb-4" aria-labelledby="@categoryHeadingId">
+                <div class="storefront-section-heading storefront-home-category-heading">
+                    <h3 id="@categoryHeadingId">@categorySection.Category.Name</h3>
+                    <a asp-controller="Catalog" asp-action="Category" asp-route-id="@categorySection.Category.Id" class="storefront-section-link">Xem danh mục <span aria-hidden="true">→</span></a>
+                </div>
+                <div class="storefront-product-grid storefront-home-category-grid">
+                    @foreach (var product in categorySection.Products)
+                    {
+                        <div class="storefront-product-grid-item"><partial name="_ProductCard" model="product" /></div>
+                    }
+                </div>
+            </section>
+        }
+    </section>
+}
+else if (Model.Data.Products.Count == 0)
+{
+    <section class="mb-5" aria-labelledby="featured-title">
+        <div class="storefront-section-heading">
+            <div><p class="storefront-eyebrow mb-1">Lựa chọn dành cho bạn</p><h2 id="featured-title">Sản phẩm đang kinh doanh</h2></div>
+            <a asp-controller="Catalog" asp-action="Index" class="storefront-section-link">Xem tất cả <span aria-hidden="true">→</span></a>
+        </div>
         <div class="catalog-empty rounded-4 p-4 text-secondary">Chưa có sản phẩm đang kinh doanh. Quản trị viên có thể thêm sản phẩm từ khu vực Admin.</div>
-    }
-    else
-    {
+    </section>
+}
+else
+{
+    <section class="mb-5" aria-labelledby="featured-title">
+        <div class="storefront-section-heading">
+            <div><p class="storefront-eyebrow mb-1">Lựa chọn dành cho bạn</p><h2 id="featured-title">Sản phẩm đang kinh doanh</h2></div>
+            <a asp-controller="Catalog" asp-action="Index" class="storefront-section-link">Xem tất cả <span aria-hidden="true">→</span></a>
+        </div>
         <div class="storefront-product-grid">
             @foreach (var product in Model.Data.Products)
             {
                 <div class="storefront-product-grid-item"><partial name="_ProductCard" model="product" /></div>
             }
         </div>
-    }
-</section>
+    </section>
+}
 
 <section class="consultation-banner rounded-4 p-4 p-lg-5 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-4" aria-labelledby="consultation-title">
     <div><p class="storefront-eyebrow mb-2">Tư vấn thông minh NEXORA</p><h2 id="consultation-title" class="h3 fw-bold">Mô tả nhu cầu bằng tiếng Việt</h2><p class="mb-0 text-secondary">Nêu ngân sách, mục đích và điều bạn ưu tiên. Gợi ý được xếp hạng từ sản phẩm cùng thông số đang có trong hệ thống.</p></div>

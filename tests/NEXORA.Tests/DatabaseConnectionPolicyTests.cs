@@ -208,7 +208,7 @@ public sealed class DatabaseConnectionPolicyTests
         Assert.Equal(System.Data.ConnectionState.Closed, context.Database.GetDbConnection().State);
         var selected = new SqlConnectionStringBuilder(context.Database.GetDbConnection().ConnectionString);
         Assert.Equal("NEXORA_Dev_Alice", selected.InitialCatalog);
-        Assert.Equal(3, context.Database.GetMigrations().Count());
+        Assert.Equal(4, context.Database.GetMigrations().Count());
         Assert.False(context.Database.HasPendingModelChanges());
     }
 

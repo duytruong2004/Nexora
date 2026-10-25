@@ -1,196 +1,278 @@
 @model CustomerConsultationViewModel
 @{
-    ViewData["Title"] = "Tư vấn sản phẩm";
-    var profile = Model.Outcome?.Profile;
+    ViewData["Title"] = "NEXORA AI";
+    var authenticated = User.Identity?.IsAuthenticated == true;
+    var canAddToCart = User.IsInRole("Customer");
 }
 
-<section class="consultation-page-hero rounded-4 mb-4" aria-labelledby="consultation-page-title">
-    <div class="consultation-hero-copy">
-        <p class="consultation-hero-kicker"><span aria-hidden="true">✦</span> NEXORA · TƯ VẤN CÔNG NGHỆ</p>
-        <h1 id="consultation-page-title">Chọn đúng thiết bị, bắt đầu từ nhu cầu của bạn.</h1>
-        <p class="consultation-hero-description">Kể chúng tôi nghe bạn cần gì. NEXORA sẽ đối chiếu ngân sách, mục đích sử dụng và thông số để gợi ý sản phẩm phù hợp.</p>
-        <div class="consultation-hero-benefits" aria-label="Điểm nổi bật">
-            <span><i aria-hidden="true">✓</i> Gợi ý theo ngân sách</span>
-            <span><i aria-hidden="true">✓</i> Nêu rõ lý do lựa chọn</span>
-            <span><i aria-hidden="true">✓</i> Dữ liệu sản phẩm NEXORA</span>
+<main class="shopping-assistant" id="shopping-assistant"
+      data-chat-url="@Url.Action("Chat", "Consultation")"
+      data-status-url="@Url.Action("ChatStatus", "Consultation")"
+      data-compare-url="@Url.Action("Compare", "Catalog")"
+      data-authenticated="@(authenticated ? "true" : "false")"
+      data-customer="@(canAddToCart ? "true" : "false")"
+      data-login-url="@Url.Action("Login", "Account", new { returnUrl = "/tu-van-san-pham" })">
+    @Html.AntiForgeryToken()
+    <aside class="shopping-assistant-sidebar" id="assistant-sidebar" aria-label="Điều hướng hội thoại">
+        <div class="shopping-assistant-brand">
+            <span class="shopping-assistant-brand-mark" aria-hidden="true">N</span>
+            <span><strong>NEXORA AI</strong><small>Trợ lý mua sắm công nghệ</small></span>
         </div>
-    </div>
-    <div class="consultation-hero-visual" aria-hidden="true">
-        <div class="consultation-orbit consultation-orbit--outer"></div>
-        <div class="consultation-orbit consultation-orbit--inner"></div>
-        <div class="consultation-hero-device"><span class="consultation-device-glow"></span><span class="consultation-device-mark">N</span></div>
-        <div class="consultation-float-card consultation-float-card--top"><span>01</span><div><strong>Mô tả nhu cầu</strong><small>Điều bạn ưu tiên</small></div></div>
-        <div class="consultation-float-card consultation-float-card--bottom"><span class="consultation-float-check">✓</span><div><strong>Gợi ý phù hợp</strong><small>Có giải thích rõ ràng</small></div></div>
-    </div>
-</section>
+        <button class="assistant-new-chat" type="button" id="assistant-new-chat"><span aria-hidden="true">＋</span> Cuộc trò chuyện mới</button>
+        <div class="assistant-history-heading"><span>PHIÊN HIỆN TẠI</span><button type="button" id="assistant-close-sidebar" aria-label="Đóng thông tin phiên">×</button></div>
+        <div class="assistant-history-list" id="assistant-history-list" aria-live="polite">
+            <p class="assistant-history-empty">Tin nhắn chỉ được giữ trong trang hiện tại. Tải lại hoặc đóng trang sẽ xóa cuộc trò chuyện.</p>
+        </div>
+        <div class="assistant-sidebar-account">
+            <span class="assistant-account-avatar" aria-hidden="true">N</span>
+            <span><strong>@(authenticated ? "Tài khoản NEXORA" : "Khách")</strong><small>Không lưu lịch sử trên máy chủ</small></span>
+        </div>
+    </aside>
+    <button class="assistant-sidebar-scrim" id="assistant-sidebar-scrim" type="button" aria-label="Đóng danh sách hội thoại" hidden></button>
 
-<div class="row g-4 align-items-start">
-    <div class="col-lg-5">
-        <form asp-controller="Consultation" asp-action="Submit" method="post" id="consultation-form" class="card consultation-card consultation-form-card p-3 p-lg-4" aria-busy="false">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="consultation-form-heading">
-                <span class="consultation-step-number">01</span>
-                <div><p>BẮT ĐẦU TỪ NHU CẦU</p><h2>Mô tả thiết bị bạn cần</h2><span>Viết tự nhiên như đang chia sẻ với nhân viên tư vấn.</span></div>
-            </div>
-            <div class="consultation-prompt-field">
-                <label asp-for="Description" class="form-label fw-semibold"></label>
-                <textarea asp-for="Description" class="form-control consultation-prompt" rows="4" maxlength="1200" placeholder="Ví dụ: Laptop dưới 25 triệu để lập trình, ưu tiên RAM lớn và máy nhẹ"></textarea>
-                <span asp-validation-for="Description" class="text-danger"></span>
-            </div>
-            <div class="consultation-suggestion-section">
-                <p>THỬ MỘT CÂU GỢI Ý</p>
-                <div class="consultation-suggestion-list" role="group" aria-label="Câu gợi ý tư vấn">
-                    <button type="button" class="btn btn-sm suggestion" aria-pressed="false" data-text="Laptop dưới 25 triệu, lập trình, ưu tiên RAM và máy nhẹ"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="11" rx="1.8"/><path d="M2.5 19h19M9 16l-.7 3m6.4-3 .7 3"/></svg> Laptop lập trình</button>
-                    <button type="button" class="btn btn-sm suggestion" aria-pressed="false" data-text="Điện thoại khoảng 12 triệu để học tập, ưu tiên pin tốt"><svg viewBox="0 0 24 24" fill="none"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M10 5h4m-2 13.5h.01"/></svg> Điện thoại học tập</button>
-                    <button type="button" class="btn btn-sm suggestion" aria-pressed="false" data-text="Máy tính bảng từ 7 đến 13 triệu để học online, ưu tiên pin tốt"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M11 18.5h2"/></svg> Máy tính bảng</button>
-                </div>
-            </div>
-            <div class="consultation-selects">
-                <div><label asp-for="ConfirmedCategory" class="form-label">Danh mục <span>(tùy chọn)</span></label><select asp-for="ConfirmedCategory" asp-items="Model.CategoryOptions" class="form-select"><option value="">Để hệ thống nhận diện</option></select></div>
-                <div><label asp-for="ConfirmedUsage" class="form-label">Mục đích <span>(tùy chọn)</span></label><select asp-for="ConfirmedUsage" asp-items="Model.UsageOptions" class="form-select"><option value="">Để hệ thống nhận diện</option></select></div>
-            </div>
-            <button class="btn btn-primary btn-lg consultation-submit" type="submit" id="consultation-submit"><span>Tìm gợi ý cho tôi</span><span aria-hidden="true">→</span></button>
-            <div id="consultation-loading" class="consultation-loading small mt-2" role="status" aria-live="polite" hidden>
-                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-                <span>Đang phân tích yêu cầu và tra cứu dữ liệu sản phẩm…</span>
-            </div>
-            <p class="consultation-form-note"><span aria-hidden="true">ⓘ</span> Kết quả dựa trên danh mục và thông tin sản phẩm hiện có của NEXORA.</p>
-        </form>
-    </div>
+    <section class="shopping-assistant-main" aria-label="Trò chuyện với NEXORA AI">
+        <header class="assistant-topbar">
+            <button class="assistant-menu-toggle" id="assistant-menu-toggle" type="button" aria-label="Thông tin phiên chat">☰</button>
+            <div><strong>NEXORA AI</strong><span id="assistant-provider-status">Trợ lý tư vấn sản phẩm</span></div>
+            <span class="assistant-data-badge"><i aria-hidden="true"></i> Dữ liệu từ NEXORA</span>
+        </header>
 
-    <div class="col-lg-7">
-        @if (Model.Outcome is null)
-        {
-            <aside class="consultation-guide" aria-labelledby="consultation-help-title">
-                <div class="consultation-guide-heading"><span>QUY TRÌNH TƯ VẤN</span><span class="consultation-guide-live"><i></i> Sẵn sàng</span></div>
-                <h2 id="consultation-help-title">Một mô tả tốt thường có 3 điều</h2>
-                <div class="consultation-guide-steps">
-                    <div><span>01</span><section><strong>Thiết bị</strong><p>Laptop, điện thoại hay máy tính bảng?</p></section></div>
-                    <div><span>02</span><section><strong>Ngân sách</strong><p>Mức giá tối đa hoặc khoảng giá bạn mong muốn.</p></section></div>
-                    <div><span>03</span><section><strong>Cách sử dụng</strong><p>Học tập, làm việc, lập trình hay giải trí.</p></section></div>
+        <div class="assistant-conversation" id="assistant-conversation" aria-live="polite" aria-relevant="additions text">
+            <section class="assistant-welcome" id="assistant-welcome">
+                <span class="assistant-welcome-spark" aria-hidden="true">✦</span>
+                <p class="assistant-eyebrow">CHỌN THIẾT BỊ PHÙ HỢP HƠN</p>
+                <h1>Chào bạn, hôm nay mình có thể giúp gì?</h1>
+                <p>Mô tả nhu cầu và ngân sách. Mình sẽ tìm sản phẩm đang có trong NEXORA và giải thích vì sao chúng phù hợp.</p>
+                <div class="assistant-prompt-grid" role="group" aria-label="Câu hỏi gợi ý">
+                    <button type="button" data-prompt="Laptop dưới 20 triệu để học lập trình, ưu tiên RAM 16 GB và SSD 512 GB"><span aria-hidden="true">⌨</span><span><strong>Laptop học lập trình</strong><small>Dưới 20 triệu · RAM từ 16 GB</small></span><b aria-hidden="true">↗</b></button>
+                    <button type="button" data-prompt="Điện thoại chơi game và chụp ảnh tốt, ngân sách khoảng 15 triệu"><span aria-hidden="true">▣</span><span><strong>Điện thoại đa dụng</strong><small>Chơi game · chụp ảnh</small></span><b aria-hidden="true">↗</b></button>
+                    <button type="button" data-prompt="Máy tính bảng gọn nhẹ để ghi chú bài giảng và mang đi học"><span aria-hidden="true">▯</span><span><strong>Máy tính bảng đi học</strong><small>Gọn nhẹ · ghi chú</small></span><b aria-hidden="true">↗</b></button>
+                    <button type="button" data-prompt="So sánh các sản phẩm laptop gaming đang có trong cửa hàng"><span aria-hidden="true">⇄</span><span><strong>So sánh lựa chọn</strong><small>Đối chiếu theo dữ liệu có sẵn</small></span><b aria-hidden="true">↗</b></button>
                 </div>
-                <div class="consultation-guide-tip"><span aria-hidden="true">✦</span><p><strong>Mẹo nhỏ</strong> — Nêu thêm 1–2 ưu tiên như pin lâu, máy nhẹ hoặc RAM lớn để gợi ý sát hơn.</p></div>
-            </aside>
-        }
-        else
-        {
-            <section class="card consultation-card p-3 p-lg-4 mb-4" aria-labelledby="consultation-profile-title">
-                <div class="d-flex justify-content-between align-items-start gap-3">
-                    <div><p class="small text-uppercase fw-semibold text-primary mb-1">Phân tích yêu cầu</p><h2 id="consultation-profile-title" class="h5 mb-0">@Model.Outcome.Message</h2></div>
-                    @if (Model.Outcome.ElapsedMilliseconds > 0) { <span class="badge text-bg-light">@Model.Outcome.ElapsedMilliseconds ms</span> }
-                </div>
-                @if (profile is not null)
-                {
-                    <section class="consultation-recognized-group" aria-labelledby="recognized-needs-title">
-                        <h3 id="recognized-needs-title">Nhu cầu hệ thống nhận diện</h3>
-                        <dl class="consultation-recognized-list">
-                            <dt>Danh mục</dt><dd>@(profile.Category.Value ?? "Chưa xác định") <span class="text-secondary fw-normal">(@profile.Category.State)</span></dd>
-                            <dt>Mục đích</dt><dd>@(profile.UsageNeed.Value ?? "Chưa xác định") <span class="text-secondary fw-normal">(@profile.UsageNeed.State)</span></dd>
-                            <dt>Ngân sách</dt><dd>
-                                @switch (profile.Budget.Kind)
-                                {
-                                    case BudgetKind.Maximum: <text>Tối đa @profile.Budget.MaximumVnd?.ToString("N0") ₫</text>; break;
-                                    case BudgetKind.Range: <text>@profile.Budget.MinimumVnd?.ToString("N0") – @profile.Budget.MaximumVnd?.ToString("N0") ₫</text>; break;
-                                    case BudgetKind.Approximate: <text>Khoảng @profile.Budget.TargetVnd?.ToString("N0") ₫ (tham khảo)</text>; break;
-                                    default: <text>Chưa nêu</text>; break;
-                                }
-                            </dd>
-                        </dl>
-                    </section>
-                    <section class="consultation-recognized-group" aria-labelledby="recognized-hard-title">
-                        <h3 id="recognized-hard-title">Điều kiện bắt buộc</h3>
-                        @if (profile.HardConstraints.Count > 0)
-                        {
-                            <div class="d-flex flex-wrap gap-2">@foreach (var item in profile.HardConstraints) { <span class="badge text-bg-danger">@item.SpecificationName @item.Operator @item.Value @item.Unit</span> }</div>
-                        }
-                        else { <p class="small text-secondary mb-0">Chưa nhận diện thấy thông số bắt buộc trong mô tả.</p> }
-                    </section>
-                    <section class="consultation-recognized-group" aria-labelledby="recognized-preferences-title">
-                        <h3 id="recognized-preferences-title">Tiêu chí ưu tiên</h3>
-                        @if (profile.SoftPreferences.Count > 0)
-                        {
-                            <div class="d-flex flex-wrap gap-2">@foreach (var item in profile.SoftPreferences) { <span class="badge text-bg-primary">@item.SpecificationName · @item.Direction</span> }</div>
-                        }
-                        else { <p class="small text-secondary mb-0">Chưa nhận diện thấy tiêu chí ưu tiên trong mô tả.</p> }
-                    </section>
-                    @if (profile.ClarificationQuestions.Count > 0)
-                    {
-                        <div class="alert alert-warning mt-3 mb-0" role="status"><strong>Cần bạn bổ sung</strong><ul class="mb-0 mt-2">@foreach (var question in profile.ClarificationQuestions) { <li>@question</li> }</ul></div>
-                    }
-                    @if (profile.Warnings.Count > 0)
-                    {
-                        <div class="small text-secondary mt-3" role="note">@foreach (var warning in profile.Warnings) { <div>@warning</div> }</div>
-                    }
-                }
+                <p class="assistant-trust-note"><span aria-hidden="true">ⓘ</span> Giá, tình trạng hàng và thông số được lấy từ dữ liệu NEXORA. AI không tự tạo thông tin sản phẩm.</p>
             </section>
+            <div class="assistant-message-list" id="assistant-message-list"></div>
+        </div>
 
-            @if (Model.Outcome.Kind == ConsultationOutcomeKind.Results)
-            {
-                <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-3">
-                    <div><p class="text-uppercase small fw-semibold text-primary mb-1">Kết quả tra cứu</p><h2 class="h4 mb-0">Sản phẩm đề xuất</h2></div>
-                    @if (Model.Outcome.Recommendations.Count >= 2)
-                    {
-                        <form asp-controller="Catalog" asp-action="Compare" method="get" class="m-0">
-                            @foreach (var item in Model.Outcome.Recommendations.Take(3)) { <input type="hidden" name="ids" value="@item.Product.Id" /> }
-                            <button class="btn btn-sm btn-outline-primary" type="submit">So sánh tối đa 3</button>
-                        </form>
-                    }
-                </div>
-                <div class="d-grid gap-3">
-                    @for (var index = 0; index < Model.Outcome.Recommendations.Count; index++)
-                    {
-                        var item = Model.Outcome.Recommendations[index];
-                        <article class="card consultation-result-card consultation-result-card--product">
-                            <div class="row g-0 align-items-stretch">
-                                <div class="col-12 col-md-4"><div class="consultation-result-image">@await Html.PartialAsync("_ProductImage", new NEXORA.Web.Models.ProductImageDisplayViewModel(item.Product.PrimaryImageUrl, item.Product.Name, "consultation"))</div></div>
-                                <div class="col-12 col-md-8"><div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start gap-2"><div><p class="small text-primary fw-semibold mb-1">@item.Product.CategoryName · @item.Product.BrandName</p><h3 class="h5"><a class="text-decoration-none" asp-controller="Catalog" asp-action="Details" asp-route-id="@item.Product.Id">@item.Product.Name</a></h3></div><span class="badge text-bg-primary align-self-start">Điểm @item.Score.ToString("0.000")</span></div>
-                                    <p class="fw-bold text-primary mb-3">@((item.Product.DiscountPrice ?? item.Product.Price).ToString("N0")) ₫</p>
-                                    @if (item.Reasons.Count > 0)
-                                    {
-                                        <div class="consultation-result-reasons"><h4>Lý do đề xuất · @(index + 1)</h4><ul>@foreach (var reason in item.Reasons) { <li>@reason</li> }</ul></div>
-                                    }
-                                    @if (item.Limitations.Count > 0) { <div class="small text-secondary mt-2">@foreach (var limitation in item.Limitations) { <div>@limitation</div> }</div> }
-                                    <a asp-controller="Catalog" asp-action="Details" asp-route-id="@item.Product.Id" class="btn btn-sm btn-outline-primary mt-3">Xem chi tiết</a>
-                                </div></div>
-                            </div>
-                        </article>
-                    }
-                </div>
-            }
-            else if (Model.Outcome.Kind == ConsultationOutcomeKind.NoMatchingProducts)
-            {
-                <div class="consultation-empty p-4" role="status"><p class="text-uppercase small fw-semibold text-primary mb-1">Chưa có kết quả phù hợp</p><h2 class="h5">Không tìm thấy sản phẩm thỏa điều kiện</h2><p class="text-secondary mb-0">Các điều kiện bắt buộc được giữ nguyên. Bạn có thể điều chỉnh mô tả hoặc danh mục rồi thử lại.</p></div>
-            }
-            else if (Model.Outcome.Kind == ConsultationOutcomeKind.InvalidInput)
-            {
-                <div class="alert alert-danger" role="alert"><h2 class="h6">Không thể xử lý yêu cầu</h2>@Model.Outcome.Message</div>
-            }
-            else
-            {
-                <div class="consultation-empty p-4" role="status"><p class="text-uppercase small fw-semibold text-primary mb-1">Cần làm rõ nhu cầu</p><h2 class="h5">Hãy trả lời các câu hỏi phía trên</h2><p class="text-secondary mb-0">Sau khi bổ sung thông tin, bạn có thể gửi lại mô tả để tiếp tục tra cứu.</p></div>
-            }
-        }
-    </div>
-</div>
+        <div class="assistant-composer-area">
+            <div class="assistant-compare-toolbar" id="assistant-compare-toolbar" hidden>
+                <span><strong id="assistant-compare-count">0</strong> sản phẩm được chọn</span>
+                <button class="btn btn-sm btn-primary" id="assistant-compare-button" type="button" disabled>So sánh sản phẩm</button>
+                <button class="assistant-clear-compare" id="assistant-clear-compare" type="button">Bỏ chọn</button>
+            </div>
+            <form class="assistant-composer" id="assistant-composer">
+                <textarea id="assistant-input" rows="1" maxlength="1200" placeholder="Hỏi NEXORA AI về thiết bị bạn đang tìm…" aria-label="Tin nhắn cho NEXORA AI"></textarea>
+                <span class="assistant-composer-hint">Enter để gửi · Shift + Enter để xuống dòng</span>
+                <button class="assistant-send-button" id="assistant-send" type="submit" aria-label="Gửi tin nhắn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7Z"/></svg></button>
+                <button class="assistant-stop-button" id="assistant-stop" type="button" aria-label="Dừng phản hồi" hidden>■</button>
+            </form>
+            <p class="assistant-disclaimer">NEXORA AI có thể chưa hiểu đúng mọi nhu cầu. Hãy kiểm tra thông tin sản phẩm trước khi đặt hàng.</p>
+        </div>
+    </section>
+</main>
 
 @section Scripts {
-    <script>
-        (() => {
-            const form = document.getElementById('consultation-form');
-            const input = document.getElementById('Description');
-            for (const button of document.querySelectorAll('.suggestion')) {
-                button.addEventListener('click', () => {
-                    input.value = button.dataset.text ?? '';
-                    for (const suggestion of document.querySelectorAll('.suggestion')) suggestion.setAttribute('aria-pressed', suggestion === button ? 'true' : 'false');
-                    input.focus();
-                });
+<script>
+(() => {
+    const root = document.getElementById('shopping-assistant');
+    const messages = document.getElementById('assistant-message-list');
+    const conversation = document.getElementById('assistant-conversation');
+    const welcome = document.getElementById('assistant-welcome');
+    const composer = document.getElementById('assistant-composer');
+    const input = document.getElementById('assistant-input');
+    const send = document.getElementById('assistant-send');
+    const stop = document.getElementById('assistant-stop');
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+    const isAuthenticated = root.dataset.authenticated === 'true';
+    const isCustomer = root.dataset.customer === 'true';
+    let previousUserMessages = [];
+    let previousRecommendedProductIds = [];
+    let previousAssistantMessage = '';
+    let controller = null;
+    const selectedCompareIds = new Set();
+
+    const scrollToLatest = () => requestAnimationFrame(() => conversation.scrollTo({ top: conversation.scrollHeight, behavior: 'smooth' }));
+    const hideWelcome = () => { welcome.hidden = true; };
+    const appendUser = text => {
+        const row = document.createElement('article'); row.className = 'assistant-message assistant-message--user';
+        const bubble = document.createElement('div'); bubble.className = 'assistant-message-bubble'; bubble.textContent = text;
+        row.append(bubble); messages.append(row); scrollToLatest();
+    };
+    const renderSafeText = (host, text) => {
+        const lines = String(text ?? '').split(/\r?\n/); let list = null; let paragraph = [];
+        const flushParagraph = () => { if (!paragraph.length) return; const p = document.createElement('p'); p.textContent = paragraph.join(' '); host.append(p); paragraph = []; };
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (/^[-*]\s+/.test(trimmed)) { flushParagraph(); if (!list) { list = document.createElement('ul'); host.append(list); } const li = document.createElement('li'); li.textContent = trimmed.replace(/^[-*]\s+/, ''); list.append(li); }
+            else { list = null; if (!trimmed) flushParagraph(); else paragraph.push(trimmed); }
+        }
+        flushParagraph();
+    };
+    const formatPrice = value => new Intl.NumberFormat('vi-VN').format(value ?? 0) + ' ₫';
+    const addAssistant = (text, options = {}) => {
+        const row = document.createElement('article'); row.className = 'assistant-message assistant-message--assistant';
+        const avatar = document.createElement('span'); avatar.className = 'assistant-message-avatar'; avatar.textContent = 'N'; avatar.setAttribute('aria-hidden', 'true');
+        const content = document.createElement('div'); content.className = 'assistant-message-content';
+        const label = document.createElement('span'); label.className = 'assistant-message-label'; label.textContent = options.aiAssisted ? 'NEXORA AI · QWEN HỖ TRỢ' : 'NEXORA AI · DỮ LIỆU CỬA HÀNG';
+        const body = document.createElement('div'); body.className = 'assistant-message-text'; renderSafeText(body, text);
+        content.append(label, body);
+        if (options.comparison) content.append(renderComparison(options.comparison));
+        if (options.products?.length) content.append(renderProducts(options.products));
+        row.append(avatar, content); messages.append(row); scrollToLatest();
+        return row;
+    };
+    const renderComparison = value => {
+        const wrap = document.createElement('div'); wrap.className = 'assistant-comparison-wrap';
+        const table = document.createElement('table'); table.className = 'assistant-comparison-table';
+        const thead = document.createElement('thead'); const header = document.createElement('tr');
+        const specHead = document.createElement('th'); specHead.textContent = 'Thông tin'; header.append(specHead);
+        for (const product of value.products ?? []) { const th = document.createElement('th'); th.textContent = product.name; header.append(th); }
+        thead.append(header); table.append(thead);
+        const tbody = document.createElement('tbody');
+        for (const item of value.rows ?? []) { const tr = document.createElement('tr'); const label = document.createElement('th'); label.textContent = item.unit ? `${item.name} (${item.unit})` : item.name; tr.append(label); for (const valueText of item.values ?? []) { const td = document.createElement('td'); td.textContent = valueText || 'Chưa có dữ liệu'; tr.append(td); } tbody.append(tr); }
+        table.append(tbody); wrap.append(table); return wrap;
+    };
+    const renderProducts = items => {
+        const section = document.createElement('section'); section.className = 'assistant-products';
+        const heading = document.createElement('div'); heading.className = 'assistant-products-heading';
+        const title = document.createElement('h3'); title.textContent = 'Sản phẩm phù hợp';
+        const count = document.createElement('span'); count.textContent = `${items.length} gợi ý từ NEXORA`; heading.append(title, count); section.append(heading);
+        const grid = document.createElement('div'); grid.className = 'assistant-product-grid';
+        for (const item of items) {
+            const card = document.createElement('article'); card.className = 'assistant-product-card';
+            const imageLink = document.createElement('a'); imageLink.href = item.detailsUrl; imageLink.className = 'assistant-product-image'; imageLink.setAttribute('aria-label', `Xem ${item.name}`);
+            if (item.imageUrl) { const img = document.createElement('img'); img.src = item.imageUrl; img.alt = item.name; img.loading = 'lazy'; img.onerror = () => { img.remove(); imageLink.textContent = 'N'; }; imageLink.append(img); } else imageLink.textContent = 'N';
+            const details = document.createElement('div'); details.className = 'assistant-product-details';
+            const meta = document.createElement('p'); meta.className = 'assistant-product-meta'; meta.textContent = `${item.categoryName} · ${item.brandName}`;
+            const name = document.createElement('h4'); const link = document.createElement('a'); link.href = item.detailsUrl; link.textContent = item.name; name.append(link);
+            const price = document.createElement('div'); price.className = 'assistant-product-price'; const current = document.createElement('strong'); current.textContent = formatPrice(item.discountPrice ?? item.price); price.append(current);
+            if (item.discountPrice != null && item.discountPrice < item.price) { const old = document.createElement('del'); old.textContent = formatPrice(item.price); price.append(old); }
+            const stock = document.createElement('span'); stock.className = `assistant-stock ${item.availableQuantity > 0 ? 'is-available' : 'is-unavailable'}`;
+            stock.textContent = item.availableQuantity > 0 ? `Còn ${item.availableQuantity}` : item.availableQuantity === 0 ? 'Tạm hết hàng' : 'Chưa có dữ liệu kho';
+            const specs = document.createElement('div'); specs.className = 'assistant-product-specs';
+            for (const spec of item.specifications ?? []) { const pill = document.createElement('span'); pill.textContent = `${spec.name}: ${spec.value}${spec.unit ? ` ${spec.unit}` : ''}`; specs.append(pill); }
+            const why = document.createElement('ul'); why.className = 'assistant-product-reasons';
+            for (const reason of item.reasons ?? []) { const li = document.createElement('li'); li.textContent = reason; why.append(li); }
+            if (!(item.reasons ?? []).length) { const li = document.createElement('li'); li.textContent = 'Được lọc theo yêu cầu bạn vừa nêu.'; why.append(li); }
+            const actions = document.createElement('div'); actions.className = 'assistant-product-actions';
+            const detailButton = document.createElement('a'); detailButton.className = 'btn btn-sm btn-outline-primary'; detailButton.href = item.detailsUrl; detailButton.textContent = 'Xem chi tiết'; actions.append(detailButton);
+            const compareLabel = document.createElement('label'); compareLabel.className = 'assistant-card-compare'; const check = document.createElement('input'); check.type = 'checkbox'; check.value = item.id; check.setAttribute('aria-label', `Chọn ${item.name} để so sánh`); check.checked = selectedCompareIds.has(item.id); check.addEventListener('change', () => { check.checked ? selectedCompareIds.add(item.id) : selectedCompareIds.delete(item.id); updateCompareToolbar(); }); compareLabel.append(check, document.createTextNode(' So sánh')); actions.append(compareLabel);
+            if (item.availableQuantity > 0 && isCustomer) { const add = document.createElement('button'); add.type = 'button'; add.className = 'btn btn-sm btn-primary assistant-add-cart'; add.textContent = 'Thêm giỏ hàng'; add.addEventListener('click', () => addToCart(add, item.id)); actions.append(add); }
+            else if (item.availableQuantity !== null && item.availableQuantity <= 0) { const unavailable = document.createElement('span'); unavailable.className = 'assistant-unavailable'; unavailable.textContent = 'Chưa thể thêm · hết hàng'; actions.append(unavailable); }
+            else if (!isAuthenticated) { const login = document.createElement('a'); login.className = 'assistant-login-cart'; login.href = root.dataset.loginUrl; login.textContent = 'Đăng nhập để mua'; actions.append(login); }
+            else if (!isCustomer) { const roleNote = document.createElement('span'); roleNote.className = 'assistant-unavailable'; roleNote.textContent = 'Cần tài khoản khách hàng để mua'; actions.append(roleNote); }
+            else { const unavailable = document.createElement('span'); unavailable.className = 'assistant-unavailable'; unavailable.textContent = 'Chưa có dữ liệu kho'; actions.append(unavailable); }
+            details.append(meta, name, price, stock); if (specs.childElementCount) details.append(specs); details.append(why, actions); card.append(imageLink, details); grid.append(card);
+        }
+        section.append(grid); return section;
+    };
+    const updateCompareToolbar = () => {
+        const toolbar = document.getElementById('assistant-compare-toolbar'); toolbar.hidden = selectedCompareIds.size === 0;
+        document.getElementById('assistant-compare-count').textContent = String(selectedCompareIds.size);
+        document.getElementById('assistant-compare-button').disabled = selectedCompareIds.size < 2 || selectedCompareIds.size > 3;
+    };
+    const addToCart = async (button, productId) => {
+        button.disabled = true;
+        try {
+            const body = new URLSearchParams({ productId: String(productId), quantity: '1', returnUrl: '/tu-van-san-pham' });
+            const response = await fetch('/Cart/Add', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json', 'RequestVerificationToken': token }, body });
+            const result = await response.json();
+            showNotice(result.message ?? (response.ok ? 'Đã cập nhật giỏ hàng.' : 'Không thể thêm sản phẩm vào giỏ.'), response.ok);
+        } catch { showNotice('Chưa thể kết nối với giỏ hàng. Hãy thử lại.', false); }
+        finally { button.disabled = false; }
+    };
+    const showNotice = (text, success) => { const notice = document.createElement('div'); notice.className = `assistant-toast ${success ? 'is-success' : 'is-error'}`; notice.textContent = text; document.body.append(notice); setTimeout(() => notice.remove(), 3200); };
+    const showTyping = () => { const row = document.createElement('div'); row.className = 'assistant-typing'; row.id = 'assistant-typing'; row.innerHTML = '<span></span><span></span><span></span><small>NEXORA AI đang tra cứu…</small>'; messages.append(row); scrollToLatest(); };
+    const removeTyping = () => document.getElementById('assistant-typing')?.remove();
+    const createStreamingMessage = () => {
+        removeTyping();
+        const row = document.createElement('article'); row.className = 'assistant-message assistant-message--assistant assistant-message--streaming';
+        const avatar = document.createElement('span'); avatar.className = 'assistant-message-avatar'; avatar.textContent = 'N'; avatar.setAttribute('aria-hidden', 'true');
+        const content = document.createElement('div'); content.className = 'assistant-message-content';
+        const label = document.createElement('span'); label.className = 'assistant-message-label'; label.textContent = 'NEXORA AI · ĐANG SOẠN';
+        const body = document.createElement('div'); body.className = 'assistant-message-text'; body.setAttribute('aria-live', 'polite');
+        content.append(label, body); row.append(avatar, content); messages.append(row); scrollToLatest();
+        return { row, label, body };
+    };
+    const readChatResponse = async response => {
+        if (!response.ok) {
+            let error = null;
+            try { error = await response.json(); } catch { /* The server may return a non-JSON error page. */ }
+            throw Object.assign(new Error(error?.message ?? 'Đã có lỗi khi xử lý yêu cầu.'), { responseError: true });
+        }
+
+        if (!response.headers.get('content-type')?.includes('text/event-stream')) return response.json();
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let streaming = null;
+        let result = null;
+        const acceptFrame = frame => {
+            let eventName = '';
+            const data = [];
+            for (const line of frame.split(/\r?\n/)) {
+                if (line.startsWith('event:')) eventName = line.slice(6).trim();
+                else if (line.startsWith('data:')) data.push(line.slice(5).trimStart());
             }
-            form.addEventListener('submit', () => {
-                form.setAttribute('aria-busy', 'true');
-                document.getElementById('consultation-submit').disabled = true;
-                document.getElementById('consultation-loading').hidden = false;
-            });
-        })();
-    </script>
+            if (!data.length) return;
+            let payload;
+            try { payload = JSON.parse(data.join('\n')); } catch { throw new Error('Phản hồi từ máy chủ không hợp lệ.'); }
+            if (eventName === 'delta' && typeof payload.text === 'string') {
+                if (!streaming) streaming = createStreamingMessage();
+                streaming.body.textContent += payload.text;
+                scrollToLatest();
+            } else if (eventName === 'result') result = payload;
+            else if (eventName === 'error') throw new Error(payload.message ?? 'Không thể hoàn tất câu trả lời.');
+        };
+
+        while (true) {
+            const { value, done } = await reader.read();
+            buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
+            let boundary;
+            while ((boundary = buffer.indexOf('\n\n')) >= 0) {
+                acceptFrame(buffer.slice(0, boundary));
+                buffer = buffer.slice(boundary + 2);
+            }
+            if (done) break;
+        }
+        if (buffer.trim()) acceptFrame(buffer);
+        if (!result) throw new Error('Kết nối kết thúc trước khi NEXORA hoàn tất phản hồi.');
+        streaming?.row.remove();
+        return result;
+    };
+    const sendMessage = async text => {
+        const message = String(text ?? '').trim(); if (!message || controller) return;
+        hideWelcome(); appendUser(message); input.value = ''; input.style.height = 'auto'; send.disabled = true; stop.hidden = false; showTyping();
+        controller = new AbortController();
+        try {
+            const response = await fetch(root.dataset.chatUrl, { method: 'POST', signal: controller.signal, headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream, application/json', 'RequestVerificationToken': token }, body: JSON.stringify({ message, previousUserMessages, previousRecommendedProductIds, previousAssistantMessage }) });
+            const result = await readChatResponse(response); removeTyping();
+            previousUserMessages = result.previousUserMessages ?? previousUserMessages.concat(message).slice(-6);
+            previousRecommendedProductIds = result.recommendedProductIds ?? [];
+            previousAssistantMessage = result.message ?? '';
+            addAssistant(result.message, { aiAssisted: result.aiAssisted, products: result.products, comparison: result.comparison });
+        } catch (error) {
+            removeTyping(); document.querySelector('.assistant-message--streaming')?.remove();
+            if (error.name === 'AbortError') addAssistant('Đã dừng phản hồi. Bạn có thể tiếp tục bằng một tin nhắn mới.');
+            else { input.value = message; input.focus(); addAssistant(error.responseError ? `${error.message} Nội dung của bạn vẫn được giữ lại trong ô nhập.` : 'Kết nối bị gián đoạn. Nội dung của bạn vẫn ở ô nhập; hãy thử gửi lại khi kết nối ổn định.'); }
+        } finally { controller = null; send.disabled = false; stop.hidden = true; input.focus(); }
+    };
+    const newChat = () => { controller?.abort(); previousUserMessages = []; previousRecommendedProductIds = []; previousAssistantMessage = ''; messages.replaceChildren(); welcome.hidden = false; selectedCompareIds.clear(); updateCompareToolbar(); input.value = ''; input.focus(); closeSidebar(); };
+    const openSidebar = () => { document.body.classList.add('assistant-sidebar-open'); document.getElementById('assistant-sidebar-scrim').hidden = false; };
+    const closeSidebar = () => { document.body.classList.remove('assistant-sidebar-open'); document.getElementById('assistant-sidebar-scrim').hidden = true; };
+
+    composer.addEventListener('submit', event => { event.preventDefault(); sendMessage(input.value); });
+    input.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); composer.requestSubmit(); } });
+    input.addEventListener('input', () => { input.style.height = 'auto'; input.style.height = `${Math.min(input.scrollHeight, 180)}px`; });
+    stop.addEventListener('click', () => controller?.abort());
+    for (const button of document.querySelectorAll('[data-prompt]')) button.addEventListener('click', () => { input.value = button.dataset.prompt ?? ''; input.focus(); input.dispatchEvent(new Event('input')); });
+    document.getElementById('assistant-new-chat').addEventListener('click', newChat);
+    document.getElementById('assistant-menu-toggle').addEventListener('click', openSidebar);
+    document.getElementById('assistant-close-sidebar').addEventListener('click', closeSidebar);
+    document.getElementById('assistant-sidebar-scrim').addEventListener('click', closeSidebar);
+    document.getElementById('assistant-compare-button').addEventListener('click', () => { const ids = Array.from(selectedCompareIds); if (ids.length >= 2 && ids.length <= 3) location.href = `${root.dataset.compareUrl}?${ids.map(id => `ids=${encodeURIComponent(id)}`).join('&')}`; });
+    document.getElementById('assistant-clear-compare').addEventListener('click', () => { selectedCompareIds.clear(); document.querySelectorAll('.assistant-card-compare input').forEach(check => check.checked = false); updateCompareToolbar(); });
+    fetch(root.dataset.statusUrl).then(response => response.json()).then(status => { document.getElementById('assistant-provider-status').textContent = status.qwenConfigured ? 'Qwen đã cấu hình · kiểm tra khi gửi câu hỏi' : 'Tư vấn theo dữ liệu NEXORA · Qwen chưa cấu hình'; }).catch(() => {});
+})();
+</script>
 }

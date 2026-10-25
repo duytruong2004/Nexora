@@ -352,6 +352,87 @@ namespace NEXORA.Infrastructure.Persistence.Migrations
                     b.ToTable("category_specifications", (string)null);
                 });
 
+            modelBuilder.Entity("NEXORA.Domain.Entities.ConsultationChatMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)")
+                        .HasColumnName("content");
+
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("conversation_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("RecommendedProductIdsJson")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("recommended_product_ids_json");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)")
+                        .HasColumnName("role");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversationId", "Id")
+                        .HasDatabaseName("ix_consultation_chat_messages_conversation_id");
+
+                    b.ToTable("consultation_chat_messages", (string)null);
+                });
+
+            modelBuilder.Entity("NEXORA.Domain.Entities.ConsultationConversation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "UpdatedAt")
+                        .HasDatabaseName("ix_consultation_conversations_user_updated");
+
+                    b.ToTable("consultation_conversations", (string)null);
+                });
+
             modelBuilder.Entity("NEXORA.Domain.Entities.Favorite", b =>
                 {
                     b.Property<int>("Id")
@@ -1463,6 +1544,26 @@ namespace NEXORA.Infrastructure.Persistence.Migrations
                     b.Navigation("Specification");
                 });
 
+            modelBuilder.Entity("NEXORA.Domain.Entities.ConsultationChatMessage", b =>
+                {
+                    b.HasOne("NEXORA.Domain.Entities.ConsultationConversation", "Conversation")
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+                });
+
+            modelBuilder.Entity("NEXORA.Domain.Entities.ConsultationConversation", b =>
+                {
+                    b.HasOne("NEXORA.Infrastructure.Identity.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("NEXORA.Domain.Entities.Favorite", b =>
                 {
                     b.HasOne("NEXORA.Domain.Entities.Product", "Product")
@@ -1712,6 +1813,11 @@ namespace NEXORA.Infrastructure.Persistence.Migrations
                     b.Navigation("Children");
 
                     b.Navigation("Products");
+                });
+
+            modelBuilder.Entity("NEXORA.Domain.Entities.ConsultationConversation", b =>
+                {
+                    b.Navigation("Messages");
                 });
 
             modelBuilder.Entity("NEXORA.Domain.Entities.Order", b =>

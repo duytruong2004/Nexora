@@ -37,7 +37,7 @@ public sealed class AppDbContextModelTests
         Assert.Contains("AspNetUserLogins", tables);
         Assert.Contains("AspNetUserTokens", tables);
         Assert.Contains("AspNetRoleClaims", tables);
-        Assert.Equal(26, tables.Count);
+        Assert.Equal(28, tables.Count);
     }
 
     [Fact]

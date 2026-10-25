@@ -405,3 +405,40 @@ internal sealed class RecommendationRuleConfiguration : IEntityTypeConfiguration
             .HasForeignKey(x => x.SpecificationId).OnDelete(DeleteBehavior.Restrict);
     }
 }
+
+internal sealed class ConsultationConversationConfiguration : IEntityTypeConfiguration<ConsultationConversation>
+{
+    public void Configure(EntityTypeBuilder<ConsultationConversation> entity)
+    {
+        entity.ToTable("consultation_conversations");
+        entity.HasKey(x => x.Id);
+        entity.Property(x => x.Title).HasMaxLength(160).IsRequired();
+        entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+        entity.Property(x => x.UpdatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+        entity.HasIndex(x => new { x.UserId, x.UpdatedAt })
+            .HasDatabaseName("ix_consultation_conversations_user_updated");
+        entity.HasOne<NEXORA.Infrastructure.Identity.AppUser>()
+            .WithMany()
+            .HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal sealed class ConsultationChatMessageConfiguration : IEntityTypeConfiguration<ConsultationChatMessage>
+{
+    public void Configure(EntityTypeBuilder<ConsultationChatMessage> entity)
+    {
+        entity.ToTable("consultation_chat_messages");
+        entity.HasKey(x => x.Id);
+        entity.Property(x => x.Role).HasMaxLength(16).IsRequired();
+        entity.Property(x => x.Content).HasMaxLength(4000).IsRequired();
+        entity.Property(x => x.RecommendedProductIdsJson).HasMaxLength(500);
+        entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+        entity.HasIndex(x => new { x.ConversationId, x.Id })
+            .HasDatabaseName("ix_consultation_chat_messages_conversation_id");
+        entity.HasOne(x => x.Conversation)
+            .WithMany(x => x.Messages)
+            .HasForeignKey(x => x.ConversationId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}
